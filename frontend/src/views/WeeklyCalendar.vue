@@ -3,6 +3,7 @@
     <!-- Top Bar -->
     <div class="top-bar">
       <div class="time-display">{{ currentTime }}</div>
+      <img src="../assets/Component3.svg" alt="Menu" class="menu-icon" />
       <button class="nav-btn" @click="nextWeek">></button>
     </div>
 
@@ -436,7 +437,14 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
-  border-bottom: 1px solid #9c9c9c10;
+
+}
+
+.menu-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  margin-right: 125px;
 }
 
 .top-bar2 {

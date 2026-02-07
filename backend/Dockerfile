@@ -3,13 +3,13 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Копируем файлы зависимостей
-COPY ./backend/requirements.txt ./
+COPY requirements.txt ./
 
 # Устанавливаем зависимости
 RUN pip install -r requirements.txt
 
 # Копируем остальной код
-COPY ./backend .
+COPY . .
 
 # Экспортируем порт
 EXPOSE 8000
