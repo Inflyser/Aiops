@@ -43,69 +43,161 @@
       </div>
     </div>
       
-
-    <!-- Calendar Header -->
-    <div class="calendar-header">
-      <div class="calendar-header2">
-        <h1 class="month-year">{{ monthYear }}</h1>
-        <button class="nav-btn1" @click="lastWeek"><</button>
-        <button class="nav-btn1" @click="nextWeek">></button>
-      </div>
-      <div class="days-header">
-        <div 
-          v-for="day in weekDays" 
-          :key="day.date"
-          class="day-header"
-        >
-          <div class="day-name">{{ day.shortName }}</div>
-          <div class="day-number">{{ day.number }}</div>
+    <!-- Week View (original unchanged) -->
+    <div v-if="currentView === 'week'">
+      <!-- Calendar Header -->
+      <div class="calendar-header">
+        <div class="calendar-header2">
+          <h1 class="month-year">{{ monthYear }}</h1>
+          <button class="nav-btn1" @click="lastWeek"><</button>
+          <button class="nav-btn1" @click="nextWeek">></button>
         </div>
-      </div>
-    </div>
-
-
-
-    <!-- Calendar Grid -->
-    <div class="calendar-grid">
-      <div class="time-column">
-        <div 
-          v-for="hour in hours" 
-          :key="hour"
-          class="time-slot"
-        >
-          {{ formatTime(hour) }}
+        <div class="days-header">
+          <div 
+            v-for="day in weekDays" 
+            :key="day.date"
+            class="day-header"
+          >
+            <div class="day-name">{{ day.shortName }}</div>
+            <div class="day-number">{{ day.number }}</div>
+          </div>
         </div>
       </div>
 
-      <div class="days-container">
-        <div 
-          v-for="day in weekDays" 
-          :key="day.date"
-          class="day-column"
-          @click="handleDayClick($event, day)"
-        >
+
+
+      <!-- Calendar Grid -->
+      <div class="calendar-grid">
+        <div class="time-column">
           <div 
             v-for="hour in hours" 
             :key="hour"
-            class="hour-slot"
-          ></div>
-          <div
-            v-for="event in getEventsForDay(day.date)"
-            :key="event.id"
-            class="event-block"
-            :style="getEventStyle(event, day.date)"
-            @click.stop="openEventModal(event)"
+            class="time-slot"
           >
-            <div class="event-indicator"></div>
-            <div class="event-content">
-              <div class="event-time">{{ formatEventTime(event) }}</div>
-              <div class="event-title">{{ event.title }}</div>
-              <div v-if="event.description" class="event-description">{{ event.description }}</div>
-              <div v-if="event.location" class="event-location">📍 {{ event.location }}</div>
+            {{ formatTime(hour) }}
+          </div>
+        </div>
+
+        <div class="days-container">
+          <div 
+            v-for="day in weekDays" 
+            :key="day.date"
+            class="day-column"
+            @click="handleDayClick($event, day)"
+          >
+            <div 
+              v-for="hour in hours" 
+              :key="hour"
+              class="hour-slot"
+            ></div>
+            <div
+              v-for="event in getEventsForDay(day.date)"
+              :key="event.id"
+              class="event-block"
+              :style="getEventStyle(event, day.date)"
+              @click.stop="openEventModal(event)"
+            >
+              <div class="event-indicator"></div>
+              <div class="event-content">
+                <div class="event-time">{{ formatEventTime(event) }}</div>
+                <div class="event-title">{{ event.title }}</div>
+                <div v-if="event.description" class="event-description">{{ event.description }}</div>
+                <div v-if="event.location" class="event-location">📍 {{ event.location }}</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Year View (new) -->
+    <div v-else-if="currentView === 'year'" class="year-calendar">
+      <div class="year-header">
+        <h1 class="year-title">{{ currentYear }}</h1>
+        <div class="year-nav">
+          <button class="nav-btn1" @click="prevYear"><</button>
+          <button class="nav-btn1" @click="nextYear">></button>
+        </div>
+      </div>
+      
+      <div class="year-grid">
+        <div 
+          v-for="month in months" 
+          :key="month.number"
+          class="month-in-year"
+        >
+          <h3 class="month-name">{{ month.name }}</h3>
+          <div class="mini-calendar">
+            <div class="mini-day-names">
+              <span v-for="dayName in miniDayNames" :key="dayName">{{ dayName }}</span>
+            </div>
+            <div class="mini-days">
+              <div 
+                v-for="day in month.days" 
+                :key="day.date"
+                class="mini-day"
+                :class="{
+                  'today': day.isToday,
+                  'other-month': !day.isCurrentMonth
+                }"
+                @click="handleMiniDayClick(day)"
+              >
+                {{ day.number }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Month View (simplified) -->
+    <div v-else-if="currentView === 'month'" class="month-calendar">
+      <div class="month-header">
+        <div class="month-header2">
+          <h1 class="month-year-title">{{ currentMonth.format('MMMM YYYY') }}</h1>
+          <div class="month-nav">
+            <button class="nav-btn1" @click="prevMonth"><</button>
+            <button class="nav-btn1" @click="nextMonth">></button>
+          </div>
+        </div>
+        <div class="days-header">
+          <div v-for="dayName in dayNames" :key="dayName" class="day-header">
+            <div class="day-name">{{ dayName }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="month-grid">
+        <div 
+          v-for="day in monthDays" 
+          :key="day.date"
+          class="month-day"
+          :class="{
+            'today': day.isToday,
+            'other-month': !day.isCurrentMonth,
+            'weekend': day.isWeekend
+          }"
+          @click="handleMonthDayClick(day)"
+        >
+          <div class="month-day-number">{{ day.number }}</div>
+          <div class="month-day-events">
+            <div 
+              v-for="event in getEventsForDay(day.date)" 
+              :key="event.id"
+              class="month-event"
+              :style="{ backgroundColor: event.color || '#4a5568' }"
+              @click.stop="openEventModal(event)"
+            >
+              {{ event.title }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day View (Placeholder) -->
+    <div v-else-if="currentView === 'day'" class="day-view">
+      <h2>Day View - Under Development</h2>
     </div>
 
     <!-- Event Modal -->
@@ -228,6 +320,8 @@ const calendarStore = useCalendarStore()
 const currentView = ref('week')
 const currentTime = ref('')
 const currentWeekStart = ref(dayjs().startOf('week'))
+const currentMonth = ref(dayjs().startOf('month'))
+const currentYear = ref(dayjs().year())
 const showModal = ref(false)
 const editingEvent = ref<any>(null)
 
@@ -243,6 +337,8 @@ const eventForm = ref({
 })
 
 const hours = Array.from({ length: 24 }, (_, i) => i) // 0:00 to 23:00
+const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const miniDayNames = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В']
 
 const weekDays = computed(() => {
   const days = []
@@ -260,6 +356,60 @@ const weekDays = computed(() => {
 
 const monthYear = computed(() => {
   return currentWeekStart.value.format('MMMM YYYY')
+})
+
+// Month View data
+const monthDays = computed(() => {
+  const days = []
+  const startOfMonth = currentMonth.value.startOf('month')
+  const endOfMonth = currentMonth.value.endOf('month')
+  const startDay = startOfMonth.startOf('week')
+  
+  let currentDay = startDay
+  for (let i = 0; i < 42; i++) { // 6 weeks
+    days.push({
+      date: currentDay.format('YYYY-MM-DD'),
+      number: currentDay.date(),
+      isToday: currentDay.isSame(dayjs(), 'day'),
+      isCurrentMonth: currentDay.month() === currentMonth.value.month(),
+      isWeekend: currentDay.day() === 6 || currentDay.day() === 0,
+      fullDate: currentDay
+    })
+    currentDay = currentDay.add(1, 'day')
+  }
+  return days
+})
+
+// Year View data
+const months = computed(() => {
+  const monthsArray = []
+  const today = dayjs()
+  
+  for (let month = 0; month < 12; month++) {
+    const monthDate = dayjs().year(currentYear.value).month(month).startOf('month')
+    const days = []
+    
+    // Get days for this month's mini calendar
+    const startDay = monthDate.startOf('week')
+    for (let i = 0; i < 42; i++) {
+      const day = startDay.add(i, 'day')
+      days.push({
+        date: day.format('YYYY-MM-DD'),
+        number: day.date(),
+        isToday: day.isSame(today, 'day'),
+        isCurrentMonth: day.month() === month,
+        isWeekend: day.day() === 6 || day.day() === 0,
+        fullDate: day
+      })
+    }
+    
+    monthsArray.push({
+      number: month,
+      name: monthDate.format('MMMM'),
+      days: days
+    })
+  }
+  return monthsArray
 })
 
 const getEventsForDay = (date: string) => {
@@ -322,6 +472,21 @@ const lastWeek = () => {
   loadEvents()
 }
 
+const nextMonth = () => {
+  currentMonth.value = currentMonth.value.add(1, 'month')
+}
+
+const prevMonth = () => {
+  currentMonth.value = currentMonth.value.add(-1, 'month')
+}
+
+const nextYear = () => {
+  currentYear.value += 1
+}
+
+const prevYear = () => {
+  currentYear.value -= 1
+}
 
 const handleDayClick = (event: MouseEvent, day: any) => {
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
@@ -345,6 +510,40 @@ const handleDayClick = (event: MouseEvent, day: any) => {
   
   editingEvent.value = null
   showModal.value = true
+}
+
+const handleMonthDayClick = (day: any) => {
+  eventForm.value = {
+    title: '',
+    description: '',
+    date: day.date,
+    startTime: '09:00',
+    endTime: '10:00',
+    location: '',
+    priority: 'medium',
+    color: '#4a5568'
+  }
+  
+  editingEvent.value = null
+  showModal.value = true
+}
+
+const handleMiniDayClick = (day: any) => {
+  if (day.isCurrentMonth) {
+    eventForm.value = {
+      title: '',
+      description: '',
+      date: day.date,
+      startTime: '09:00',
+      endTime: '10:00',
+      location: '',
+      priority: 'medium',
+      color: '#4a5568'
+    }
+    
+    editingEvent.value = null
+    showModal.value = true
+  }
 }
 
 const openEventModal = (event: any) => {
@@ -425,12 +624,7 @@ const deleteEvent = async () => {
 
 const loadEvents = async () => {
   // Используем моковые данные вместо реального API
-  // В реальном приложении здесь был бы вызов API
   console.log('Loading mock events')
-  // Для демонстрации просто используем моковые данные
-  // В реальном приложении мы могли бы использовать calendarStore.events = mockWeeklyEvents
-  // Но поскольку мы не можем напрямую изменить состояние store извне,
-  // мы будем использовать моковые данные в методе getEventsForDay
 }
 
 let timeInterval: ReturnType<typeof setInterval>
@@ -522,6 +716,7 @@ onUnmounted(() => {
   gap: 20px;
 }
 
+/* WEEK VIEW - ORIGINAL STYLES (unchanged) */
 .calendar-grid {
   display: grid;
   grid-template-columns: 60px 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
@@ -638,12 +833,10 @@ onUnmounted(() => {
 .calendar-header {
   padding: 20px;
   border-bottom: 1px solid #80808021;
-
 }
 
 .calendar-header2 {
   display: flex;
-
 }
 
 .month-year {
@@ -782,6 +975,219 @@ onUnmounted(() => {
   margin-top: 2px;
 }
 
+/* YEAR VIEW STYLES */
+.year-calendar {
+  padding: 20px;
+}
+
+.year-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #80808021;
+}
+
+.year-title {
+  font-size: 52px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.year-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 20px;
+}
+
+.month-in-year {
+  background: #0f0f0f;
+  border-radius: 10px;
+  padding: 15px;
+  transition: transform 0.2s;
+}
+
+.month-in-year:hover {
+  transform: translateY(-2px);
+}
+
+.month-name {
+  font-size: 24px;
+  margin: 0 0 15px 0;
+  text-align: center;
+  font-weight: 600;
+}
+
+.mini-calendar {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.mini-day-names {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+.mini-day-names span {
+  font-size: 12px;
+  color: #888;
+  font-weight: bold;
+}
+
+.mini-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.mini-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.mini-day:hover {
+  background-color: #333;
+}
+
+.mini-day.today {
+  background-color: #4a90e2;
+  color: white;
+  font-weight: bold;
+  border: 2px solid #4a90e2;
+}
+
+.mini-day.other-month {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.mini-day.other-month:hover {
+  background-color: transparent;
+}
+
+/* MONTH VIEW STYLES */
+.month-calendar {
+  padding: 20px;
+}
+
+.month-header {
+  padding: 20px;
+  border-bottom: 1px solid #80808021;
+}
+
+.month-header2 {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.month-year-title {
+  font-size: 52px;
+  font-weight: bold;
+  margin: 0;
+  flex: 1;
+}
+
+.month-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-left: 60px;
+  margin-right: 20px;
+}
+
+.month-day {
+  min-height: 120px;
+  border: 1px solid #333;
+  padding: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.month-day:hover {
+  background-color: #1a1a1a;
+}
+
+.month-day.today {
+  border: 2px solid #4a90e2;
+  background-color: rgba(74, 144, 226, 0.1);
+}
+
+.month-day.today .month-day-number {
+  background-color: #4a90e2;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.month-day.other-month {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.month-day.other-month:hover {
+  background-color: transparent;
+}
+
+.month-day.weekend {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.month-day-number {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.month-event {
+  font-size: 12px;
+  padding: 2px 6px;
+  margin-bottom: 2px;
+  border-radius: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* DAY VIEW STYLES */
+.day-view {
+  padding: 40px;
+  text-align: center;
+}
+
+.day-view h2 {
+  font-size: 36px;
+  color: #888;
+}
+
+/* MODAL STYLES */
 .modal {
   overflow: hidden;
   position: fixed;
@@ -896,4 +1302,3 @@ onUnmounted(() => {
   color: #fff;
 }
 </style>
-
