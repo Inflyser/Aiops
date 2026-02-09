@@ -3,8 +3,10 @@
     <!-- Top Bar -->
     <div class="top-bar">
       <div class="time-display">{{ currentTime }}</div>
-      <img src="../assets/Component3.svg" alt="Menu" class="menu-icon" />
-      <button class="nav-btn" @click="nextWeek">></button>
+      <div class="menu-wrapper">
+        <ThreeDotsMenu />
+      </div>
+      <button class="nav-btn" @click="nextWeek"> </button>
     </div>
 
 
@@ -44,7 +46,11 @@
 
     <!-- Calendar Header -->
     <div class="calendar-header">
-      <h1 class="month-year">{{ monthYear }}</h1>
+      <div class="calendar-header2">
+        <h1 class="month-year">{{ monthYear }}</h1>
+        <button class="nav-btn1" @click="lastWeek"><</button>
+        <button class="nav-btn1" @click="nextWeek">></button>
+      </div>
       <div class="days-header">
         <div 
           v-for="day in weekDays" 
@@ -83,17 +89,20 @@
             :key="hour"
             class="hour-slot"
           ></div>
-          <div 
+          <div
             v-for="event in getEventsForDay(day.date)"
             :key="event.id"
             class="event-block"
             :style="getEventStyle(event, day.date)"
             @click.stop="openEventModal(event)"
           >
-            <div class="event-time">{{ formatEventTime(event) }}</div>
-            <div class="event-title">{{ event.title }}</div>
-            <div v-if="event.description" class="event-description">{{ event.description }}</div>
-            <div v-if="event.location" class="event-location">📍 {{ event.location }}</div>
+            <div class="event-indicator"></div>
+            <div class="event-content">
+              <div class="event-time">{{ formatEventTime(event) }}</div>
+              <div class="event-title">{{ event.title }}</div>
+              <div v-if="event.description" class="event-description">{{ event.description }}</div>
+              <div v-if="event.location" class="event-location">📍 {{ event.location }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -209,6 +218,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { useCalendarStore } from '../stores/calendar'
+import ThreeDotsMenu from '../components/ThreeDotsMenu.vue'
+import { mockWeeklyEvents } from '../mock/weeklyData'
 
 dayjs.locale('ru')
 
@@ -231,7 +242,7 @@ const eventForm = ref({
   color: '#4a5568'
 })
 
-const hours = Array.from({ length: 24 }, (_, i) => (i + 6) % 24) // 6:00 to 5:00 next day
+const hours = Array.from({ length: 24 }, (_, i) => i) // 0:00 to 23:00
 
 const weekDays = computed(() => {
   const days = []
@@ -252,7 +263,8 @@ const monthYear = computed(() => {
 })
 
 const getEventsForDay = (date: string) => {
-  return calendarStore.events.filter(event => {
+  // Используем моковые данные для демонстрации
+  return mockWeeklyEvents.filter(event => {
     const eventDate = dayjs(event.start).format('YYYY-MM-DD')
     return eventDate === date
   })
@@ -270,10 +282,15 @@ const getEventStyle = (event: any, dayDate: string) => {
   const top = (startMinutes / 60) * 120
   const height = Math.max((duration / 60) * 120, 30) // минимум 30px высоты
   
+  // Проверяем, что событие не выходит за пределы 24 часов
+  const maxTop = 24 * 120 // 24 часа * 120px
+  const clampedTop = Math.min(top, maxTop)
+  const clampedHeight = Math.min(height, maxTop - clampedTop)
+  
   return {
-    top: `${top}px`,
-    height: `${height}px`,
-    backgroundColor: event.color || '#4a5568',
+    top: `${clampedTop}px`,
+    height: `${clampedHeight}px`,
+    backgroundColor: '#4a5568',
     position: 'absolute' as const,
     left: '2px',
     right: '2px',
@@ -300,12 +317,17 @@ const nextWeek = () => {
   loadEvents()
 }
 
+const lastWeek = () => {
+  currentWeekStart.value = currentWeekStart.value.add(-1, 'week')
+  loadEvents()
+}
+
 
 const handleDayClick = (event: MouseEvent, day: any) => {
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
   const clickY = event.clientY - rect.top
-  const hour = Math.floor(clickY / 120) + 6
-  const minutes = Math.floor((clickY % 60) / 60 * 60)
+  const hour = Math.floor(clickY / 120)
+  const minutes = Math.floor((clickY % 120) / 120 * 60)
   
   const startTime = dayjs(day.fullDate).hour(hour).minute(minutes)
   const endTime = startTime.add(1, 'hour')
@@ -402,11 +424,13 @@ const deleteEvent = async () => {
 }
 
 const loadEvents = async () => {
-  const start = currentWeekStart.value.startOf('week').toISOString()
-  const end = currentWeekStart.value.endOf('week').toISOString()
-  console.log('Loading events from', start, 'to', end)
-  await calendarStore.fetchEvents(start, end)
-  console.log('Loaded events:', calendarStore.events)
+  // Используем моковые данные вместо реального API
+  // В реальном приложении здесь был бы вызов API
+  console.log('Loading mock events')
+  // Для демонстрации просто используем моковые данные
+  // В реальном приложении мы могли бы использовать calendarStore.events = mockWeeklyEvents
+  // Но поскольку мы не можем напрямую изменить состояние store извне,
+  // мы будем использовать моковые данные в методе getEventsForDay
 }
 
 let timeInterval: ReturnType<typeof setInterval>
@@ -430,14 +454,21 @@ onUnmounted(() => {
   min-height: 100vh;
   background-color: #050505;
   color: #ffffff;
+  overflow: hidden;
 }
 
 .top-bar {
+  margin-top: 5px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
+}
 
+.menu-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .menu-icon {
@@ -491,6 +522,88 @@ onUnmounted(() => {
   gap: 20px;
 }
 
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  height: calc(100vh - 250px);
+  overflow: auto;
+  position: relative;
+  min-height: 800px;
+}
+
+.time-column {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #333;
+}
+
+.time-slot {
+  height: 120px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 5px;
+  font-size: 14px;
+  color: #aaa;
+}
+
+.days-container {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  position: relative;
+  min-height: 2880px; /* 24 часа * 120px */
+}
+
+.day-column {
+  position: relative;
+  border-left: 1px solid #333;
+  min-height: 2880px; /* 24 часа * 120px */
+  height: fit-content;
+}
+
+.hour-slot {
+  height: 120px;
+  border-bottom: 1px solid #333;
+  position: relative;
+  min-height: 120px;
+}
+
+.event-block {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 4px;
+  padding: 5px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 10;
+  cursor: pointer;
+}
+
+.event-time {
+  font-weight: bold;
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.event-title {
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.event-description {
+  font-size: 9px;
+  opacity: 0.8;
+}
+
+.event-location {
+  font-size: 9px;
+  margin-top: 2px;
+}
+
 .nav-link {
   color: #888;
   text-decoration: none;
@@ -512,9 +625,24 @@ onUnmounted(() => {
   padding: 5px 10px;
 }
 
+.nav-btn1 {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 38px;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0px 10px 15px 25px;
+}
+
 .calendar-header {
   padding: 20px;
   border-bottom: 1px solid #80808021;
+
+}
+
+.calendar-header2 {
+  display: flex;
 
 }
 
@@ -605,33 +733,51 @@ onUnmounted(() => {
   overflow: hidden;
   z-index: 10;
   transition: opacity 0.2s;
+  display: flex;
+  height: 100%;
+  min-height: 30px;
 }
 
 .event-block:hover {
   opacity: 0.9;
 }
 
+.event-indicator {
+  width: 7px;
+  border-radius: 6px;
+  background-color: #ffffff;
+  margin-right: 8px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.event-content {
+  flex: 1;
+  overflow: hidden;
+}
+
 .event-time {
-  font-size: 10px;
+  font-size: 20px;
   color: rgba(255, 255, 255, 0.8);
   margin-bottom: 2px;
+  font-weight: 500;
 }
 
 .event-title {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 600;
   margin-bottom: 2px;
 }
 
 .event-description {
-  font-size: 11px;
+  font-size: 18px;
   color: rgba(255, 255, 255, 0.8);
   margin-top: 3px;
   line-height: 1.3;
 }
 
 .event-location {
-  font-size: 10px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 2px;
 }

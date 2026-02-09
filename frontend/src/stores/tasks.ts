@@ -22,7 +22,7 @@ export const useTasksStore = defineStore('tasks', () => {
   const error = ref<string | null>(null)
 
   const api = axios.create({
-    baseURL: '/api/v1/tasks',
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1/tasks',
     headers: {
       'Content-Type': 'application/json'
     }
