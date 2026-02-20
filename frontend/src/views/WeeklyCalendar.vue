@@ -6,7 +6,16 @@
       <div class="menu-wrapper">
         <ThreeDotsMenu />
       </div>
-      <button class="nav-btn" @click="nextWeek"> </button>
+      <!-- Compact mode toggle - перенесено в top-bar -->
+      <button
+        class="compact-toggle-btn header-toggle"
+        :class="{ active: compactMode }"
+        @click="compactMode = !compactMode"
+        :title="compactMode ? 'Показать полный день (0:00–23:00)' : 'Рабочий день (7:00–23:00)'"
+      >
+        <span class="toggle-icon">{{ compactMode ? '☀' : '◑' }}</span>
+        <span class="toggle-label">{{ compactMode ? '7–24' : '0–24' }}</span>
+      </button>
     </div>
 
 
@@ -20,7 +29,7 @@
           day
         </button>
         <button 
-          class="view-btn active" 
+          class="view-btn" 
           :class="{ active: currentView === 'week' }"
           @click="currentView = 'week'"
         >
@@ -64,11 +73,9 @@
         </div>
       </div>
 
-
-
       <!-- Calendar Grid -->
-      <div class="calendar-grid">
-        <div class="time-column">
+      <div class="calendar-grid" :style="{ minHeight: (calendarHeight + 150) + 'px' }">
+        <div class="time-column" :style="{ minHeight: calendarHeight + 'px' }">
           <div 
             v-for="hour in hours" 
             :key="hour"
@@ -78,11 +85,12 @@
           </div>
         </div>
 
-        <div class="days-container">
+        <div class="days-container" :style="{ minHeight: calendarHeight + 'px' }">
           <div 
             v-for="day in weekDays" 
             :key="day.date"
             class="day-column"
+            :style="{ minHeight: calendarHeight + 'px' }"
             @click="handleDayClick($event, day)"
           >
             <div 
@@ -336,7 +344,22 @@ const eventForm = ref({
   color: '#4a5568'
 })
 
-const hours = Array.from({ length: 24 }, (_, i) => i) // 0:00 to 23:00
+// Переключатель режима: false = полный день (0-23), true = рабочий день (7-23)
+const compactMode = ref(false)
+
+const hours = computed(() => {
+  if (compactMode.value) {
+    return Array.from({ length: 17 }, (_, i) => i + 7) // 7:00 to 23:00
+  }
+  return Array.from({ length: 24 }, (_, i) => i) // 0:00 to 23:00
+})
+
+// Высота календаря: 17 часов * 120px или 24 часа * 120px
+const calendarHeight = computed(() => {
+  const totalHours = compactMode.value ? 17 : 24
+  return totalHours * 120
+})
+
 const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const miniDayNames = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В']
 
@@ -424,19 +447,27 @@ const getEventStyle = (event: any, dayDate: string) => {
   const start = dayjs(event.start)
   const end = dayjs(event.end)
   const dayStart = dayjs(dayDate).startOf('day')
-  
+
   const startMinutes = start.diff(dayStart, 'minute')
   const duration = end.diff(start, 'minute')
-  
-  // 120px per hour, так что умножаем на 120
-  const top = (startMinutes / 60) * 120
-  const height = Math.max((duration / 60) * 120, 30) // минимум 30px высоты
-  
-  // Проверяем, что событие не выходит за пределы 24 часов
-  const maxTop = 24 * 120 // 24 часа * 120px
-  const clampedTop = Math.min(top, maxTop)
+
+  // Смещение в compactMode: скрываем первые 7 часов (7 * 60 = 420 мин)
+  const offsetMinutes = compactMode.value ? 7 * 60 : 0
+
+  // 120px per hour
+  const top = ((startMinutes - offsetMinutes) / 60) * 120
+  const height = Math.max((duration / 60) * 120, 30)
+
+  const totalHours = compactMode.value ? 17 : 24
+  const maxTop = totalHours * 120
+  const clampedTop = Math.max(0, Math.min(top, maxTop))
   const clampedHeight = Math.min(height, maxTop - clampedTop)
-  
+
+  // Скрываем события, которые полностью до начала видимого диапазона
+  if (clampedTop >= maxTop || clampedHeight <= 0) {
+    return { display: 'none' }
+  }
+
   return {
     top: `${clampedTop}px`,
     height: `${clampedHeight}px`,
@@ -645,10 +676,11 @@ onUnmounted(() => {
 <style scoped>
 .weekly-calendar {
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
   background-color: #050505;
   color: #ffffff;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .top-bar {
@@ -657,6 +689,39 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
+  gap: 15px;
+  overflow: hidden;
+}
+
+.compact-toggle-btn {
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.compact-toggle-btn:hover {
+  background: #444;
+}
+
+.compact-toggle-btn.active {
+  background: #4a5568;
+  color: #fff;
+}
+
+.toggle-icon {
+  font-size: 16px;
+}
+
+.toggle-label {
+  font-weight: 500;
 }
 
 .menu-wrapper {
@@ -677,6 +742,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: 30px 0px 0px 0px;
+  overflow: hidden;
 }
 
 .time-display {
@@ -747,14 +813,6 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   position: relative;
-  min-height: 2880px; /* 24 часа * 120px */
-}
-
-.day-column {
-  position: relative;
-  border-left: 1px solid #333;
-  min-height: 2880px; /* 24 часа * 120px */
-  height: fit-content;
 }
 
 .hour-slot {
@@ -872,28 +930,29 @@ onUnmounted(() => {
 }
 
 .calendar-grid {
-  overflow: hidden;
+  flex: 1;
+  overflow-y: auto;
   display: flex;
   position: relative;
-  height: calc(100vh - 200px);
-  overflow-y: auto;
+  min-height: 0;
+  height: calc(100vh - 250px);
 }
 
 .time-column {
   width: 90px;
-  padding: 20px 0 0 20px;
-  margin-top: -145px;
   border-right: 1px solid #808080;
+  flex-shrink: 0;
 }
 
 .time-slot {
-  height: 60px;
+  height: 120px;
   display: flex;
   align-items: flex-start;
-  padding-top: 120px;
+  padding-left: 10px;
   font-size: 20px;
   color: #6b6b6b;
   font-weight: bold;
+  box-sizing: border-box;
 }
 
 .days-container {
@@ -907,7 +966,6 @@ onUnmounted(() => {
 .day-column {
   border-right: 1px solid #333;
   position: relative;
-  min-height: 2880px;
 }
 
 .hour-slot {
@@ -977,7 +1035,7 @@ onUnmounted(() => {
 
 /* YEAR VIEW STYLES */
 .year-calendar {
-  padding: 20px;
+  padding: 10px;
 }
 
 .year-header {
@@ -996,14 +1054,14 @@ onUnmounted(() => {
 
 .year-nav {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .year-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  padding: 20px;
+  gap: 10px;
+  padding: 10px;
 }
 
 .month-in-year {

@@ -4,17 +4,15 @@
       <div class="card-title">{{ task.title }}</div>
       <div class="card-actions">
         <button
-          class="small-btn"
-          :disabled="!canMoveLeft"
-          @click="$emit('move-left', leftTarget)"
-          title="Переместить влево"
-        >◀</button>
+          class="small-btn edit-btn"
+          @click="$emit('edit-task', task)"
+          title="Редактировать задачу"
+        >✎</button>
         <button
-          class="small-btn"
-          :disabled="!canMoveRight"
-          @click="$emit('move-right', rightTarget)"
-          title="Переместить вправо"
-        >▶</button>
+          class="small-btn delete-btn"
+          @click="$emit('delete-task', task.id)"
+          title="Удалить задачу"
+        >✕</button>
       </div>
     </div>
     <div v-if="task.description" class="card-desc">{{ task.description }}</div>
@@ -35,24 +33,11 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emits = defineEmits(['move-left', 'move-right'])
+const emits = defineEmits(['move-left', 'move-right', 'edit-task', 'delete-task'])
 
 const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 
-const canMoveLeft = computed(() => props.status !== 'todo')
-const canMoveRight = computed(() => props.status !== 'done')
-
-const leftTarget = computed(() => {
-  if (props.status === 'in-progress') return 'todo'
-  if (props.status === 'done') return 'in-progress'
-  return 'todo'
-})
-
-const rightTarget = computed(() => {
-  if (props.status === 'todo') return 'in-progress'
-  if (props.status === 'in-progress') return 'done'
-  return 'done'
-})
+// Удалены вычисляемые свойства для перемещения, так как используется перетаскивание
 </script>
 
 <style scoped>
@@ -104,6 +89,22 @@ const rightTarget = computed(() => {
 .small-btn:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+.edit-btn {
+  color: #ffd700;
+}
+
+.edit-btn:hover {
+  background-color: #444;
+}
+
+.delete-btn {
+  color: #ff6b6b;
+}
+
+.delete-btn:hover {
+  background-color: #5a1818;
 }
 
 .card-desc {
