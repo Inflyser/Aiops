@@ -4,7 +4,9 @@
     <div class="menu-wrapper">
       <ThreeDotsMenu />
     </div>
+    <!-- Кнопка переключения 0-24 / 7-24 только для недельного вида -->
     <button
+      v-if="currentView === 'week'"
       class="compact-toggle-btn header-toggle"
       :class="{ active: compactMode }"
       @click="$emit('toggle-compact', !compactMode)"
@@ -26,6 +28,7 @@ dayjs.locale('ru')
 
 defineProps<{
   compactMode: boolean
+  currentView: string
 }>()
 
 defineEmits<{

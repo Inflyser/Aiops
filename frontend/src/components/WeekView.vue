@@ -155,16 +155,50 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
   const end = dayjs(event.end)
   const dayStart = dayjs(dayDate).startOf('day')
 
-  const startMinutes = start.diff(dayStart, 'minute')
+  let startMinutes = start.diff(dayStart, 'minute')
   const duration = end.diff(start, 'minute')
 
-  const offsetMinutes = props.compactMode ? 7 * 60 : 0
+  // В компактном режиме (7-24): события раньше 7:00 показываем с 7:00
+  // События позже 23:00 скрываем
+  if (props.compactMode) {
+    if (startMinutes < 7 * 60) {
+      // Событие начинается до 7:00 - показываем с 7:00
+      startMinutes = 7 * 60
+    } else if (startMinutes >= 24 * 60) {
+      // Событие начинается после полуночи - скрываем
+      return { display: 'none' }
+    }
+    
+    // В компактном режиме сетка начинается с 7:00, поэтому нужно вычесть 7 часов
+    // чтобы событие в 10:00 было на правильной позиции (3-й слот, а не 10-й)
+    const offsetMinutes = 7 * 60
+    const top = ((startMinutes - offsetMinutes) / 60) * 120
+    const height = Math.max((duration / 60) * 120, 30)
 
-  const top = ((startMinutes - offsetMinutes) / 60) * 120
+    const maxTop = 17 * 120 // 17 часов в компактном режиме
+    const clampedTop = Math.max(0, Math.min(top, maxTop))
+    const clampedHeight = Math.min(height, maxTop - clampedTop)
+
+    if (clampedTop >= maxTop || clampedHeight <= 0) {
+      return { display: 'none' }
+    }
+
+    return {
+      top: `${clampedTop}px`,
+      height: `${clampedHeight}px`,
+      backgroundColor: '#4a5568',
+      position: 'absolute' as const,
+      left: '2px',
+      right: '2px',
+      zIndex: 10
+    }
+  }
+
+  // Не компактный режим (0-24)
+  const top = (startMinutes / 60) * 120
   const height = Math.max((duration / 60) * 120, 30)
 
-  const totalHours = props.compactMode ? 17 : 24
-  const maxTop = totalHours * 120
+  const maxTop = 24 * 120
   const clampedTop = Math.max(0, Math.min(top, maxTop))
   const clampedHeight = Math.min(height, maxTop - clampedTop)
 

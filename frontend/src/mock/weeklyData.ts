@@ -41,7 +41,7 @@ export const createMockWeeklyData = (startDate?: Date) => {
       title: 'Задача на неделю',
       description: 'Моковая задача для демонстрации на 7 дней',
       completed: false,
-      due_date: dayjs(start).add(6, 'day').toISOString(),
+      due_date: dayjs(start).add(4, 'day').toISOString(),
       priority: 'high',
       tags: ['mock', 'weekly'],
       project_id: undefined,
@@ -71,6 +71,22 @@ export const createMockWeeklyData = (startDate?: Date) => {
       updated_at: dayjs(start).toISOString()
     })
   }
+
+  // Добавляем событие на 22 февраля 2026 с 9:00 до 13:00
+  events.push({
+    id: 'event-8',
+    title: 'Рабочая встреча',
+    description: 'Совещание с командой',
+    start: dayjs('2026-02-22 09:00:00').toISOString(),
+    end: dayjs('2026-02-22 13:00:00').toISOString(),
+    all_day: false,
+    color: '#38a14a',
+    location: 'Переговорная',
+    priority: 'medium',
+    user_id: 'user-123',
+    created_at: dayjs().toISOString(),
+    updated_at: dayjs().toISOString()
+  })
 
   return { tasks, events }
 }

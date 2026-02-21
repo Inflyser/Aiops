@@ -3,6 +3,7 @@
     <!-- Top Bar -->
     <CalendarTopBar 
       :compact-mode="compactMode"
+      :current-view="currentView"
       @toggle-compact="compactMode = $event"
     />
 
