@@ -88,7 +88,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'day-click', day: WeekDay, event: MouseEvent): void
+  (e: 'day-click', data: { day: WeekDay; dateTime: dayjs.Dayjs }): void
   (e: 'open-event', event: CalendarEvent): void
 }>()
 
@@ -228,7 +228,21 @@ const formatEventTime = (event: CalendarEvent) => {
 }
 
 const handleDayClick = (event: MouseEvent, day: WeekDay) => {
-  emit('day-click', day, event)
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  const clickY = event.clientY - rect.top
+  const slotIndex = Math.floor(clickY / 120)
+  const minutes = Math.floor((clickY % 120) / 120 * 60)
+  
+  // В компактном режиме слот 0 соответствует 7:00, а не 0:00
+  const hour = props.compactMode ? slotIndex + 7 : slotIndex
+  
+  // Передаём вычисленное время вместе с днём
+  const clickedDateTime = day.fullDate.hour(hour).minute(minutes)
+  
+  emit('day-click', { 
+    day, 
+    dateTime: clickedDateTime 
+  })
 }
 </script>
 

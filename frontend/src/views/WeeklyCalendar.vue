@@ -159,20 +159,15 @@ const prevYear = () => {
 }
 
 // Event handlers
-const handleWeekDayClick = (day: any, event: MouseEvent) => {
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  const clickY = event.clientY - rect.top
-  const hour = Math.floor(clickY / 120)
-  const minutes = Math.floor((clickY % 120) / 120 * 60)
-  
-  const startTime = dayjs(day.fullDate).hour(hour).minute(minutes)
-  const endTime = startTime.add(1, 'hour')
+const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
+  const { day, dateTime } = data
+  const endTime = dateTime.add(1, 'hour')
   
   eventForm.value = {
     title: '',
     description: '',
     date: day.date,
-    startTime: startTime.format('HH:mm'),
+    startTime: dateTime.format('HH:mm'),
     endTime: endTime.format('HH:mm'),
     location: '',
     priority: 'medium',
