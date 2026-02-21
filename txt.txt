@@ -1,8 +1,0 @@
-diskpart
-list disk
-select disk X  (X - номер твоей флешки, СМОТРИ ВНИМАТЕЛЬНО!)
-clean
-create partition primary size=32000  <-- вот это ключ! Создаем раздел на 32GB
-format fs=FAT32 quick
-assign
-exit
