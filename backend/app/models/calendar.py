@@ -13,8 +13,8 @@ class CalendarEvent(Base):
     end = Column(DateTime(timezone=True), nullable=False)
     all_day = Column(Boolean, default=False)
     color = Column(String(7), default="#3B82F6")  # HEX цвет
-    location = Column(String(255))
     priority = Column(String(20), default="medium")  # low, medium, high
+    tag_id = Column(String, ForeignKey("tags.id"), nullable=True)  # Связь с тегом
     
     user_id = Column(String, ForeignKey("users.id"))
     
@@ -22,3 +22,4 @@ class CalendarEvent(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     user = relationship("User", back_populates="calendar_events")
+    tag = relationship("Tag", foreign_keys=[tag_id])

@@ -9,8 +9,8 @@ class CalendarEventBase(BaseModel):
     end: datetime
     all_day: bool = False
     color: str = "#4a5568"
-    location: Optional[str] = None
     priority: str = "medium"
+    tag_id: Optional[str] = None
 
 class CalendarEventCreate(CalendarEventBase):
     pass
@@ -22,8 +22,8 @@ class CalendarEventUpdate(BaseModel):
     end: Optional[datetime] = None
     all_day: Optional[bool] = None
     color: Optional[str] = None
-    location: Optional[str] = None
     priority: Optional[str] = None
+    tag_id: Optional[str] = None
 
 class CalendarEvent(CalendarEventBase):
     model_config = ConfigDict(from_attributes=True)

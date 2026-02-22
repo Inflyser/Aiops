@@ -53,30 +53,21 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="eventLocation">Место (необязательно):</label>
-          <input 
-            type="text" 
-            id="eventLocation" 
-            v-model="formData.location"
-            placeholder="Например: Школа, Библиотека"
-          >
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="eventPriority">Приоритет:</label>
-            <select id="eventPriority" v-model="formData.priority">
-              <option value="low">Низкий</option>
-              <option value="medium">Средний</option>
-              <option value="high">Высокий</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="eventColor">Цвет:</label>
-            <input 
-              type="color" 
-              id="eventColor" 
-              v-model="formData.color"
+          <label>Тег:</label>
+          <div class="tags-selector">
+            <div 
+              v-for="tag in availableTags" 
+              :key="tag.id"
+              class="tag-option"
+              :class="{ selected: selectedTagId === tag.id }"
+              @click="selectTag(tag)"
             >
+              <span class="tag-color" :style="{ backgroundColor: tag.color }"></span>
+              <span class="tag-name">{{ tag.name }}</span>
+            </div>
+            <div v-if="availableTags.length === 0" class="no-tags-message">
+              Нет доступных тегов. Создайте теги в панели тегов.
+            </div>
           </div>
         </div>
         <div class="form-actions">
@@ -103,7 +94,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+
+interface Tag {
+  id: string
+  name: string
+  color: string
+}
 
 interface EventFormData {
   title: string
@@ -111,9 +108,9 @@ interface EventFormData {
   date: string
   startTime: string
   endTime: string
-  location: string
   priority: string
   color: string
+  tagId?: string
 }
 
 interface CalendarEvent {
@@ -122,22 +119,50 @@ interface CalendarEvent {
   description?: string
   start: string
   end: string
-  location?: string
   priority?: string
   color?: string
+  tagId?: string
 }
 
 const props = defineProps<{
   show: boolean
   editingEvent: CalendarEvent | null
   formData: EventFormData
+  availableTags: Tag[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'close'): void
   (e: 'save'): void
   (e: 'delete'): void
 }>()
+
+const selectedTagId = ref<string | null>(null)
+
+// Sync selectedTagId with formData when editing
+watch(() => props.formData, (newFormData) => {
+  selectedTagId.value = newFormData.tagId || null
+}, { immediate: true })
+
+// Also watch for when the modal opens with editing event
+watch(() => props.show, (isVisible) => {
+  if (isVisible && props.editingEvent) {
+    selectedTagId.value = props.editingEvent.tagId || null
+  }
+})
+
+const selectTag = (tag: Tag) => {
+  if (selectedTagId.value === tag.id) {
+    // Deselect if clicking on already selected tag
+    selectedTagId.value = null
+    props.formData.color = '#4a5568'
+    props.formData.tagId = undefined
+  } else {
+    selectedTagId.value = tag.id
+    props.formData.color = tag.color
+    props.formData.tagId = tag.id
+  }
+}
 </script>
 
 <style scoped>
@@ -157,7 +182,7 @@ defineEmits<{
 .modal-content {
   background-color: #1a1a1a;
   padding: 30px;
-  border-radius: 8px;
+  border-radius: 35px;
   width: 90%;
   max-width: 500px;
   position: relative;
@@ -252,5 +277,57 @@ defineEmits<{
 .btn-danger {
   background-color: #dc3545;
   color: #fff;
+}
+
+/* Tags Selector Styles */
+.tags-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+.tag-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  background-color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.tag-option:hover {
+  background-color: #444;
+}
+
+.tag-option.selected {
+  border-color: #fff;
+  background-color: #4a5568;
+}
+
+.tag-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tag-name {
+  font-size: 13px;
+  color: #ddd;
+}
+
+.no-tags-message {
+  color: #666;
+  font-size: 13px;
+  padding: 10px;
+  text-align: center;
+  width: 100%;
 }
 </style>

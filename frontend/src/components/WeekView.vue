@@ -35,10 +35,9 @@
           >
             <div class="event-indicator"></div>
             <div class="event-content">
-              <div class="event-time">{{ formatEventTime(event) }}</div>
               <div class="event-title">{{ event.title }}</div>
+              <div class="event-time">{{ formatEventTime(event) }}</div>
               <div v-if="event.description" class="event-description">{{ event.description }}</div>
-              <div v-if="event.location" class="event-location">📍 {{ event.location }}</div>
             </div>
           </div>
           
@@ -69,7 +68,6 @@ interface CalendarEvent {
   description?: string
   start: string
   end: string
-  location?: string
   priority?: string
   color?: string
 }

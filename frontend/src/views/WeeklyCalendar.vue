@@ -4,7 +4,18 @@
     <CalendarTopBar 
       :compact-mode="compactMode"
       :current-view="currentView"
+      :show-tags-panel="showTagsPanel"
       @toggle-compact="compactMode = $event"
+      @toggle-tags="showTagsPanel = !showTagsPanel"
+    />
+
+    <!-- Tags Panel -->
+    <TagsPanel 
+      v-if="showTagsPanel"
+      :tags="tags"
+      @close="showTagsPanel = false"
+      @add-tag="addTag"
+      @delete-tag="deleteTag"
     />
 
     <!-- View Selector -->
@@ -64,6 +75,7 @@
       :show="showModal"
       :editing-event="editingEvent"
       :form-data="eventForm"
+      :available-tags="tags"
       @close="closeModal"
       @save="saveEvent"
       @delete="deleteEvent"
@@ -76,6 +88,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { useCalendarStore } from '../stores/calendar'
+import { useTagsStore } from '../stores/tags'
 import { mockWeeklyEvents } from '../mock/weeklyData'
 
 // Components
@@ -86,10 +99,12 @@ import WeekView from '../components/WeekView.vue'
 import MonthView from '../components/MonthView.vue'
 import YearView from '../components/YearView.vue'
 import EventModal from '../components/EventModal.vue'
+import TagsPanel from '../components/TagsPanel.vue'
 
 dayjs.locale('ru')
 
 const calendarStore = useCalendarStore()
+const tagsStore = useTagsStore()
 
 // State
 const currentView = ref('week')
@@ -102,6 +117,29 @@ const editingEvent = ref<any>(null)
 // Переключатель режима: false = полный день (0-23), true = рабочий день (7-23)
 const compactMode = ref(false)
 
+// Tags state
+const showTagsPanel = ref(false)
+
+// Tags methods
+const addTag = async (tag: { name: string; color: string }) => {
+  try {
+    await tagsStore.createTag(tag)
+  } catch (error) {
+    console.error('Failed to add tag:', error)
+  }
+}
+
+const deleteTag = async (tagId: string) => {
+  try {
+    await tagsStore.deleteTag(tagId)
+  } catch (error) {
+    console.error('Failed to delete tag:', error)
+  }
+}
+
+// Computed for tags from store
+const tags = computed(() => tagsStore.tags)
+
 // Events (mock data)
 const events = computed(() => mockWeeklyEvents)
 
@@ -113,7 +151,8 @@ const eventForm = ref({
   endTime: '',
   location: '',
   priority: 'medium',
-  color: '#4a5568'
+  color: '#4a5568',
+  tagId: undefined as string | undefined
 })
 
 // Computed week days
@@ -171,7 +210,8 @@ const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
     endTime: endTime.format('HH:mm'),
     location: '',
     priority: 'medium',
-    color: '#4a5568'
+    color: '#4a5568',
+    tagId: undefined
   }
   
   editingEvent.value = null
@@ -187,7 +227,8 @@ const handleMonthDayClick = (day: any) => {
     endTime: '10:00',
     location: '',
     priority: 'medium',
-    color: '#4a5568'
+    color: '#4a5568',
+    tagId: undefined
   }
   
   editingEvent.value = null
@@ -204,7 +245,8 @@ const handleMiniDayClick = (day: any) => {
       endTime: '10:00',
       location: '',
       priority: 'medium',
-      color: '#4a5568'
+      color: '#4a5568',
+      tagId: undefined
     }
     
     editingEvent.value = null
@@ -225,7 +267,8 @@ const openEventModal = (event: any) => {
     endTime: end.format('HH:mm'),
     location: event.location || '',
     priority: event.priority || 'medium',
-    color: event.color || '#4a5568'
+    color: event.color || '#4a5568',
+    tagId: event.tagId || undefined
   }
   
   showModal.value = true
@@ -242,13 +285,19 @@ const closeModal = () => {
     endTime: '',
     location: '',
     priority: 'medium',
-    color: '#4a5568'
+    color: '#4a5568',
+    tagId: undefined
   }
 }
 
 const saveEvent = async () => {
   const start = dayjs(`${eventForm.value.date} ${eventForm.value.startTime}`)
   const end = dayjs(`${eventForm.value.date} ${eventForm.value.endTime}`)
+  
+  // Если выбран тег, используем его цвет, иначе дефолтный
+  const eventColor = eventForm.value.tagId 
+    ? eventForm.value.color 
+    : '#4a5568'
   
   const eventData = {
     title: eventForm.value.title,
@@ -257,8 +306,9 @@ const saveEvent = async () => {
     end: end.toISOString(),
     location: eventForm.value.location || undefined,
     priority: eventForm.value.priority,
-    color: getPriorityColor(eventForm.value.priority),
-    all_day: false
+    color: eventColor,
+    all_day: false,
+    tagId: eventForm.value.tagId
   }
   
   if (editingEvent.value) {
@@ -292,8 +342,60 @@ const loadEvents = async () => {
   console.log('Loading mock events')
 }
 
+// Keyboard navigation handler
+const handleKeydown = (event: KeyboardEvent) => {
+  // Ignore if modal is open or input is focused
+  if (showModal.value) return
+  
+  const target = event.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+    return
+  }
+  
+  switch (event.key) {
+    case 'ArrowLeft':
+      // Previous week
+      if (currentView.value === 'week') {
+        lastWeek()
+      } else if (currentView.value === 'month') {
+        prevMonth()
+      } else if (currentView.value === 'year') {
+        prevYear()
+      }
+      break
+    case 'ArrowRight':
+      // Next week
+      if (currentView.value === 'week') {
+        nextWeek()
+      } else if (currentView.value === 'month') {
+        nextMonth()
+      } else if (currentView.value === 'year') {
+        nextYear()
+      }
+      break
+    case 'ArrowUp':
+      // Previous month view
+      if (currentView.value === 'month') {
+        prevMonth()
+      }
+      break
+    case 'ArrowDown':
+      // Next month view
+      if (currentView.value === 'month') {
+        nextMonth()
+      }
+      break
+  }
+}
+
 onMounted(() => {
   loadEvents()
+  tagsStore.fetchTags()
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 

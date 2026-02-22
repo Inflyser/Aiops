@@ -15,6 +15,16 @@
       <span class="toggle-icon">{{ compactMode ? '☀' : '◑' }}</span>
       <span class="toggle-label">{{ compactMode ? '7–24' : '0–24' }}</span>
     </button>
+    <!-- Кнопка Tags -->
+    <button
+      class="tags-toggle-btn header-toggle"
+      :class="{ active: showTagsPanel }"
+      @click="$emit('toggle-tags')"
+      title="Теги"
+    >
+      <span class="toggle-icon">🏷</span>
+      <span class="toggle-label">Tags</span>
+    </button>
   </div>
 </template>
 
@@ -29,10 +39,12 @@ dayjs.locale('ru')
 defineProps<{
   compactMode: boolean
   currentView: string
+  showTagsPanel: boolean
 }>()
 
 defineEmits<{
   (e: 'toggle-compact', value: boolean): void
+  (e: 'toggle-tags'): void
 }>()
 
 const currentTime = ref('')
@@ -85,6 +97,30 @@ onUnmounted(() => {
 }
 
 .compact-toggle-btn.active {
+  background: #4a5568;
+  color: #fff;
+}
+
+.tags-toggle-btn {
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.tags-toggle-btn:hover {
+  background: #444;
+}
+
+.tags-toggle-btn.active {
   background: #4a5568;
   color: #fff;
 }
