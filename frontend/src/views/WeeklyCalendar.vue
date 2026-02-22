@@ -92,14 +92,14 @@ import { useTagsStore } from '../stores/tags'
 import { mockWeeklyEvents } from '../mock/weeklyData'
 
 // Components
-import CalendarTopBar from '../components/CalendarTopBar.vue'
-import ViewSelector from '../components/ViewSelector.vue'
-import CalendarHeader from '../components/CalendarHeader.vue'
-import WeekView from '../components/WeekView.vue'
-import MonthView from '../components/MonthView.vue'
-import YearView from '../components/YearView.vue'
-import EventModal from '../components/EventModal.vue'
-import TagsPanel from '../components/TagsPanel.vue'
+import CalendarTopBar from '../components/calendar/CalendarTopBar.vue'
+import ViewSelector from '../components/ui/ViewSelector.vue'
+import CalendarHeader from '../components/calendar/CalendarHeader.vue'
+import WeekView from '../components/calendar/WeekView.vue'
+import MonthView from '../components/calendar/MonthView.vue'
+import YearView from '../components/calendar/YearView.vue'
+import EventModal from '../components/modals/EventModal.vue'
+import TagsPanel from '../components/modals/TagsPanel.vue'
 
 dayjs.locale('ru')
 

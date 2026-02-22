@@ -34,7 +34,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import ThreeDotsMenu from './ThreeDotsMenu.vue'
+import ThreeDotsMenu from '../ui/ThreeDotsMenu.vue'
 
 dayjs.locale('ru')
 
