@@ -4,27 +4,29 @@
     <div class="menu-wrapper">
       <ThreeDotsMenu />
     </div>
-    <!-- Кнопка переключения 0-24 / 7-24 только для недельного вида -->
-    <button
-      v-if="currentView === 'week'"
-      class="compact-toggle-btn header-toggle"
-      :class="{ active: compactMode }"
-      @click="$emit('toggle-compact', !compactMode)"
-      :title="compactMode ? 'Показать полный день (0:00–23:00)' : 'Рабочий день (7:00–23:00)'"
-    >
-      <span class="toggle-icon">{{ compactMode ? '☀' : '◑' }}</span>
-      <span class="toggle-label">{{ compactMode ? '7–24' : '0–24' }}</span>
-    </button>
-    <!-- Кнопка Tags -->
-    <button
-      class="tags-toggle-btn header-toggle"
-      :class="{ active: showTagsPanel }"
-      @click="$emit('toggle-tags')"
-      title="Теги"
-    >
-      <span class="toggle-icon">🏷</span>
-      <span class="toggle-label">Tags</span>
-    </button>
+    <div class="header-controls">
+      <!-- Кнопка переключения 0-24 / 7-24 только для недельного вида -->
+      <button
+        v-if="currentView === 'week'"
+        class="compact-toggle-btn header-toggle"
+        :class="{ active: compactMode }"
+        @click="$emit('toggle-compact', !compactMode)"
+        :title="compactMode ? 'Показать полный день (0:00–23:00)' : 'Рабочий день (7:00–23:00)'"
+      >
+        <span class="toggle-icon">{{ compactMode ? '☀' : '◑' }}</span>
+        <span class="toggle-label">{{ compactMode ? '7–24' : '0–24' }}</span>
+      </button>
+      <!-- Кнопка Tags -->
+      <button
+        class="tags-toggle-btn header-toggle"
+        :class="{ active: showTagsPanel }"
+        @click="$emit('toggle-tags')"
+        title="Теги"
+      >
+        <span class="toggle-icon">🏷</span>
+        <span class="toggle-label">Tags</span>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -71,11 +73,31 @@ onUnmounted(() => {
 .top-bar {
   margin-top: 5px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
   flex-shrink: 0;
+  position: relative;
+}
 
+.time-display {
+  font-size: 22px;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.menu-wrapper {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
 }
 
 .compact-toggle-btn {
@@ -130,18 +152,6 @@ onUnmounted(() => {
 }
 
 .toggle-label {
-  font-weight: 500;
-}
-
-.menu-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.time-display {
-  font-size: 22px;
-  color: #ffffff;
   font-weight: 500;
 }
 </style>

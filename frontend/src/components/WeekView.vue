@@ -36,7 +36,10 @@
             <div class="event-indicator"></div>
             <div class="event-content">
               <div class="event-title">{{ event.title }}</div>
-              <div class="event-time">{{ formatEventTime(event) }}</div>
+              <div class="event-time">
+                <img src="@/assets/icon-clock.svg" alt="clock" class="event-time-icon" />
+                {{ formatEventTime(event) }}
+              </div>
               <div v-if="event.description" class="event-description">{{ event.description }}</div>
             </div>
           </div>
@@ -345,6 +348,14 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   color: rgba(255, 255, 255, 0.8);
   margin-bottom: 2px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.event-time-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .event-title {
