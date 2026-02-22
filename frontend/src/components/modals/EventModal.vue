@@ -18,7 +18,7 @@
       <form @submit.prevent="$emit('save')">
         <!-- Название задачи -->
         <div class="form-group">
-          <label for="eventTitle">Название задачи</label>
+          
           <input 
             type="text" 
             id="eventTitle" 
@@ -30,7 +30,6 @@
         
         <!-- Описание -->
         <div class="form-group">
-          <label for="eventDescription">Описание</label>
           <textarea 
             id="eventDescription" 
             v-model="formData.description"
@@ -41,7 +40,7 @@
         
         <!-- Тег -->
         <div class="form-group">
-          <label>Тег</label>
+          
           <div class="tags-selector">
             <div 
               v-for="tag in availableTags" 
@@ -61,7 +60,7 @@
         
         <!-- Время начало - конец -->
         <div class="form-group">
-          <label>Время</label>
+         
           <div class="time-range">
             <input 
               type="time" 
@@ -310,19 +309,20 @@ const selectTag = (tag: Tag) => {
 }
 
 .modal-content {
-  background-color: #1a1a1a;
+  background-color: #121212;
   padding: 30px;
   border-radius: 35px;
   width: 90%;
-  max-width: 400px;
+  max-width: 500px;
   position: relative;
+  border: 1px solid #444;
 }
 
 .close {
   position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 28px;
+  top: 18px;
+  right: 40px;
+  font-size: 32px;
   cursor: pointer;
   color: #888;
 }
@@ -332,13 +332,11 @@ const selectTag = (tag: Tag) => {
 }
 
 .modal-content h2 {
-  margin-bottom: 20px;
-  font-size: 24px;
+  font-size: 18px;
   text-align: center;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+
+  gap: 15px;
 }
 
 .header-icon {
@@ -401,14 +399,14 @@ const selectTag = (tag: Tag) => {
 .divider {
   height: 1px;
   background-color: #333;
-  margin: 20px 0;
+  margin: 20px -30px 20px -30px;
 }
 
 .month-navigator {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .nav-btn {
@@ -425,15 +423,15 @@ const selectTag = (tag: Tag) => {
 }
 
 .month-year {
-  font-size: 14px;
+  font-size: 18px;
   color: #fff;
   text-transform: capitalize;
 }
 
 .mini-calendar {
-  background-color: #252525;
+  background-color: #121212;
   border-radius: 10px;
-  padding: 10px;
+  padding: 1px;
 }
 
 .weekdays {
@@ -444,7 +442,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .weekdays span {
-  font-size: 11px;
+  font-size: 16px;
   color: #666;
   text-transform: uppercase;
 }
@@ -452,7 +450,7 @@ const selectTag = (tag: Tag) => {
 .calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 1px;
 }
 
 .calendar-day {
@@ -463,9 +461,9 @@ const selectTag = (tag: Tag) => {
   background: none;
   border: none;
   color: #ddd;
-  font-size: 12px;
+  font-size: 16px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 12px;
   transition: all 0.2s;
 }
 
@@ -493,7 +491,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .btn {
-  padding: 12px 30px;
+  padding: 12px 12%;
   border: none;
   border-radius: 10px;
   cursor: pointer;
