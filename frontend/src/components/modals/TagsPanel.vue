@@ -91,6 +91,18 @@ const handleAddTag = () => {
   padding: 16px;
   z-index: 100;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.25s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .tags-panel-header {

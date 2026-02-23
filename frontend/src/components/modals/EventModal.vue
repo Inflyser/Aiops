@@ -306,6 +306,16 @@ const selectTag = (tag: Tag) => {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -316,6 +326,18 @@ const selectTag = (tag: Tag) => {
   max-width: 500px;
   position: relative;
   border: 1px solid #444;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .close {
@@ -332,16 +354,17 @@ const selectTag = (tag: Tag) => {
 }
 
 .modal-content h2 {
-  font-size: 18px;
+  font-size: 20px;
   text-align: center;
   display: flex;
-
+  color: #ffffffd8;
   gap: 15px;
 }
 
 .header-icon {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
+  padding: 0 0 8px 0;
 }
 
 .form-group {

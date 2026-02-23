@@ -266,7 +266,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 
 .time-column {
   width: 90px;
-  border-right: 1px solid #808080;
+  border-right: 1px solid #33333357;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -285,7 +285,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   font-size: 20px;
   color: #6b6b6b;
   font-weight: bold;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #33333357;
   box-sizing: border-box;
   flex-shrink: 0;
 }
@@ -298,7 +298,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 }
 
 .day-column {
-  border-right: 1px solid #333;
+  border-right: 1px solid #33333357;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -306,7 +306,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 
 .hour-slot {
   height: 120px;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid #33333357;
   min-height: 120px;
 }
 

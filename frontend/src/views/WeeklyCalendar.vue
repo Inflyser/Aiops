@@ -25,50 +25,52 @@
     />
       
     <!-- Week View -->
-    <div v-if="currentView === 'week'" class="week-view-container">
-      <!-- Calendar Header -->
-      <CalendarHeader 
-        :current-week-start="currentWeekStart"
-        @prev-week="lastWeek"
-        @next-week="nextWeek"
-      />
+    <Transition name="view-fade" mode="out-in">
+      <div v-if="currentView === 'week'" key="week" class="week-view-container">
+        <!-- Calendar Header -->
+        <CalendarHeader 
+          :current-week-start="currentWeekStart"
+          @prev-week="lastWeek"
+          @next-week="nextWeek"
+        />
 
-      <!-- Calendar Grid -->
-      <WeekView 
-        :week-days="weekDays"
-        :events="events"
-        :compact-mode="compactMode"
-        @day-click="handleWeekDayClick"
-        @open-event="openEventModal"
-      />
-    </div>
+        <!-- Calendar Grid -->
+        <WeekView 
+          :week-days="weekDays"
+          :events="events"
+          :compact-mode="compactMode"
+          @day-click="handleWeekDayClick"
+          @open-event="openEventModal"
+        />
+      </div>
 
-    <!-- Year View -->
-    <div v-else-if="currentView === 'year'">
-      <YearView 
-        :current-year="currentYear"
-        @prev-year="prevYear"
-        @next-year="nextYear"
-        @day-click="handleMiniDayClick"
-      />
-    </div>
+      <!-- Year View -->
+      <div v-else-if="currentView === 'year'" key="year">
+        <YearView 
+          :current-year="currentYear"
+          @prev-year="prevYear"
+          @next-year="nextYear"
+          @day-click="handleMiniDayClick"
+        />
+      </div>
 
-    <!-- Month View -->
-    <div v-else-if="currentView === 'month'">
-      <MonthView 
-        :current-month="currentMonth"
-        :events="events"
-        @prev-month="prevMonth"
-        @next-month="nextMonth"
-        @day-click="handleMonthDayClick"
-        @open-event="openEventModal"
-      />
-    </div>
+      <!-- Month View -->
+      <div v-else-if="currentView === 'month'" key="month">
+        <MonthView 
+          :current-month="currentMonth"
+          :events="events"
+          @prev-month="prevMonth"
+          @next-month="nextMonth"
+          @day-click="handleMonthDayClick"
+          @open-event="openEventModal"
+        />
+      </div>
 
-    <!-- Day View (Placeholder) -->
-    <div v-else-if="currentView === 'day'" class="day-view">
-      <h2>Day View - Under Development</h2>
-    </div>
+      <!-- Day View (Placeholder) -->
+      <div v-else-if="currentView === 'day'" key="day" class="day-view">
+        <h2>Day View - Under Development</h2>
+      </div>
+    </Transition>
 
     <!-- Event Modal -->
     <EventModal 
@@ -426,5 +428,21 @@ onUnmounted(() => {
 .day-view h2 {
   font-size: 36px;
   color: #888;
+}
+
+/* View Transition Animations */
+.view-fade-enter-active,
+.view-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.view-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.view-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>
