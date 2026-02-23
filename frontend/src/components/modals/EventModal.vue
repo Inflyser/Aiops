@@ -186,7 +186,7 @@ const props = defineProps<{
   availableTags: Tag[]
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'close'): void
   (e: 'save'): void
   (e: 'delete'): void

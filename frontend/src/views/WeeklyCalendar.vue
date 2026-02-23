@@ -41,6 +41,8 @@
           :compact-mode="compactMode"
           @day-click="handleWeekDayClick"
           @open-event="openEventModal"
+          @event-drop="handleEventDrop"
+          @event-move-to-next-week="handleMoveToNextWeek"
         />
       </div>
 
@@ -91,7 +93,6 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { useCalendarStore } from '../stores/calendar'
 import { useTagsStore } from '../stores/tags'
-import { mockWeeklyEvents } from '../mock/weeklyData'
 
 // Components
 import CalendarTopBar from '../components/calendar/CalendarTopBar.vue'
@@ -142,8 +143,21 @@ const deleteTag = async (tagId: string) => {
 // Computed for tags from store
 const tags = computed(() => tagsStore.tags)
 
-// Events (mock data)
-const events = computed(() => mockWeeklyEvents)
+// Функция для получения цвета тега по ID
+const getTagColor = (tagId: string | undefined): string => {
+  if (!tagId) return '#4a5568'
+  const tag = tags.value.find(t => t.id === tagId)
+  return tag?.color || '#4a5568'
+}
+
+// Events from calendar store (с уже установленными цветами от тегов)
+const events = computed(() => {
+  return calendarStore.events.map(event => ({
+    ...event,
+    // Используем цвет события или цвет тега, если он есть
+    color: event.color || getTagColor(event.tag_id)
+  }))
+})
 
 const eventForm = ref({
   title: '',
@@ -270,7 +284,7 @@ const openEventModal = (event: any) => {
     location: event.location || '',
     priority: event.priority || 'medium',
     color: event.color || '#4a5568',
-    tagId: event.tagId || undefined
+    tagId: event.tag_id || event.tagId || undefined
   }
   
   showModal.value = true
@@ -298,7 +312,7 @@ const saveEvent = async () => {
   
   // Если выбран тег, используем его цвет, иначе дефолтный
   const eventColor = eventForm.value.tagId 
-    ? eventForm.value.color 
+    ? getTagColor(eventForm.value.tagId)
     : '#4a5568'
   
   const eventData = {
@@ -310,7 +324,7 @@ const saveEvent = async () => {
     priority: eventForm.value.priority,
     color: eventColor,
     all_day: false,
-    tagId: eventForm.value.tagId
+    tag_id: eventForm.value.tagId  // Используем tag_id для бэкенда
   }
   
   if (editingEvent.value) {
@@ -323,15 +337,6 @@ const saveEvent = async () => {
   loadEvents()
 }
 
-const getPriorityColor = (priority: string) => {
-  const colors: Record<string, string> = {
-    low: '#3a403c',
-    medium: '#47381f',
-    high: '#3a1d19'
-  }
-  return colors[priority] || '#4a5568'
-}
-
 const deleteEvent = async () => {
   if (editingEvent.value) {
     await calendarStore.deleteEvent(editingEvent.value.id)
@@ -341,7 +346,59 @@ const deleteEvent = async () => {
 }
 
 const loadEvents = async () => {
-  console.log('Loading mock events')
+  // Load events from backend for current week
+  const startOfWeek = currentWeekStart.value.format('YYYY-MM-DD')
+  const endOfWeek = currentWeekStart.value.add(6, 'day').format('YYYY-MM-DD')
+  await calendarStore.fetchEvents(startOfWeek, endOfWeek)
+}
+
+// Handle drag and drop event
+const handleEventDrop = async (data: { event: any; newDate: string; newStart: string; newEnd: string }) => {
+  const { event, newStart, newEnd } = data
+  
+  const eventData = {
+    title: event.title,
+    description: event.description || undefined,
+    start: newStart,
+    end: newEnd,
+    location: event.location || undefined,
+    priority: event.priority || 'medium',
+    color: event.color || '#4a5568',
+    all_day: false,
+    tag_id: event.tag_id || event.tagId || undefined
+  }
+  
+  // Update the event in the store/backend
+  await calendarStore.updateEvent(event.id, eventData)
+  
+  console.log('Event moved:', event.title, 'to', newStart)
+}
+
+// Handle move event to next week (+7 days)
+const handleMoveToNextWeek = async (event: any) => {
+  const originalStart = dayjs(event.start)
+  const originalEnd = dayjs(event.end)
+  
+  // Add 7 days to the event
+  const newStart = originalStart.add(7, 'day')
+  const newEnd = originalEnd.add(7, 'day')
+  
+  const eventData = {
+    title: event.title,
+    description: event.description || undefined,
+    start: newStart.toISOString(),
+    end: newEnd.toISOString(),
+    location: event.location || undefined,
+    priority: event.priority || 'medium',
+    color: event.color || '#4a5568',
+    all_day: false,
+    tag_id: event.tag_id || event.tagId || undefined
+  }
+  
+  // Update the event in the store/backend
+  await calendarStore.updateEvent(event.id, eventData)
+  
+  console.log('Event moved to next week:', event.title, 'to', newStart.format('YYYY-MM-DD HH:mm'))
 }
 
 // Keyboard navigation handler

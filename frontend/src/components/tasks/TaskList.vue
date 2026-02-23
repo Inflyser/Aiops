@@ -117,7 +117,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useTasksStore } from '../stores/tasks'
+import { useTasksStore } from '../../stores/tasks'
 import dayjs from 'dayjs'
 
 const tasksStore = useTasksStore()

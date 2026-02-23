@@ -25,13 +25,6 @@ import 'dayjs/locale/ru'
 
 dayjs.locale('ru')
 
-interface WeekDay {
-  date: string
-  shortName: string
-  number: number
-  fullDate: dayjs.Dayjs
-}
-
 const props = defineProps<{
   currentWeekStart: dayjs.Dayjs
 }>()

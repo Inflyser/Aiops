@@ -17,9 +17,15 @@
           v-for="day in weekDays" 
           :key="day.date"
           class="day-column"
-          :class="{ 'current-day': isCurrentDay(day) }"
+          :class="{ 
+            'current-day': isCurrentDay(day),
+            'drag-over': dragOverDay === day.date
+          }"
           :style="{ minHeight: calendarHeight + 'px' }"
           @click="handleDayClick($event, day)"
+          @dragover="handleDragOver($event, day)"
+          @dragleave="handleDragLeave"
+          @drop="handleDrop($event, day)"
         >
           <div 
             v-for="hour in hours" 
@@ -30,8 +36,12 @@
             v-for="event in getEventsForDay(day.date)"
             :key="event.id"
             class="event-block"
+            :class="{ 'dragging': draggedEvent?.id === event.id }"
             :style="getEventStyle(event, day.date)"
+            draggable="true"
             @click.stop="$emit('open-event', event)"
+            @dragstart="handleDragStart($event, event)"
+            @dragend="handleDragEnd"
           >
             <div class="event-indicator"></div>
             <div class="event-content">
@@ -42,6 +52,13 @@
               </div>
               <div v-if="event.description" class="event-description">{{ event.description }}</div>
             </div>
+            <button 
+              class="event-menu-btn"
+              @click.stop="$emit('event-move-to-next-week', event)"
+              title="Перенести на следующую неделю"
+            >
+              <img src="@/assets/three-point.svg" alt="menu" />
+            </button>
           </div>
           
           <!-- Current Time Line (only for today) -->
@@ -91,7 +108,73 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'day-click', data: { day: WeekDay; dateTime: dayjs.Dayjs }): void
   (e: 'open-event', event: CalendarEvent): void
+  (e: 'event-drop', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
+  (e: 'event-move-to-next-week', event: CalendarEvent): void
 }>()
+
+// Drag and drop state
+const draggedEvent = ref<CalendarEvent | null>(null)
+const dragOverDay = ref<string | null>(null)
+
+const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
+  draggedEvent.value = calendarEvent
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent))
+  }
+}
+
+const handleDragEnd = () => {
+  draggedEvent.value = null
+  dragOverDay.value = null
+}
+
+const handleDragOver = (event: DragEvent, day: WeekDay) => {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dragOverDay.value = day.date
+}
+
+const handleDragLeave = () => {
+  dragOverDay.value = null
+}
+
+const handleDrop = (event: DragEvent, day: WeekDay) => {
+  event.preventDefault()
+  dragOverDay.value = null
+  
+  if (draggedEvent.value) {
+    const eventData = draggedEvent.value
+    
+    // Calculate the time offset from the original start
+    const originalStart = dayjs(eventData.start)
+    const originalEnd = dayjs(eventData.end)
+    const duration = originalEnd.diff(originalStart, 'minute')
+    
+    // Get the time from the drop position
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const dropY = event.clientY - rect.top
+    const slotIndex = Math.floor(dropY / 120)
+    const minutes = Math.floor((dropY % 120) / 120 * 60)
+    
+    const hour = props.compactMode ? slotIndex + 7 : slotIndex
+    
+    // Calculate new start and end times
+    const newStart = day.fullDate.hour(hour).minute(minutes)
+    const newEnd = newStart.add(duration, 'minute')
+    
+    emit('event-drop', {
+      event: eventData,
+      newDate: day.date,
+      newStart: newStart.toISOString(),
+      newEnd: newEnd.toISOString()
+    })
+  }
+  
+  draggedEvent.value = null
+}
 
 // Current time for the red line
 const currentTime = ref(dayjs())
@@ -159,6 +242,9 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
   let startMinutes = start.diff(dayStart, 'minute')
   const duration = end.diff(start, 'minute')
 
+  // Используем цвет события или дефолтный серый цвет
+  const eventColor = event.color || '#4a5568'
+
   // В компактном режиме (7-24): события раньше 7:00 показываем с 7:00
   // События позже 23:00 скрываем
   if (props.compactMode) {
@@ -187,7 +273,7 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
     return {
       top: `${clampedTop}px`,
       height: `${clampedHeight}px`,
-      backgroundColor: '#4a5568',
+      backgroundColor: eventColor,
       position: 'absolute' as const,
       left: '2px',
       right: '2px',
@@ -210,7 +296,7 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
   return {
     top: `${clampedTop}px`,
     height: `${clampedHeight}px`,
-    backgroundColor: '#4a5568',
+    backgroundColor: eventColor,
     position: 'absolute' as const,
     left: '2px',
     right: '2px',
@@ -314,7 +400,6 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   position: absolute;
   left: 2px;
   right: 2px;
-  background-color: #4a5568;
   border-radius: 4px;
   padding: 5px 8px;
   cursor: pointer;
@@ -327,6 +412,16 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 
 .event-block:hover {
   opacity: 0.9;
+}
+
+.event-block.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+/* Drag over state for day column */
+.day-column.drag-over {
+  background-color: rgba(74, 85, 104, 0.3);
 }
 
 .event-indicator {
@@ -375,6 +470,34 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 2px;
+}
+
+/* Event Menu Button */
+.event-menu-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 15;
+}
+
+.event-block:hover .event-menu-btn {
+  opacity: 1;
+}
+
+.event-menu-btn:hover {
+  opacity: 0.8 !important;
+}
+
+.event-menu-btn img {
+  display: block;
+  width: 20px;
+  height: auto;
 }
 
 /* Current Time Line */

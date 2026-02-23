@@ -12,6 +12,7 @@ interface CalendarEvent {
   color: string
   location?: string
   priority?: string
+  tag_id?: string
   user_id: string
   created_at: string
   updated_at?: string
@@ -107,4 +108,3 @@ export const useCalendarStore = defineStore('calendar', () => {
     deleteEvent
   }
 })
-

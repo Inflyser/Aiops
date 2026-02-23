@@ -11,11 +11,11 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "todo"
     POSTGRES_PASSWORD: str = "todo123"
     POSTGRES_DB: str = "tododb"
-    # Используем переменную окружения DATABASE_URL или дефолтное значение
+    # Используем DATABASE_URL если установлена, иначе собираем из компонентов
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://test_bot_1kn1_user:u9lcSDGFj2Qvsh38KiPdOWiS8fYxThrA@dpg-d5rs27n18n1s73drp0og-a.frankfurt-postgres.render.com/test_bot_1kn1"
-    ) or "postgresql://test_bot_1kn1_user:u9lcSDGFj2Qvsh38KiPdOWiS8fYxThrA@dpg-d5rs27n18n1s73drp0og-a.frankfurt-postgres.render.com/test_bot_1kn1"
+        f"postgresql://{os.getenv('POSTGRES_USER', 'todo')}:{os.getenv('POSTGRES_PASSWORD', 'todo123')}@{os.getenv('POSTGRES_SERVER', 'postgres')}:5432/{os.getenv('POSTGRES_DB', 'tododb')}"
+    )
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"

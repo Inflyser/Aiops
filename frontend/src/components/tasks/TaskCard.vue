@@ -24,7 +24,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import dayjs from 'dayjs'
 
 interface Props {
@@ -32,12 +31,10 @@ interface Props {
   status: string
 }
 
-const props = defineProps<Props>()
-const emits = defineEmits(['move-left', 'move-right', 'edit-task', 'delete-task'])
+defineProps<Props>()
+defineEmits(['move-left', 'move-right', 'edit-task', 'delete-task'])
 
 const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
-
-// Удалены вычисляемые свойства для перемещения, так как используется перетаскивание
 </script>
 
 <style scoped>
