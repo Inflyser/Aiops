@@ -109,6 +109,7 @@ const emit = defineEmits<{
   (e: 'day-click', data: { day: WeekDay; dateTime: dayjs.Dayjs }): void
   (e: 'open-event', event: CalendarEvent): void
   (e: 'event-drop', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
+  (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'event-move-to-next-week', event: CalendarEvent): void
 }>()
 
@@ -116,23 +117,30 @@ const emit = defineEmits<{
 const draggedEvent = ref<CalendarEvent | null>(null)
 const dragOverDay = ref<string | null>(null)
 
+const isAltPressed = ref(false)
+
 const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
   draggedEvent.value = calendarEvent
+  isAltPressed.value = event.altKey // Проверяем Alt при начале перетаскивания
+  
   if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
+    // Если зажат Alt - это копирование, иначе - перемещение
+    event.dataTransfer.effectAllowed = event.altKey ? 'copy' : 'move'
     event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent))
+    event.dataTransfer.setData('application/x-alt-drag', String(event.altKey))
   }
 }
 
 const handleDragEnd = () => {
   draggedEvent.value = null
   dragOverDay.value = null
+  isAltPressed.value = false
 }
 
 const handleDragOver = (event: DragEvent, day: WeekDay) => {
   event.preventDefault()
   if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move'
+    event.dataTransfer.dropEffect = event.altKey ? 'copy' : 'move'
   }
   dragOverDay.value = day.date
 }
@@ -147,6 +155,7 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
   
   if (draggedEvent.value) {
     const eventData = draggedEvent.value
+    const isCopy = event.altKey || isAltPressed.value // Проверяем Alt при сбросе
     
     // Calculate the time offset from the original start
     const originalStart = dayjs(eventData.start)
@@ -165,15 +174,26 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
     const newStart = day.fullDate.hour(hour).minute(minutes)
     const newEnd = newStart.add(duration, 'minute')
     
-    emit('event-drop', {
-      event: eventData,
-      newDate: day.date,
-      newStart: newStart.toISOString(),
-      newEnd: newEnd.toISOString()
-    })
+    // Если Alt зажат - это копирование, иначе - перемещение
+    if (isCopy) {
+      emit('event-copy', {
+        event: eventData,
+        newDate: day.date,
+        newStart: newStart.toISOString(),
+        newEnd: newEnd.toISOString()
+      })
+    } else {
+      emit('event-drop', {
+        event: eventData,
+        newDate: day.date,
+        newStart: newStart.toISOString(),
+        newEnd: newEnd.toISOString()
+      })
+    }
   }
   
   draggedEvent.value = null
+  isAltPressed.value = false
 }
 
 // Current time for the red line

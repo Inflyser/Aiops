@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import uuid4
+from pydantic import BaseModel
 
 from app.db.base import get_db
 from app.schemas.task import Task, TaskCreate, TaskUpdate, TaskInDB
@@ -107,3 +108,51 @@ def delete_task(
     db.delete(task)
     db.commit()
     return {"message": "Task deleted successfully"}
+
+
+# Pydantic модели для bulk update
+class TaskStatusUpdate(BaseModel):
+    task_id: str
+    status: str
+    order: Optional[int] = None
+
+
+class BulkUpdateRequest(BaseModel):
+    tasks: List[TaskStatusUpdate]
+
+
+class BulkUpdateResponse(BaseModel):
+    updated: int
+    tasks: List[Task]
+
+
+@router.post("/bulk-update", response_model=BulkUpdateResponse)
+def bulk_update_tasks(
+    *,
+    db: Session = Depends(get_db),
+    bulk_request: BulkUpdateRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Bulk update задач (статус и порядок)"""
+    updated_tasks = []
+    
+    for item in bulk_request.tasks:
+        task = db.query(TaskModel).filter(
+            TaskModel.id == item.task_id,
+            TaskModel.user_id == current_user.id
+        ).first()
+        
+        if task:
+            task.status = item.status
+            task.completed = item.status == "done"
+            if item.order is not None:
+                task.order = item.order
+            updated_tasks.append(task)
+    
+    db.commit()
+    
+    # Обновляем и возвращаем задачи
+    for task in updated_tasks:
+        db.refresh(task)
+    
+    return BulkUpdateResponse(updated=len(updated_tasks), tasks=updated_tasks)

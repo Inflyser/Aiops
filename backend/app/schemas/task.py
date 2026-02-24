@@ -7,6 +7,8 @@ class TaskBase(BaseModel):
     title: str
     description: Optional[str] = None
     completed: bool = False
+    status: str = "todo"  # Для совместимости - id колонки
+    column_id: Optional[str] = None  # Ссылка на колонку Kanban
     due_date: Optional[datetime] = None
     priority: str = "medium"
     tags: List[str] = []
@@ -19,6 +21,8 @@ class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     completed: Optional[bool] = None
+    status: Optional[str] = None
+    column_id: Optional[str] = None
     due_date: Optional[datetime] = None
     priority: Optional[str] = None
     tags: Optional[List[str]] = None

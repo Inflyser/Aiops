@@ -10,13 +10,15 @@ class Task(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text)
     completed = Column(Boolean, default=False)
+    status = Column(String(50), default="todo")  # Для совместимости - id колонки
     due_date = Column(DateTime(timezone=True))
     priority = Column(String(20), default="medium")  # low, medium, high
     tags = Column(ARRAY(String))
     order = Column(Integer, default=0)
     
     user_id = Column(String, ForeignKey("users.id"))
-    project_id = Column(String, nullable=True)  # Временно без ForeignKey, так как Project может не существовать
+    project_id = Column(String, nullable=True)
+    column_id = Column(String, ForeignKey("kanban_columns.id"), nullable=True)  # Связь с колонкой Kanban
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -24,6 +26,7 @@ class Task(Base):
     # Relationships
     user = relationship("User", back_populates="tasks")
     subtasks = relationship("Subtask", back_populates="task", cascade="all, delete-orphan")
+    column = relationship("KanbanColumn", back_populates="tasks")
 
 class Subtask(Base):
     __tablename__ = "subtasks"

@@ -34,7 +34,7 @@
             </div>
             <button
               class="del-col-btn"
-              v-if="columns.length > 1"
+              v-if="canRemoveColumn(col.key)"
               @click="removeColumn(col.key)"
               type="button"
               title="Удалить колонку"
@@ -58,9 +58,10 @@
               <div class="kanban-card-wrapper">
                 <TaskCard
                   :task="task"
-                  :status="statusMap[task.id]"
+                  :status="task.status"
                   @edit-task="openEditTaskModal"
                   @delete-task="deleteTask"
+                  @toggle-task="toggleTask"
                 />
               </div>
             </template>
@@ -113,14 +114,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import ThreeDotsMenu from '../components/ui/ThreeDotsMenu.vue'
 import TaskCard from '../components/tasks/TaskCard.vue'
 import EditTaskModal from '../components/modals/EditTaskModal.vue'
 import { useTasksStore } from '../stores/tasks'
-import { mockKanbanTasks } from '../mock/kanbanData'
+import { useCalendarStore } from '../stores/calendar'
+import { useKanbanStore } from '../stores/kanban'
 import draggable from 'vuedraggable'
 
 dayjs.locale('ru')
@@ -131,13 +133,14 @@ const updateTime = () => {
 }
 
 const tasksStore = useTasksStore()
-const statusMap = ref<Record<string, string>>({})
+const kanbanStore = useKanbanStore()
 
-const columns = ref([
-  { key: 'todo', label: 'To Do' },
-  { key: 'in-progress', label: 'In Progress' },
-  { key: 'done', label: 'Done' }
-])
+// Получаем колонки из store
+const columns = computed(() => kanbanStore.columns.map(col => ({
+  key: col.id,
+  label: col.title,
+  color: col.color
+})))
 
 const newColTitle = ref('')
 const newTaskTitles = reactive<Record<string, string>>({})
@@ -154,58 +157,65 @@ const updateTaskTitle = (colKey: string, value: string) => {
   newTaskTitles[colKey] = value
 }
 
-const initializeStatusMap = async () => {
-  try {
-    await tasksStore.fetchTasks()
-  } catch (err) {
-    console.warn('Failed to fetch tasks from server, using mock data:', err)
-    if (tasksStore.tasks.length === 0) {
-      tasksStore.tasks.push(...mockKanbanTasks)
-    }
-  }
-
+const initializeTasks = async () => {
+  await tasksStore.fetchTasks()
+  
+  // Инициализируем status для задач без него (миграция уже выполнена)
   tasksStore.tasks.forEach((t: any) => {
-    if (!statusMap.value[t.id]) {
-      statusMap.value[t.id] = t.completed ? 'done' : 'todo'
+    if (!t.status) {
+      t.status = t.completed ? 'done' : 'todo'
     }
   })
 
   initializeTaskTitles()
 }
 
+// Используем статус из задачи напрямую
 const tasksByColumn = (colKey: string) => {
-  return tasksStore.tasks.filter((t: any) => statusMap.value[t.id] === colKey)
+  return tasksStore.tasks.filter((t: any) => t.status === colKey)
 }
 
 const getColumnTasks = (colKey: string) => {
-  return tasksStore.tasks.filter((t: any) => statusMap.value[t.id] === colKey)
+  return tasksStore.tasks.filter((t: any) => t.status === colKey)
 }
 
 const onMove = () => true
 
-const addColumn = () => {
+const addColumn = async () => {
   const title = newColTitle.value.trim()
   if (!title) return
-  const key = title.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now()
-  columns.value.push({ key, label: title })
-  newTaskTitles[key] = ''
-  newColTitle.value = ''
+  try {
+    const newCol = await kanbanStore.createColumn({ title, color: '#555555' })
+    newTaskTitles[newCol.id] = ''
+    newColTitle.value = ''
+  } catch (err) {
+    console.error('Failed to create column:', err)
+  }
 }
 
-const removeColumn = (colKey: string) => {
-  if (columns.value.length === 1) return
+const removeColumn = async (colKey: string) => {
+  if (kanbanStore.columns.length <= 1) return
+  
   const tasksToRemove = tasksByColumn(colKey)
-  const index = columns.value.findIndex(col => col.key === colKey)
-  columns.value.splice(index, 1)
-  delete newTaskTitles[colKey]
-  if (columns.value.length > 0) {
-    const firstColumnKey = columns.value[0].key
-    tasksToRemove.forEach((t: any) => {
-      statusMap.value[t.id] = firstColumnKey
-      tasksStore.updateTask(t.id, { completed: firstColumnKey === 'done' })
-        .catch(err => console.error('Failed to update task after column removal:', err))
-    })
+  
+  try {
+    await kanbanStore.deleteColumn(colKey)
+    delete newTaskTitles[colKey]
+    
+    // Переносим задачи в первую колонку
+    if (kanbanStore.columns.length > 0) {
+      const firstColumn = kanbanStore.columns[0]
+      for (const t of tasksToRemove) {
+        await tasksStore.updateTask(t.id, { column_id: firstColumn.id })
+      }
+    }
+  } catch (err) {
+    console.error('Failed to delete column:', err)
   }
+}
+
+const canRemoveColumn = (_colKey: string) => {
+  return kanbanStore.columns.length > 1
 }
 
 const addTask = async (colKey: string) => {
@@ -214,45 +224,73 @@ const addTask = async (colKey: string) => {
   try {
     const taskData = {
       title,
+      status: colKey,
       completed: colKey === 'done',
       priority: 'medium',
       description: ''
     }
-    const newTask = await tasksStore.createTask(taskData)
-    statusMap.value[newTask.id] = colKey
+    await tasksStore.createTask(taskData)
     newTaskTitles[colKey] = ''
   } catch (err) {
     console.error('Failed to create task:', err)
   }
 }
 
-const onTaskChange = (evt: any, colKey: string) => {
+const onTaskChange = async (evt: any, colKey: string) => {
   if (evt.added) {
     const task = evt.added.element
-    if (task && statusMap.value[task.id] !== colKey) {
-      const prevStatus = statusMap.value[task.id]
-      statusMap.value[task.id] = colKey
-      tasksStore.updateTask(task.id, { completed: colKey === 'done' })
-        .catch(err => {
-          console.error('Failed to update task status on server:', err)
-          statusMap.value[task.id] = prevStatus
+    if (task && task.status !== colKey) {
+      const prevStatus = task.status
+      task.status = colKey
+      try {
+        await tasksStore.updateTask(task.id, { 
+          status: colKey,
+          completed: colKey === 'done' 
         })
+      } catch (err) {
+        console.error('Failed to update task status on server:', err)
+        task.status = prevStatus
+      }
     }
   }
 }
 
-const onTaskDrop = (_evt: any, _colKey: string) => {}
+const onTaskDrop = async (_evt: any, _colKey: string) => {
+  // Bulk update порядка задач после перетаскивания
+  const bulkItems: any[] = []
+  columns.value.forEach((col, colIndex) => {
+    const tasksInCol = getColumnTasks(col.key)
+    tasksInCol.forEach((task: any, taskIndex: number) => {
+      bulkItems.push({
+        task_id: task.id,
+        status: col.key,
+        order: colIndex * 100 + taskIndex
+      })
+    })
+  })
+  
+  if (bulkItems.length > 0) {
+    try {
+      await tasksStore.bulkUpdateTasks(bulkItems)
+    } catch (err) {
+      console.error('Failed to bulk update tasks order:', err)
+    }
+  }
+}
 
 let timeInterval: ReturnType<typeof setInterval>
 
 onMounted(async () => {
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
-  await initializeStatusMap()
+  await kanbanStore.fetchColumns()
+  await initializeTasks()
+  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   clearInterval(timeInterval)
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 const editingTask = ref<any>(null)
@@ -264,11 +302,6 @@ const openEditTaskModal = (task: any) => {
 const updateTask = async (updatedTask: any) => {
   try {
     await tasksStore.updateTask(updatedTask.id, updatedTask)
-    if (updatedTask.completed && statusMap.value[updatedTask.id] !== 'done') {
-      statusMap.value[updatedTask.id] = 'done'
-    } else if (!updatedTask.completed && statusMap.value[updatedTask.id] === 'done') {
-      statusMap.value[updatedTask.id] = 'todo'
-    }
   } catch (err) {
     console.error('Failed to update task:', err)
   }
@@ -277,9 +310,30 @@ const updateTask = async (updatedTask: any) => {
 const deleteTask = async (taskId: string) => {
   try {
     await tasksStore.deleteTask(taskId)
-    delete statusMap.value[taskId]
   } catch (err) {
     console.error('Failed to delete task:', err)
+  }
+}
+
+const toggleTask = async (taskId: string) => {
+  try {
+    await tasksStore.toggleTask(taskId)
+  } catch (err) {
+    console.error('Failed to toggle task:', err)
+  }
+}
+
+// Keyboard handler for Ctrl+Z / Ctrl+Я
+const handleKeydown = (event: KeyboardEvent) => {
+  // Ctrl+Z или Ctrl+Я (русская раскладка) - отменить действие
+  if (event.ctrlKey && (event.key === 'z' || event.key === 'я')) {
+    event.preventDefault()
+    // Используем undo из calendar store (общий)
+    const calendarStore = useCalendarStore()
+    calendarStore.undo().then(() => {
+      // Перезагрузить задачи
+      tasksStore.fetchTasks()
+    })
   }
 }
 </script>

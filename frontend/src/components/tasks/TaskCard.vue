@@ -1,16 +1,24 @@
 <template>
-  <div class="task-card">
+  <div 
+    class="task-card" 
+    :class="{ 'task-completed': task.completed }"
+    @dblclick.stop="$emit('edit-task', task)"
+  >
     <div class="card-top">
-      <div class="card-title">{{ task.title }}</div>
+      <!-- Checkbox for completion -->
+      <button
+        class="task-checkbox"
+        :class="{ checked: task.completed }"
+        @click.stop="$emit('toggle-task', task.id)"
+        :title="task.completed ? 'Отметить как невыполненную' : 'Отметить как выполненную'"
+      >
+        <span v-if="task.completed">✓</span>
+      </button>
+      <div class="card-title" :class="{ completed: task.completed }">{{ task.title }}</div>
       <div class="card-actions">
         <button
-          class="small-btn edit-btn"
-          @click="$emit('edit-task', task)"
-          title="Редактировать задачу"
-        >✎</button>
-        <button
           class="small-btn delete-btn"
-          @click="$emit('delete-task', task.id)"
+          @click.stop="$emit('delete-task', task.id)"
           title="Удалить задачу"
         >✕</button>
       </div>
@@ -32,7 +40,7 @@ interface Props {
 }
 
 defineProps<Props>()
-defineEmits(['move-left', 'move-right', 'edit-task', 'delete-task'])
+defineEmits(['move-left', 'move-right', 'edit-task', 'delete-task', 'toggle-task'])
 
 const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 </script>
@@ -55,6 +63,10 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
   border-color: #444;
 }
 
+.task-completed {
+  opacity: 0.7;
+}
+
 .card-top {
   display: flex;
   justify-content: space-between;
@@ -62,9 +74,41 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
   gap: 8px;
 }
 
+/* Checkbox styles */
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border: 2px solid #555;
+  border-radius: 50%;
+  background: transparent;
+  color: #4caf50;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.task-checkbox:hover {
+  border-color: #4caf50;
+}
+
+.task-checkbox.checked {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: #fff;
+}
+
 .card-title {
   font-weight: 600;
   flex: 1;
+}
+
+.card-title.completed {
+  text-decoration: line-through;
+  color: #777;
 }
 
 .card-actions {
@@ -89,14 +133,6 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 .small-btn:disabled {
   opacity: 0.3;
   cursor: default;
-}
-
-.edit-btn {
-  color: #ffd700;
-}
-
-.edit-btn:hover {
-  background-color: #444;
 }
 
 .delete-btn {

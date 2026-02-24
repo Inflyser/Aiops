@@ -42,6 +42,7 @@
           @day-click="handleWeekDayClick"
           @open-event="openEventModal"
           @event-drop="handleEventDrop"
+          @event-copy="handleEventCopy"
           @event-move-to-next-week="handleMoveToNextWeek"
         />
       </div>
@@ -108,6 +109,9 @@ dayjs.locale('ru')
 
 const calendarStore = useCalendarStore()
 const tagsStore = useTagsStore()
+
+// Выбранное событие (для копирования)
+const selectedEventId = ref<string | null>(null)
 
 // State
 const currentView = ref('week')
@@ -328,9 +332,24 @@ const saveEvent = async () => {
   }
   
   if (editingEvent.value) {
+    // Сохраняем старое событие для отмены
+    const oldEvent = { ...editingEvent.value }
     await calendarStore.updateEvent(editingEvent.value.id, eventData)
+    // Добавляем в историю
+    calendarStore.addToHistory({
+      type: 'update',
+      eventId: editingEvent.value.id,
+      oldEvent,
+      newEvent: { ...editingEvent.value, ...eventData }
+    })
   } else {
-    await calendarStore.createEvent(eventData)
+    const newEvent = await calendarStore.createEvent(eventData)
+    // Добавляем в историю
+    calendarStore.addToHistory({
+      type: 'create',
+      eventId: newEvent.id,
+      newEvent
+    })
   }
   
   closeModal()
@@ -339,7 +358,15 @@ const saveEvent = async () => {
 
 const deleteEvent = async () => {
   if (editingEvent.value) {
+    // Сохраняем событие для отмены
+    const deletedEvent = { ...editingEvent.value }
     await calendarStore.deleteEvent(editingEvent.value.id)
+    // Добавляем в историю
+    calendarStore.addToHistory({
+      type: 'delete',
+      eventId: deletedEvent.id,
+      oldEvent: deletedEvent
+    })
     closeModal()
     loadEvents()
   }
@@ -356,6 +383,9 @@ const loadEvents = async () => {
 const handleEventDrop = async (data: { event: any; newDate: string; newStart: string; newEnd: string }) => {
   const { event, newStart, newEnd } = data
   
+  // Сохраняем старое событие для отмены
+  const oldEvent = { ...event }
+  
   const eventData = {
     title: event.title,
     description: event.description || undefined,
@@ -370,6 +400,14 @@ const handleEventDrop = async (data: { event: any; newDate: string; newStart: st
   
   // Update the event in the store/backend
   await calendarStore.updateEvent(event.id, eventData)
+  
+  // Добавляем в историю
+  calendarStore.addToHistory({
+    type: 'update',
+    eventId: event.id,
+    oldEvent,
+    newEvent: { ...event, ...eventData }
+  })
   
   console.log('Event moved:', event.title, 'to', newStart)
 }
@@ -401,6 +439,37 @@ const handleMoveToNextWeek = async (event: any) => {
   console.log('Event moved to next week:', event.title, 'to', newStart.format('YYYY-MM-DD HH:mm'))
 }
 
+// Handle Alt+drag copy event
+const handleEventCopy = async (data: { event: any; newDate: string; newStart: string; newEnd: string }) => {
+  const { event, newStart, newEnd } = data
+  
+  const eventData = {
+    title: event.title,
+    description: event.description || undefined,
+    start: newStart,
+    end: newEnd,
+    location: event.location || undefined,
+    priority: event.priority || 'medium',
+    color: event.color || '#4a5568',
+    all_day: false,
+    tag_id: event.tag_id || event.tagId || undefined
+  }
+  
+  // Create a new event (copy)
+  const newEvent = await calendarStore.createEvent(eventData)
+  
+  // Добавляем в историю
+  calendarStore.addToHistory({
+    type: 'create',
+    eventId: newEvent.id,
+    newEvent
+  })
+  
+  loadEvents()
+  
+  console.log('Event copied:', event.title, 'to', newStart)
+}
+
 // Keyboard navigation handler
 const handleKeydown = (event: KeyboardEvent) => {
   // Ignore if modal is open or input is focused
@@ -408,6 +477,35 @@ const handleKeydown = (event: KeyboardEvent) => {
   
   const target = event.target as HTMLElement
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+    return
+  }
+  
+  // Ctrl+Z или Ctrl+Я (русская раскладка) - отменить действие
+  if (event.ctrlKey && (event.key === 'z' || event.key === 'я')) {
+    event.preventDefault()
+    console.log('Ctrl+Z pressed, calling undo...')
+    calendarStore.undo().then(() => {
+      loadEvents()
+    })
+    return
+  }
+  
+  // Ctrl+C - копировать событие
+  if (event.ctrlKey && event.key === 'c' && selectedEventId.value) {
+    const eventToCopy = calendarStore.events.find(e => e.id === selectedEventId.value)
+    if (eventToCopy) {
+      calendarStore.copyEvent(eventToCopy)
+    }
+    return
+  }
+  
+  // Ctrl+V - вставить событие
+  if (event.ctrlKey && event.key === 'v') {
+    if (calendarStore.hasCopiedEvent()) {
+      calendarStore.pasteEvent().then(() => {
+        loadEvents()
+      })
+    }
     return
   }
   
@@ -443,6 +541,19 @@ const handleKeydown = (event: KeyboardEvent) => {
       if (currentView.value === 'month') {
         nextMonth()
       }
+      break
+    case 'Delete':
+    case 'Backspace':
+      // Удалить выбранное событие
+      if (selectedEventId.value) {
+        calendarStore.deleteEvent(selectedEventId.value)
+        selectedEventId.value = null
+        loadEvents()
+      }
+      break
+    case 'Escape':
+      // Снять выделение
+      selectedEventId.value = null
       break
   }
 }

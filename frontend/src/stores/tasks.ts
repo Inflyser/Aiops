@@ -7,6 +7,8 @@ interface Task {
   title: string
   description?: string
   completed: boolean
+  status?: string  // todo, in-progress, done (устарело, используем column_id)
+  column_id?: string  // Ссылка на колонку Kanban
   due_date?: string
   priority: string
   tags?: string[]
@@ -14,6 +16,12 @@ interface Task {
   user_id: string
   created_at: string
   updated_at?: string
+}
+
+interface BulkUpdateItem {
+  task_id: string
+  status: string
+  order?: number
 }
 
 export const useTasksStore = defineStore('tasks', () => {
@@ -103,6 +111,29 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
+  // Bulk update для Kanban - обновление статусов и порядка
+  const bulkUpdateTasks = async (items: BulkUpdateItem[]) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.post('/bulk-update', { tasks: items })
+      // Обновляем локальный стейт
+      response.data.tasks.forEach((updatedTask: Task) => {
+        const index = tasks.value.findIndex(t => t.id === updatedTask.id)
+        if (index !== -1) {
+          tasks.value[index] = updatedTask
+        }
+      })
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Ошибка bulk update задач'
+      console.error('Error bulk updating tasks:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     tasks,
     loading,
@@ -111,7 +142,8 @@ export const useTasksStore = defineStore('tasks', () => {
     createTask,
     updateTask,
     deleteTask,
-    toggleTask
+    toggleTask,
+    bulkUpdateTasks
   }
 })
 
