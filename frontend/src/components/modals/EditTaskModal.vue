@@ -127,7 +127,7 @@ const saveTask = () => {
 .modal-content {
   background: #1a1a1a;
   border: 1px solid #333;
-  border-radius: 8px;
+  border-radius: 15px;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
@@ -161,7 +161,7 @@ const saveTask = () => {
 }
 
 .close-btn {
-  background: #e53e3e;
+  background: #333;
   border: none;
   color: white;
   width: 28px;
@@ -172,7 +172,7 @@ const saveTask = () => {
 }
 
 .close-btn:hover {
-  background: #c53030;
+  background: #333;
 }
 
 .modal-body {
@@ -195,8 +195,8 @@ const saveTask = () => {
   padding: 10px 12px;
   border: 1px solid #333;
   border-radius: 4px;
-  background: #2d3748;
-  color: #fff;
+  background: #333;
+  color: #d1d1d1;
   font-size: 14px;
 }
 
@@ -222,20 +222,20 @@ const saveTask = () => {
 }
 
 .btn-cancel {
-  background: #4a5568;
+  background: #333;
   color: white;
 }
 
 .btn-cancel:hover {
-  background: #2d3748;
+  background: #333333;
 }
 
 .btn-save {
-  background: #38a169;
+  background: #4767a3;
   color: white;
 }
 
 .btn-save:hover {
-  background: #2f855a;
+  background: #4767a3;
 }
 </style>

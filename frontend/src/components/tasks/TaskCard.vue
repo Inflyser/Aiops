@@ -26,7 +26,7 @@
     <div v-if="task.description" class="card-desc">{{ task.description }}</div>
     <div class="card-meta">
       <span v-if="task.due_date">📅 {{ formatDate(task.due_date) }}</span>
-      <span class="priority" :class="`p-${task.priority}`">{{ task.priority }}</span>
+      <span v-if="task.priority" class="priority" :class="`p-${task.priority}`">{{ task.priority }}</span>
     </div>
   </div>
 </template>
@@ -82,7 +82,7 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
   border: 2px solid #555;
   border-radius: 50%;
   background: transparent;
-  color: #4caf50;
+  color: #cccccc;
   font-size: 12px;
   cursor: pointer;
   display: flex;
@@ -92,13 +92,13 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 }
 
 .task-checkbox:hover {
-  border-color: #4caf50;
+  border-color: #cccccc;
 }
 
 .task-checkbox.checked {
-  background: #4caf50;
-  border-color: #4caf50;
-  color: #fff;
+  background: #cccccc;
+  border-color: #cccccc;
+  color: #000000;
 }
 
 .card-title {
@@ -114,20 +114,28 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 .card-actions {
   display: flex;
   gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.task-card:hover .card-actions {
+  opacity: 1;
 }
 
 .small-btn {
   background: transparent;
-  border: 1px solid #333;
-  color: #ddd;
-  padding: 4px 6px;
+  border: none;
+  color: #555;
+  padding: 2px 6px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
+  font-size: 12px;
 }
 
 .small-btn:hover {
-  background-color: #333;
+  background-color: #222;
+  color: #888;
 }
 
 .small-btn:disabled {
@@ -136,11 +144,12 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 }
 
 .delete-btn {
-  color: #ff6b6b;
+  color: #555;
 }
 
 .delete-btn:hover {
-  background-color: #5a1818;
+  background-color: #222;
+  color: #888;
 }
 
 .card-desc {
@@ -151,7 +160,7 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 
 .card-meta {
   margin-top: 10px;
-  font-size: 12px;
+  font-size: 14px;
   color: #999;
   display: flex;
   gap: 8px;
@@ -159,9 +168,9 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 }
 
 .priority {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 11px
+  padding: 4px 9px;
+  border-radius: 10px;
+  font-size: 12px
 }
 
 .p-low {

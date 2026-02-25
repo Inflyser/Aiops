@@ -74,15 +74,33 @@
           </div>
 
           <!-- Add Task Form -->
-          <form class="add-task-form" @submit.prevent="addTask(col.key)">
-            <input
-              :value="newTaskTitles[col.key]"
-              @input="updateTaskTitle(col.key, ($event.target as HTMLInputElement).value)"
-              placeholder="Добавить задачу..."
-              class="task-input"
-            />
-            <button type="submit" class="add-task-btn" title="Добавить">+</button>
-          </form>
+          <div class="add-task-container">
+            <!-- Кнопка добавления -->
+            <button 
+              v-if="!isAddingTask[col.key]" 
+              class="add-task-btn-new"
+              @click="startAddTask(col.key)"
+            >
+              + Добавить карточку
+            </button>
+            
+            <!-- Поле ввода при добавлении -->
+            <form 
+              v-else 
+              class="add-task-form" 
+              @submit.prevent="addTask(col.key)"
+              @mouseleave="cancelAddTask(col.key)"
+            >
+              <input
+                :id="`task-input-${col.key}`"
+                :value="newTaskTitles[col.key]"
+                @input="updateTaskTitle(col.key, ($event.target as HTMLInputElement).value)"
+                placeholder="Введите название задачи..."
+                class="task-input"
+                @keydown.escape="cancelAddTask(col.key)"
+              />
+            </form>
+          </div>
         </div>
 
         <!-- Add Column -->
@@ -114,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, reactive, computed } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, computed, nextTick } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import ThreeDotsMenu from '../components/ui/ThreeDotsMenu.vue'
@@ -124,6 +142,7 @@ import { useTasksStore } from '../stores/tasks'
 import { useCalendarStore } from '../stores/calendar'
 import { useKanbanStore } from '../stores/kanban'
 import draggable from 'vuedraggable'
+import { mockKanbanTasks } from '../mock/kanbanData'
 
 dayjs.locale('ru')
 
@@ -131,6 +150,9 @@ const currentTime = ref('')
 const updateTime = () => {
   currentTime.value = dayjs().format('HH:mm DD MMMM')
 }
+
+// Использовать мок данные
+const USE_MOCK = true
 
 const tasksStore = useTasksStore()
 const kanbanStore = useKanbanStore()
@@ -144,6 +166,24 @@ const columns = computed(() => kanbanStore.columns.map(col => ({
 
 const newColTitle = ref('')
 const newTaskTitles = reactive<Record<string, string>>({})
+const isAddingTask = reactive<Record<string, boolean>>({})
+
+// Функции для управления добавлением задачи
+const startAddTask = async (colKey: string) => {
+  isAddingTask[colKey] = true
+  newTaskTitles[colKey] = ''
+  // Фокус на input после рендера
+  await nextTick()
+  const inputEl = document.querySelector(`#task-input-${colKey}`) as HTMLInputElement
+  if (inputEl) {
+    inputEl.focus()
+  }
+}
+
+const cancelAddTask = (colKey: string) => {
+  isAddingTask[colKey] = false
+  newTaskTitles[colKey] = ''
+}
 
 const initializeTaskTitles = () => {
   columns.value.forEach(col => {
@@ -158,14 +198,27 @@ const updateTaskTitle = (colKey: string, value: string) => {
 }
 
 const initializeTasks = async () => {
-  await tasksStore.fetchTasks()
-  
-  // Инициализируем status для задач без него (миграция уже выполнена)
-  tasksStore.tasks.forEach((t: any) => {
-    if (!t.status) {
-      t.status = t.completed ? 'done' : 'todo'
-    }
-  })
+  if (USE_MOCK) {
+    // Используем мок данные
+    const mockTasksWithStatus = mockKanbanTasks.map((task: any, index: number) => ({
+      ...task,
+      status: index < 2 ? 'todo' : index < 4 ? 'in-progress' : 'done'
+    }))
+    
+    // Заменяем задачи на мок
+    mockTasksWithStatus.forEach((t: any) => {
+      tasksStore.tasks.push(t)
+    })
+  } else {
+    await tasksStore.fetchTasks()
+    
+    // Инициализируем status для задач без него (миграция уже выполнена)
+    tasksStore.tasks.forEach((t: any) => {
+      if (!t.status) {
+        t.status = t.completed ? 'done' : 'todo'
+      }
+    })
+  }
 
   initializeTaskTitles()
 }
@@ -220,17 +273,23 @@ const canRemoveColumn = (_colKey: string) => {
 
 const addTask = async (colKey: string) => {
   const title = newTaskTitles[colKey]?.trim()
-  if (!title) return
+  if (!title) {
+    // Если пустое название - отменяем
+    cancelAddTask(colKey)
+    return
+  }
   try {
     const taskData = {
       title,
       status: colKey,
       completed: colKey === 'done',
-      priority: 'medium',
+      priority: undefined,
       description: ''
     }
     await tasksStore.createTask(taskData)
     newTaskTitles[colKey] = ''
+    // Закрываем режим добавления после создания
+    isAddingTask[colKey] = false
   } catch (err) {
     console.error('Failed to create task:', err)
   }
@@ -283,7 +342,16 @@ let timeInterval: ReturnType<typeof setInterval>
 onMounted(async () => {
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
-  await kanbanStore.fetchColumns()
+  
+  if (USE_MOCK) {
+    // Используем мок колонки
+    kanbanStore.columns.push({ id: 'todo', title: 'To Do', order: 0, color: '#555', user_id: 'user-123' })
+    kanbanStore.columns.push({ id: 'in-progress', title: 'In Progress', order: 1, color: '#888', user_id: 'user-123' })
+    kanbanStore.columns.push({ id: 'done', title: 'Done', order: 2, color: '#ccc', user_id: 'user-123' })
+  } else {
+    await kanbanStore.fetchColumns()
+  }
+  
   await initializeTasks()
   window.addEventListener('keydown', handleKeydown)
 })
@@ -473,14 +541,14 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .column-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   color: #e0e0e0;
   letter-spacing: 0.02em;
 }
 
 .column-count {
-  font-size: 12px;
+  font-size: 13px;
   color: #444;
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
@@ -554,13 +622,34 @@ const handleKeydown = (event: KeyboardEvent) => {
   line-height: 1;
 }
 
+/* ─── Add Task Container ───────────────────────────────── */
+.add-task-container {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #1a1a1a;
+}
+
+/* Кнопка добавления */
+.add-task-btn-new {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #555;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+  transition: color 0.2s;
+}
+
+.add-task-btn-new:hover {
+  color: #888;
+}
+
 /* ─── Add Task Form ─────────────────────────────────────── */
 .add-task-form {
   display: flex;
   gap: 6px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #1a1a1a;
 }
 
 .task-input {
