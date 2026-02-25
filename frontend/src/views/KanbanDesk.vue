@@ -427,7 +427,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   border: 1px solid #1e1e1e;
   border-radius: 12px;
   padding: 16px;
-  width: 300px;
+  width: 450px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -604,7 +604,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 /* ─── Add Column ────────────────────────────────────────── */
 .add-col {
-  width: 260px;
+  width: 400px;
   flex-shrink: 0;
   border: 1px dashed #1e1e1e;
   border-radius: 12px;

@@ -1,13 +1,17 @@
 <template>
-  <div class="menu-container" @click.stop="toggleMenu">
+  <div 
+    class="menu-container" 
+    @mouseenter="openMenu" 
+    @mouseleave="closeMenu"
+  >
     <!-- Иконка из SVG вместо трех точек -->
-    <div v-if="!isMenuOpen" class="dots-icon">
+    <div class="dots-icon">
       <img :src="dotsIcon" alt="Menu" class="dots-svg-icon" />
     </div>
     
     <!-- Анимированная панель с иконками -->
     <Transition name="menu">
-      <div v-if="isMenuOpen" class="animated-menu" @click.stop>
+      <div v-if="isMenuOpen" class="animated-menu">
         <div class="menu-panel">
           <!-- Календарь -->
           <div class="icon-wrapper" @click.stop="navigateToWeeklyCalendar">
@@ -23,6 +27,11 @@
           <div class="icon-wrapper" @click.stop="navigateToStatistics">
             <img :src="kanbanIcon" alt="Statistics" class="svg-icon" />
           </div>
+
+          <!-- Планирование -->
+          <div class="icon-wrapper" @click.stop="navigateToPlanning">
+            <img :src="kanbanIcon" alt="Planning" class="svg-icon" />
+          </div>
         </div>
       </div>
     </Transition>
@@ -30,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 // Импортируем SVG иконки из assets
@@ -41,8 +50,12 @@ import dotsIcon from '@/assets/three-point.svg' // Иконка для трех 
 const isMenuOpen = ref(false)
 const router = useRouter()
 
-const toggleMenu = () => {
-  isMenuOpen.value = !isMenuOpen.value
+const openMenu = () => {
+  isMenuOpen.value = true
+}
+
+const closeMenu = () => {
+  isMenuOpen.value = false
 }
 
 const navigateToWeeklyCalendar = () => {
@@ -60,21 +73,10 @@ const navigateToStatistics = () => {
   isMenuOpen.value = false
 }
 
-// Закрыть меню при клике вне его области
-const closeMenu = (event: MouseEvent) => {
-  const menuElement = document.querySelector('.menu-container')
-  if (menuElement && !menuElement.contains(event.target as Node)) {
-    isMenuOpen.value = false
-  }
+const navigateToPlanning = () => {
+  router.push('/planning')
+  isMenuOpen.value = false
 }
-
-// Добавляем слушатель событий для закрытия меню при клике вне его области
-document.addEventListener('click', closeMenu)
-
-// Очищаем слушатель при уничтожении компонента
-onUnmounted(() => {
-  document.removeEventListener('click', closeMenu)
-})
 </script>
 
 <style scoped>
@@ -106,7 +108,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: brightness(0) invert(1); /* Делает иконку белой (если она черная) */
+  filter: brightness(0) invert(1);
 }
 
 .animated-menu {
@@ -127,7 +129,6 @@ onUnmounted(() => {
   min-width: 80px;
 }
 
-/* Анимации появления и исчезновения */
 .menu-enter-active,
 .menu-leave-active {
   transition: all 0.3s ease;
