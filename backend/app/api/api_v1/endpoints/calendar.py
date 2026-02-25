@@ -22,10 +22,14 @@ def get_calendar_events(
     """Получить события календаря"""
     query = db.query(CalendarEvent).filter(CalendarEvent.user_id == current_user.id)
     
+    # Показываем события которые пересекаются с запрошенным периодом
     if start:
-        query = query.filter(CalendarEvent.start >= start)
+        # События которые заканчиваются после start
+        query = query.filter(CalendarEvent.end > start)
     if end:
-        query = query.filter(CalendarEvent.end <= end)
+        # События которые начинаются до end (включая весь день)
+        # Для событий на весь день - они должны показываться если start < end_date
+        query = query.filter(CalendarEvent.start < end)
     
     events = query.order_by(CalendarEvent.start).all()
     return events

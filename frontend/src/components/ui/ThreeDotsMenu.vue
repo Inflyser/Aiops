@@ -18,6 +18,11 @@
           <div class="icon-wrapper" @click.stop="navigateToKanban">
             <img :src="kanbanIcon" alt="Kanban" class="svg-icon" />
           </div>
+          
+          <!-- Статистика -->
+          <div class="icon-wrapper" @click.stop="navigateToStatistics">
+            <img :src="kanbanIcon" alt="Statistics" class="svg-icon" />
+          </div>
         </div>
       </div>
     </Transition>
@@ -50,6 +55,11 @@ const navigateToKanban = () => {
   isMenuOpen.value = false
 }
 
+const navigateToStatistics = () => {
+  router.push('/statistics')
+  isMenuOpen.value = false
+}
+
 // Закрыть меню при клике вне его области
 const closeMenu = (event: MouseEvent) => {
   const menuElement = document.querySelector('.menu-container')
@@ -73,7 +83,6 @@ onUnmounted(() => {
   cursor: pointer;
   width: 24px;
   height: 24px;
-  margin-right: 125px;
   display: flex;
   align-items: center;
   justify-content: center;

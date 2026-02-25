@@ -54,7 +54,9 @@ export const useCalendarStore = defineStore('calendar', () => {
       if (end) params.end = end
       
       const response = await api.get('/', { params })
+      console.log('Fetched events:', response.data.length)
       events.value = response.data
+      console.log('Events in store after fetch:', events.value.length)
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Ошибка загрузки событий'
       console.error('Error fetching events:', err)

@@ -81,6 +81,12 @@ def delete_tag(
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
     
+    # Сначала очищаем tag_id у всех связанных событий
+    from app.models.calendar import CalendarEvent
+    db.query(CalendarEvent).filter(
+        CalendarEvent.tag_id == tag_id
+    ).update({"tag_id": None})
+    
     db.delete(tag)
     db.commit()
     return {"message": "Tag deleted", "id": tag_id}

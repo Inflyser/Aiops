@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import WeeklyCalendar from '../views/WeeklyCalendar.vue'
 import KanbanDesk from '../views/KanbanDesk.vue'
+import Statistics from '../views/Statistics.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,6 +15,11 @@ const router = createRouter({
       path: '/kanban',
       name: 'kanban-desk',
       component: KanbanDesk
+    },
+    {
+      path: '/statistics',
+      name: 'statistics',
+      component: Statistics
     }
   ]
 })

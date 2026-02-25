@@ -69,9 +69,17 @@
         />
       </div>
 
-      <!-- Day View (Placeholder) -->
-      <div v-else-if="currentView === 'day'" key="day" class="day-view">
-        <h2>Day View - Under Development</h2>
+      <!-- Day View -->
+      <div v-else-if="currentView === 'day'" key="day" class="day-view-container" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <DayView 
+          :current-day="currentDay"
+          :events="events"
+          @prev-day="prevDay"
+          @next-day="nextDay"
+          @go-today="goToToday"
+          @hour-click="handleDayHourClick"
+          @open-event="openEventModal"
+        />
       </div>
     </Transition>
 
@@ -89,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { useCalendarStore } from '../stores/calendar'
@@ -102,6 +110,7 @@ import CalendarHeader from '../components/calendar/CalendarHeader.vue'
 import WeekView from '../components/calendar/WeekView.vue'
 import MonthView from '../components/calendar/MonthView.vue'
 import YearView from '../components/calendar/YearView.vue'
+import DayView from '../components/calendar/DayView.vue'
 import EventModal from '../components/modals/EventModal.vue'
 import TagsPanel from '../components/modals/TagsPanel.vue'
 
@@ -114,15 +123,17 @@ const tagsStore = useTagsStore()
 const selectedEventId = ref<string | null>(null)
 
 // State
-const currentView = ref('week')
+const currentView = ref('day')
+const currentDay = ref(dayjs())
 const currentWeekStart = ref(dayjs().startOf('week'))
 const currentMonth = ref(dayjs().startOf('month'))
 const currentYear = ref(dayjs().year())
 const showModal = ref(false)
 const editingEvent = ref<any>(null)
 
-// Переключатель режима: false = полный день (0-23), true = рабочий день (7-23)
-const compactMode = ref(false)
+// Переключатель режима: true = рабочий день (7-23), false = полный день (0-23)
+// По умолчанию рабочий день (7-24)
+const compactMode = ref(true)
 
 // Tags state
 const showTagsPanel = ref(false)
@@ -215,6 +226,49 @@ const nextYear = () => {
 
 const prevYear = () => {
   currentYear.value -= 1
+}
+
+// Day navigation
+const prevDay = () => {
+  currentDay.value = currentDay.value.subtract(1, 'day')
+  loadEventsForDay()
+}
+
+const nextDay = () => {
+  currentDay.value = currentDay.value.add(1, 'day')
+  loadEventsForDay()
+}
+
+const goToToday = () => {
+  currentDay.value = dayjs()
+  loadEventsForDay()
+}
+
+const loadEventsForDay = async () => {
+  const dayStart = currentDay.value.format('YYYY-MM-DD')
+  const dayEnd = currentDay.value.format('YYYY-MM-DD')
+  await calendarStore.fetchEvents(dayStart, dayEnd)
+}
+
+const handleDayHourClick = (data: { hour: number; date: dayjs.Dayjs }) => {
+  const { hour, date } = data
+  const startTime = date.hour(hour)
+  const endTime = startTime.add(1, 'hour')
+  
+  eventForm.value = {
+    title: '',
+    description: '',
+    date: date.format('YYYY-MM-DD'),
+    startTime: startTime.format('HH:mm'),
+    endTime: endTime.format('HH:mm'),
+    location: '',
+    priority: 'medium',
+    color: '#4a5568',
+    tagId: undefined
+  }
+  
+  editingEvent.value = null
+  showModal.value = true
 }
 
 // Event handlers
@@ -511,23 +565,27 @@ const handleKeydown = (event: KeyboardEvent) => {
   
   switch (event.key) {
     case 'ArrowLeft':
-      // Previous week
+      // Previous
       if (currentView.value === 'week') {
         lastWeek()
       } else if (currentView.value === 'month') {
         prevMonth()
       } else if (currentView.value === 'year') {
         prevYear()
+      } else if (currentView.value === 'day') {
+        prevDay()
       }
       break
     case 'ArrowRight':
-      // Next week
+      // Next
       if (currentView.value === 'week') {
         nextWeek()
       } else if (currentView.value === 'month') {
         nextMonth()
       } else if (currentView.value === 'year') {
         nextYear()
+      } else if (currentView.value === 'day') {
+        nextDay()
       }
       break
     case 'ArrowUp':
@@ -558,7 +616,16 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
+// Watch for view changes to reload events for the current view
+watch(currentView, async (newView) => {
+  if (newView === 'day') {
+    // For day view, also load a wider range (week) to have data available
+    loadEvents()
+  }
+})
+
 onMounted(() => {
+  // Load events for current week by default (so we have data for all views)
   loadEvents()
   tagsStore.fetchTags()
   window.addEventListener('keydown', handleKeydown)
