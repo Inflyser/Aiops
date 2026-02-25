@@ -10,6 +10,7 @@
         v-for="day in weekDays" 
         :key="day.date"
         class="day-header"
+        :class="{ 'is-today': day.isToday }"
       >
         <div class="day-name">{{ day.shortName }}</div>
         <div class="day-number">{{ day.number }}</div>
@@ -36,13 +37,16 @@ defineEmits<{
 
 const weekDays = computed(() => {
   const days = []
+  const today = dayjs().format('YYYY-MM-DD')
   for (let i = 0; i < 7; i++) {
     const date = props.currentWeekStart.add(i, 'day')
+    const dateStr = date.format('YYYY-MM-DD')
     days.push({
-      date: date.format('YYYY-MM-DD'),
+      date: dateStr,
       shortName: date.format('ddd').toUpperCase().slice(0, 2),
       number: date.date(),
-      fullDate: date
+      fullDate: date,
+      isToday: dateStr === today
     })
   }
   return days
@@ -105,5 +109,16 @@ const monthYear = computed(() => {
 .day-number {
   font-size: 22px;
   font-weight: 700;
+}
+
+.is-today .day-number {
+  background-color: #333333;
+  color: white;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

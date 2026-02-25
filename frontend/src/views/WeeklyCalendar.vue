@@ -73,7 +73,7 @@
       <div v-else-if="currentView === 'day'" key="day" class="day-view-container" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
         <DayView 
           :current-day="currentDay"
-          :events="events"
+          :events="dayEvents"
           @prev-day="prevDay"
           @next-day="nextDay"
           @go-today="goToToday"
@@ -174,6 +174,15 @@ const events = computed(() => {
   }))
 })
 
+// Фильтрованные события для дневного вида
+const dayEvents = computed(() => {
+  const currentDayStr = currentDay.value.format('YYYY-MM-DD')
+  return events.value.filter(event => {
+    const eventDate = dayjs(event.start).format('YYYY-MM-DD')
+    return eventDate === currentDayStr
+  })
+})
+
 const eventForm = ref({
   title: '',
   description: '',
@@ -245,9 +254,10 @@ const goToToday = () => {
 }
 
 const loadEventsForDay = async () => {
-  const dayStart = currentDay.value.format('YYYY-MM-DD')
-  const dayEnd = currentDay.value.format('YYYY-MM-DD')
-  await calendarStore.fetchEvents(dayStart, dayEnd)
+  // Загружаем всю неделю чтобы данные были доступны для фильтрации
+  const startOfWeek = currentDay.value.startOf('week').format('YYYY-MM-DD')
+  const endOfWeek = currentDay.value.startOf('week').add(6, 'day').format('YYYY-MM-DD')
+  await calendarStore.fetchEvents(startOfWeek, endOfWeek)
 }
 
 const handleDayHourClick = (data: { hour: number; date: dayjs.Dayjs }) => {

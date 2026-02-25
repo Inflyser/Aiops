@@ -113,24 +113,30 @@ const loadStatistics = async () => {
   loading.value = true
   const now = dayjs()
   let startDate: dayjs.Dayjs
+  let endDate: dayjs.Dayjs
   
   switch (currentPeriod.value) {
     case 'week':
+      // Загружаем всю неделю (понедельник - воскресенье)
       startDate = now.startOf('week')
+      endDate = now.startOf('week').add(6, 'day')
       break
     case 'month':
       startDate = now.startOf('month')
+      endDate = now.endOf('month')
       break
     case 'year':
       startDate = now.startOf('year')
+      endDate = now.endOf('year')
       break
     default:
       startDate = now.startOf('week')
+      endDate = now.startOf('week').add(6, 'day')
   }
   
   try {
     const startStr = startDate.format('YYYY-MM-DD')
-    const endStr = now.format('YYYY-MM-DD')
+    const endStr = endDate.format('YYYY-MM-DD')
     console.log('Loading statistics:', startStr, 'to', endStr)
     
     const response = await axios.get('/api/v1/calendar/', {
@@ -151,10 +157,14 @@ const loadStatistics = async () => {
 
 // Compute tag statistics
 const tagStats = computed(() => {
+  console.log('Computing tagStats, events:', statisticsEvents.value.length, 'tags:', tagsStore.tags.length)
+  
   const tagsMap = new Map()
   
   // Get all tags
   const tags = tagsStore.tags
+  console.log('Tags:', tags)
+  
   tags.forEach(tag => {
     tagsMap.set(tag.id, {
       tagId: tag.id,
@@ -167,6 +177,7 @@ const tagStats = computed(() => {
   // Calculate time spent on each tag
   statisticsEvents.value.forEach(event => {
     const tagId = event.tag_id
+    console.log('Event:', event.title, 'tag_id:', tagId)
     if (tagId && tagsMap.has(tagId)) {
       const start = dayjs(event.start)
       const end = dayjs(event.end)
@@ -183,6 +194,8 @@ const tagStats = computed(() => {
       ...stat,
       hours: stat.totalMinutes / 60
     }))
+  
+  console.log('Stats before percentage:', stats)
   
   // Find max hours for percentage calculation
   const maxHours = Math.max(...stats.map(s => s.hours), 1)
