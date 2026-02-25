@@ -25,7 +25,7 @@
     />
       
     <!-- Week View -->
-    <Transition name="view-fade" mode="out-in">
+    <Transition name="slide-fade" mode="out-in">
       <div v-if="currentView === 'week'" key="week" class="week-view-container">
         <!-- Calendar Header -->
         <CalendarHeader 
@@ -131,6 +131,9 @@ const currentYear = ref(dayjs().year())
 const showModal = ref(false)
 const editingEvent = ref<any>(null)
 
+// Локальное состояние для bounce анимации
+const bouncingEvents = ref<Set<string>>(new Set())
+
 // Переключатель режима: true = рабочий день (7-23), false = полный день (0-23)
 // По умолчанию рабочий день (7-24)
 const compactMode = ref(true)
@@ -170,7 +173,9 @@ const events = computed(() => {
   return calendarStore.events.map(event => ({
     ...event,
     // Используем цвет события или цвет тега, если он есть
-    color: event.color || getTagColor(event.tag_id)
+    color: event.color || getTagColor(event.tag_id),
+    // Используем локальное состояние для bounce анимации
+    bouncing: bouncingEvents.value.has(String(event.id))
   }))
 })
 
@@ -462,6 +467,9 @@ const handleEventDrop = async (data: { event: any; newDate: string; newStart: st
     tag_id: event.tag_id || event.tagId || undefined
   }
   
+  // Включаем bounce анимацию
+  bouncingEvents.value.add(String(event.id))
+  
   // Update the event in the store/backend
   await calendarStore.updateEvent(event.id, eventData)
   
@@ -474,6 +482,13 @@ const handleEventDrop = async (data: { event: any; newDate: string; newStart: st
   })
   
   console.log('Event moved:', event.title, 'to', newStart)
+  
+  // Remove bounce effect after animation completes
+  setTimeout(() => {
+    const newSet = new Set(bouncingEvents.value)
+    newSet.delete(String(event.id))
+    bouncingEvents.value = newSet
+  }, 500)
 }
 
 // Handle move event to next week (+7 days)
@@ -675,19 +690,19 @@ onUnmounted(() => {
   color: #888;
 }
 
-/* View Transition Animations */
-.view-fade-enter-active,
-.view-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+/* View Transition Animations - Slide effect */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.view-fade-enter-from {
+.slide-fade-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateX(40px) scale(0.95);
 }
 
-.view-fade-leave-to {
+.slide-fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateX(-40px) scale(0.95);
 }
 </style>

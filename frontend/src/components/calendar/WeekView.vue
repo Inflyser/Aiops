@@ -36,7 +36,7 @@
             v-for="event in getEventsForDay(day.date)"
             :key="event.id"
             class="event-block"
-            :class="{ 'dragging': draggedEvent?.id === event.id }"
+            :class="{ 'dragging': draggedEvent?.id === event.id, 'bounce': event.bouncing }"
             :style="getEventStyle(event, day.date)"
             draggable="true"
             @click.stop="$emit('open-event', event)"
@@ -90,6 +90,7 @@ interface CalendarEvent {
   end: string
   priority?: string
   color?: string
+  bouncing?: boolean
 }
 
 interface WeekDay {
@@ -437,6 +438,31 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 .event-block.dragging {
   opacity: 0.5;
   cursor: grabbing;
+}
+
+/* Bounce animation for dropped events */
+.event-block.bounce {
+  animation: bounce-in 0.5s ease-out;
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  30% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  70% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Drag over state for day column */
