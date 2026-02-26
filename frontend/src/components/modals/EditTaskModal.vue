@@ -33,6 +33,7 @@
               v-model="localTask.priority"
               class="form-control"
             >
+              <option :value="undefined">Нет</option>
               <option value="low">Низкий</option>
               <option value="medium">Средний</option>
               <option value="high">Высокий</option>
@@ -64,7 +65,7 @@ interface Task {
   id: string
   title: string
   description?: string
-  priority: string
+  priority?: string
   due_date?: string
   completed: boolean
 }
@@ -81,7 +82,7 @@ const localTask = ref<Task>({
   id: '',
   title: '',
   description: '',
-  priority: 'medium',
+  priority: undefined,
   due_date: '',
   completed: false
 })

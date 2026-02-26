@@ -140,9 +140,9 @@ const months = computed(() => {
 
 .year-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  padding: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 15px;
+  padding: 20px;
 }
 
 .month-in-year {
@@ -206,10 +206,10 @@ const months = computed(() => {
 }
 
 .mini-day.today {
-  background-color: #4a90e2;
+  background-color: #444444;
   color: white;
   font-weight: bold;
-  border: 2px solid #4a90e2;
+  border: 2px solid #444444;
 }
 
 .mini-day.other-month {

@@ -9,22 +9,26 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '005'
+revision = '005_add_status_to_tasks'
 down_revision = '004'
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    # Добавляем колонку status со значением по умолчанию 'todo'
-    op.add_column('tasks', sa.Column('status', sa.String(50), nullable=True))
-    
-    # Устанавливаем значение по умолчанию для существующих записей
-    # Задачи с completed=True получают статус 'done', остальные - 'todo'
-    op.execute("UPDATE tasks SET status = CASE WHEN completed = true THEN 'done' ELSE 'todo' END WHERE status IS NULL")
-    
-    # Теперь делаем колонку NOT NULL
-    op.alter_column('tasks', 'status', nullable=False)
+    # Проверяем, существует ли колонка status
+    conn = op.get_bind()
+    result = conn.execute(sa.text("SELECT column_name FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'status'"))
+    if result.fetchone() is None:
+        # Добавляем колонку status со значением по умолчанию 'todo'
+        op.add_column('tasks', sa.Column('status', sa.String(50), nullable=True))
+        
+        # Устанавливаем значение по умолчанию для существующих записей
+        # Задачи с completed=True получают статус 'done', остальные - 'todo'
+        op.execute("UPDATE tasks SET status = CASE WHEN completed = true THEN 'done' ELSE 'todo' END WHERE status IS NULL")
+        
+        # Теперь делаем колонку NOT NULL
+        op.alter_column('tasks', 'status', nullable=False)
 
 
 def downgrade() -> None:

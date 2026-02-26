@@ -10,7 +10,7 @@ class TaskBase(BaseModel):
     status: str = "todo"  # Для совместимости - id колонки
     column_id: Optional[str] = None  # Ссылка на колонку Kanban
     due_date: Optional[datetime] = None
-    priority: str = "medium"
+    priority: Optional[str] = None  # None by default - can be set via editing
     tags: List[str] = []
     project_id: Optional[str] = None
 

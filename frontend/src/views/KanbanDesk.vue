@@ -19,103 +19,127 @@
 
     <!-- Kanban Board -->
     <div class="kanban-board">
-      <div class="kanban-columns">
-        <div
-          v-for="col in columns"
-          :key="col.key"
-          class="kanban-column"
-        >
-          <!-- Column Header -->
-          <div class="column-header">
-            <div class="column-header-left">
-              <span class="column-dot" :class="`dot-${col.key}`"></span>
-              <h3 class="column-title">{{ col.label }}</h3>
-              <span class="column-count">{{ tasksByColumn(col.key).length }}</span>
-            </div>
-            <button
-              class="del-col-btn"
-              v-if="canRemoveColumn(col.key)"
-              @click="removeColumn(col.key)"
-              type="button"
-              title="Удалить колонку"
-            >✕</button>
-          </div>
-
-          <!-- Draggable Task List -->
-          <draggable
-            class="column-body"
-            :list="getColumnTasks(col.key)"
-            :group="{ name: 'tasks', pull: true, put: true }"
-            item-key="id"
-            @change="(e: any) => onTaskChange(e, col.key)"
-            @end="(e: any) => onTaskDrop(e, col.key)"
-            ghost-class="ghost"
-            chosen-class="chosen"
-            drag-class="drag"
-            :move="onMove"
+      <draggable
+        v-model="columnOrder"
+        class="kanban-columns"
+        group="columns"
+        item-key="key"
+        handle=".column-drag-handle"
+        @end="onColumnReorder"
+      >
+        <template #item="{ element: col }">
+          <div
+            class="kanban-column"
+            :class="{ 'column-collapsed': collapsedColumns[col.key] }"
           >
-            <template #item="{ element: task }">
-              <div class="kanban-card-wrapper">
-                <TaskCard
-                  :task="task"
-                  :status="task.status"
-                  @edit-task="openEditTaskModal"
-                  @delete-task="deleteTask"
-                  @toggle-task="toggleTask"
-                />
+            <!-- Column Header -->
+            <div class="column-header" :class="{ 'header-collapsed': collapsedColumns[col.key] }">
+              <div class="column-drag-handle" title="Перетащить колонку">
+                ⋮⋮
+              </div>
+              <div class="column-header-left">
+                <span class="column-dot" :class="`dot-${col.key}`"></span>
+                <h3 class="column-title" :class="{ 'title-collapsed': collapsedColumns[col.key] }">{{ col.label }}</h3>
+                <span class="column-count">{{ tasksByColumn(col.key).length }}</span>
+              </div>
+              <div class="header-buttons">
+                <button
+                  class="collapse-col-btn"
+                  @click="toggleCollapse(col.key)"
+                  type="button"
+                  :title="collapsedColumns[col.key] ? 'Развернуть' : 'Свернуть'"
+                >
+                  {{ collapsedColumns[col.key] ? '▶' : '▼' }}
+                </button>
+                <button
+                  class="del-col-btn"
+                  v-if="canRemoveColumn(col.key)"
+                  @click="removeColumn(col.key)"
+                  type="button"
+                  title="Удалить колонку"
+                >✕</button>
+              </div>
+            </div>
+
+            <!-- Column Content (collapsible) -->
+            <template v-if="!collapsedColumns[col.key]">
+              <!-- Draggable Task List -->
+              <draggable
+                class="column-body"
+                :list="getColumnTasks(col.key)"
+                :group="{ name: 'tasks', pull: true, put: true }"
+                item-key="id"
+                @change="(e: any) => onTaskChange(e, col.key)"
+                @end="(e: any) => onTaskDrop(e, col.key)"
+                ghost-class="ghost"
+                chosen-class="chosen"
+                drag-class="drag"
+                :move="onMove"
+              >
+                <template #item="{ element: task }">
+                  <div class="kanban-card-wrapper">
+                    <TaskCard
+                      :task="task"
+                      :status="task.status"
+                      @edit-task="openEditTaskModal"
+                      @delete-task="deleteTask"
+                      @toggle-task="toggleTask"
+                    />
+                  </div>
+                </template>
+              </draggable>
+
+              <!-- Empty State -->
+              <div v-if="tasksByColumn(col.key).length === 0" class="empty-column">
+                <span class="empty-icon">○</span>
+                <span>Пусто</span>
+              </div>
+
+              <!-- Add Task Form -->
+              <div class="add-task-container">
+                <!-- Кнопка добавления -->
+                <button 
+                  v-if="!isAddingTask[col.key]" 
+                  class="add-task-btn-new"
+                  @click="startAddTask(col.key)"
+                >
+                  + Добавить карточку
+                </button>
+                
+                <!-- Поле ввода при добавлении -->
+                <form 
+                  v-else 
+                  class="add-task-form" 
+                  @submit.prevent="addTask(col.key)"
+                  @mouseleave="cancelAddTask(col.key)"
+                >
+                  <input
+                    :id="`task-input-${col.key}`"
+                    :value="newTaskTitles[col.key]"
+                    @input="updateTaskTitle(col.key, ($event.target as HTMLInputElement).value)"
+                    placeholder="Введите название задачи..."
+                    class="task-input"
+                    @keydown.escape="cancelAddTask(col.key)"
+                  />
+                </form>
               </div>
             </template>
-          </draggable>
-
-          <!-- Empty State -->
-          <div v-if="tasksByColumn(col.key).length === 0" class="empty-column">
-            <span class="empty-icon">○</span>
-            <span>Пусто</span>
           </div>
+        </template>
+      </draggable>
 
-          <!-- Add Task Form -->
-          <div class="add-task-container">
-            <!-- Кнопка добавления -->
-            <button 
-              v-if="!isAddingTask[col.key]" 
-              class="add-task-btn-new"
-              @click="startAddTask(col.key)"
-            >
-              + Добавить карточку
-            </button>
-            
-            <!-- Поле ввода при добавлении -->
-            <form 
-              v-else 
-              class="add-task-form" 
-              @submit.prevent="addTask(col.key)"
-              @mouseleave="cancelAddTask(col.key)"
-            >
-              <input
-                :id="`task-input-${col.key}`"
-                :value="newTaskTitles[col.key]"
-                @input="updateTaskTitle(col.key, ($event.target as HTMLInputElement).value)"
-                placeholder="Введите название задачи..."
-                class="task-input"
-                @keydown.escape="cancelAddTask(col.key)"
-              />
-            </form>
-          </div>
-        </div>
-
-        <!-- Add Column -->
-        <div class="add-col">
-          <div class="add-col-inner">
-            <p class="add-col-label">Новая колонка</p>
-            <form @submit.prevent="addColumn" class="add-col-form">
-              <input
-                v-model="newColTitle"
-                placeholder="Название..."
-                class="task-input"
-              />
-              <button type="submit" class="add-task-btn" title="Создать">+</button>
-            </form>
-          </div>
+      <!-- Add Column (at the end) -->
+      <div class="add-col">
+        <div class="add-col-inner">
+          <p class="add-col-label">Новая колонка</p>
+          <form @submit.prevent="addColumn" class="add-col-form">
+            <input
+              v-model="newColTitle"
+              placeholder="Название..."
+              class="task-input"
+            />
+            <button type="submit" class="add-task-btn" title="Создать">+</button>
+          </form>
         </div>
       </div>
     </div>
@@ -142,7 +166,6 @@ import { useTasksStore } from '../stores/tasks'
 import { useCalendarStore } from '../stores/calendar'
 import { useKanbanStore } from '../stores/kanban'
 import draggable from 'vuedraggable'
-import { mockKanbanTasks } from '../mock/kanbanData'
 
 dayjs.locale('ru')
 
@@ -151,8 +174,6 @@ const updateTime = () => {
   currentTime.value = dayjs().format('HH:mm DD MMMM')
 }
 
-// Использовать мок данные
-const USE_MOCK = true
 
 const tasksStore = useTasksStore()
 const kanbanStore = useKanbanStore()
@@ -167,6 +188,29 @@ const columns = computed(() => kanbanStore.columns.map(col => ({
 const newColTitle = ref('')
 const newTaskTitles = reactive<Record<string, string>>({})
 const isAddingTask = reactive<Record<string, boolean>>({})
+const collapsedColumns = reactive<Record<string, boolean>>({})
+
+// Computed for column order (for drag and drop)
+const columnOrder = computed({
+  get: () => columns.value,
+  set: (val) => {
+    // Handle column reorder if needed
+    if (val && val.length > 0) {
+      // Could save to backend here
+      console.log('Column order changed:', val.map(c => c.key))
+    }
+  }
+})
+
+// Toggle column collapse
+const toggleCollapse = (colKey: string) => {
+  collapsedColumns[colKey] = !collapsedColumns[colKey]
+}
+
+// Handle column reorder
+const onColumnReorder = () => {
+  // Save new order to backend if needed
+}
 
 // Функции для управления добавлением задачи
 const startAddTask = async (colKey: string) => {
@@ -198,27 +242,14 @@ const updateTaskTitle = (colKey: string, value: string) => {
 }
 
 const initializeTasks = async () => {
-  if (USE_MOCK) {
-    // Используем мок данные
-    const mockTasksWithStatus = mockKanbanTasks.map((task: any, index: number) => ({
-      ...task,
-      status: index < 2 ? 'todo' : index < 4 ? 'in-progress' : 'done'
-    }))
-    
-    // Заменяем задачи на мок
-    mockTasksWithStatus.forEach((t: any) => {
-      tasksStore.tasks.push(t)
-    })
-  } else {
-    await tasksStore.fetchTasks()
-    
-    // Инициализируем status для задач без него (миграция уже выполнена)
-    tasksStore.tasks.forEach((t: any) => {
-      if (!t.status) {
-        t.status = t.completed ? 'done' : 'todo'
-      }
-    })
-  }
+  await tasksStore.fetchTasks()
+  
+  // Инициализируем status для задач без него (миграция уже выполнена)
+  tasksStore.tasks.forEach((t: any) => {
+    if (!t.status) {
+      t.status = t.completed ? 'done' : 'todo'
+    }
+  })
 
   initializeTaskTitles()
 }
@@ -343,14 +374,7 @@ onMounted(async () => {
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
   
-  if (USE_MOCK) {
-    // Используем мок колонки
-    kanbanStore.columns.push({ id: 'todo', title: 'To Do', order: 0, color: '#555', user_id: 'user-123' })
-    kanbanStore.columns.push({ id: 'in-progress', title: 'In Progress', order: 1, color: '#888', user_id: 'user-123' })
-    kanbanStore.columns.push({ id: 'done', title: 'Done', order: 2, color: '#ccc', user_id: 'user-123' })
-  } else {
-    await kanbanStore.fetchColumns()
-  }
+  await kanbanStore.fetchColumns()
   
   await initializeTasks()
   window.addEventListener('keydown', handleKeydown)
@@ -479,14 +503,19 @@ const handleKeydown = (event: KeyboardEvent) => {
 .kanban-board {
   padding: 24px 20px;
   overflow-x: auto;
-}
-
-.kanban-columns {
   display: flex;
   gap: 16px;
   align-items: flex-start;
   min-width: max-content;
   padding-bottom: 12px;
+}
+
+/* Override for draggable to align items at top */
+.kanban-columns {
+  align-items: flex-start;
+  min-width: max-content;
+  display: flex;
+  gap: 16px;
 }
 
 /* ─── Column ────────────────────────────────────────────── */
@@ -574,6 +603,94 @@ const handleKeydown = (event: KeyboardEvent) => {
   background: #1a1a1a;
 }
 
+/* Column drag handle */
+.column-drag-handle {
+  cursor: grab;
+  color: #444;
+  font-size: 14px;
+  padding: 4px;
+  margin-right: 4px;
+  transition: color 0.2s;
+}
+
+.column-drag-handle:hover {
+  color: #888;
+}
+
+.column-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Collapse button */
+.collapse-col-btn {
+  background: transparent;
+  border: none;
+  color: #444;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.2s, background 0.2s;
+}
+
+.collapse-col-btn:hover {
+  color: #888;
+  background: #1a1a1a;
+}
+
+/* Collapsed column - title rotated */
+.column-collapsed {
+  width: 60px !important;
+  height: auto;
+  min-height: 100px;
+  padding: 12px 4px;
+  align-self: stretch;
+}
+
+.column-collapsed .column-header {
+  flex-direction: column-reverse;
+  border-bottom: none;
+  margin-bottom: 0;
+  padding: 0;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.column-collapsed .column-drag-handle {
+  display: none;
+}
+
+.column-collapsed .column-dot,
+.column-collapsed .column-count,
+.column-collapsed .column-body,
+.column-collapsed .add-task-container,
+.column-collapsed .empty-column {
+  display: none !important;
+}
+
+.column-collapsed .header-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.column-collapsed .column-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  font-size: 16px;
+  margin: 0;
+  max-height: 150px;
+}
+
+/* Header buttons wrapper */
+.header-buttons {
+  display: flex;
+  gap: 4px;
+}
+
 /* ─── Column Body (droppable zone) ─────────────────────── */
 .column-body {
   display: flex;
@@ -637,7 +754,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   color: #555;
   padding: 8px 12px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   text-align: left;
   transition: color 0.2s;
 }
@@ -659,7 +776,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   border: 1px solid #1e1e1e;
   background: #0a0a0a;
   color: #ccc;
-  font-size: 13px;
+  font-size: 15px;
   outline: none;
   transition: border-color 0.2s;
 }

@@ -12,7 +12,7 @@ class Task(Base):
     completed = Column(Boolean, default=False)
     status = Column(String(50), default="todo")  # Для совместимости - id колонки
     due_date = Column(DateTime(timezone=True))
-    priority = Column(String(20), default="medium")  # low, medium, high
+    priority = Column(String(20), nullable=True, default=None)  # low, medium, high - None by default
     tags = Column(ARRAY(String))
     order = Column(Integer, default=0)
     
