@@ -27,11 +27,6 @@
           <div class="icon-wrapper" @click.stop="navigateToStatistics">
             <img :src="kanbanIcon" alt="Statistics" class="svg-icon" />
           </div>
-
-          <!-- Планирование -->
-          <div class="icon-wrapper" @click.stop="navigateToPlanning">
-            <img :src="kanbanIcon" alt="Planning" class="svg-icon" />
-          </div>
         </div>
       </div>
     </Transition>
@@ -70,11 +65,6 @@ const navigateToKanban = () => {
 
 const navigateToStatistics = () => {
   router.push('/statistics')
-  isMenuOpen.value = false
-}
-
-const navigateToPlanning = () => {
-  router.push('/planning')
   isMenuOpen.value = false
 }
 </script>

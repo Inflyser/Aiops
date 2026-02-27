@@ -6,7 +6,6 @@
       <div class="menu-wrapper">
         <ThreeDotsMenu />
       </div>
-      <button class="nav-btn"> </button>
     </div>
 
     <!-- Board Header -->
@@ -447,21 +446,16 @@ const handleKeydown = (event: KeyboardEvent) => {
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
+  position: relative;
 }
 
 .menu-wrapper {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.nav-btn {
-  background: transparent;
-  border: none;
-  color: #ffffff;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 5px 10px;
 }
 
 .time-display {
