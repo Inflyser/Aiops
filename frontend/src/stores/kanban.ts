@@ -89,7 +89,6 @@ export const useKanbanStore = defineStore('kanban', () => {
   const reorderColumns = async (columnIds: string[]) => {
     try {
       await api.post('/reorder', columnIds)
-      // Обновляем порядок локально
       columnIds.forEach((id, index) => {
         const col = columns.value.find(c => c.id === id)
         if (col) col.order = index
@@ -100,6 +99,10 @@ export const useKanbanStore = defineStore('kanban', () => {
     }
   }
 
+  const updateColumnOrder = async (columnIds: string[]) => {
+    await reorderColumns(columnIds)
+  }
+
   return {
     columns,
     loading,
@@ -108,6 +111,7 @@ export const useKanbanStore = defineStore('kanban', () => {
     createColumn,
     updateColumn,
     deleteColumn,
-    reorderColumns
+    reorderColumns,
+    updateColumnOrder
   }
 })

@@ -27,9 +27,11 @@ def get_calendar_events(
         # События которые заканчиваются после start
         query = query.filter(CalendarEvent.end > start)
     if end:
-        # События которые начинаются до end (включая весь день)
-        # Для событий на весь день - они должны показываться если start < end_date
-        query = query.filter(CalendarEvent.start < end)
+        # События которые начинаются до конца end дня (включая весь день)
+        # Добавляем 1 день к end, чтобы включить события на весь end день
+        from datetime import timedelta
+        end_inclusive = end + timedelta(days=1)
+        query = query.filter(CalendarEvent.start < end_inclusive)
     
     events = query.order_by(CalendarEvent.start).all()
     return events

@@ -167,7 +167,8 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
     const dropY = event.clientY - rect.top
     const slotIndex = Math.floor(dropY / 120)
-    const minutes = Math.floor((dropY % 120) / 120 * 60)
+    const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
+    const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
     
     const hour = props.compactMode ? slotIndex + 7 : slotIndex
     
@@ -339,7 +340,8 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
   const clickY = event.clientY - rect.top
   const slotIndex = Math.floor(clickY / 120)
-  const minutes = Math.floor((clickY % 120) / 120 * 60)
+  const rawMinutes = Math.floor((clickY % 120) / 120 * 60)
+  const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
   
   // В компактном режиме слот 0 соответствует 7:00, а не 0:00
   const hour = props.compactMode ? slotIndex + 7 : slotIndex

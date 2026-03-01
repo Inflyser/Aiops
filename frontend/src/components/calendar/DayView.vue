@@ -20,23 +20,21 @@
           v-for="hour in hours" 
           :key="hour"
           class="day-hour-row"
-          @click="$emit('hour-click', { hour, date: currentDay })"
         >
-          <div class="hour-label">{{ hour }}:00</div>
-          <div class="hour-events">
-            <div 
-              v-for="event in getEventsForHour(hour)" 
-              :key="event.id"
-              class="day-event"
-              :style="{ 
-                backgroundColor: event.color || '#4a5568',
-                height: getEventHeight(event)
-              }"
-              @click.stop="$emit('open-event', event)"
-            >
-              <div class="event-time">{{ formatEventTime(event) }}</div>
-              <div class="event-title">{{ event.title }}</div>
-            </div>
+          <div class="hour-label">{{ hour.toString().padStart(2, '0') }}:00</div>
+          <div class="hour-events" @click="handleRowClick(hour)"></div>
+        </div>
+        
+        <div class="events-container" :style="{ minHeight: calendarHeight + 'px' }">
+          <div
+            v-for="event in events"
+            :key="event.id"
+            class="day-event"
+            :style="getEventStyle(event)"
+            @click.stop="$emit('open-event', event)"
+          >
+            <div class="event-time">{{ formatEventTime(event) }}</div>
+            <div class="event-title">{{ event.title }}</div>
           </div>
         </div>
       </div>
@@ -45,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -64,9 +63,10 @@ interface CalendarEvent {
 const props = defineProps<{
   currentDay: dayjs.Dayjs
   events: CalendarEvent[]
+  compactMode: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'prev-day'): void
   (e: 'next-day'): void
   (e: 'go-today'): void
@@ -74,20 +74,82 @@ defineEmits<{
   (e: 'open-event', event: CalendarEvent): void
 }>()
 
-const hours = Array.from({ length: 24 }, (_, i) => i)
+const hours = computed(() => {
+  if (props.compactMode) {
+    return Array.from({ length: 17 }, (_, i) => i + 7) // 7:00 to 23:00
+  }
+  return Array.from({ length: 24 }, (_, i) => i) // 0:00 to 23:00
+})
 
-const getEventsForHour = (hour: number) => {
-  return props.events.filter(event => {
-    const eventStart = dayjs(event.start)
-    return eventStart.hour() === hour
-  })
+const calendarHeight = computed(() => {
+  const totalHours = props.compactMode ? 17 : 24
+  return totalHours * 120
+})
+
+const handleRowClick = (hour: number) => {
+  emit('hour-click', { hour, date: props.currentDay })
 }
 
-const getEventHeight = (event: CalendarEvent) => {
+const getEventStyle = (event: CalendarEvent) => {
   const start = dayjs(event.start)
   const end = dayjs(event.end)
-  const durationHours = end.diff(start, 'hour')
-  return `${Math.max(durationHours * 60, 30)}px`
+  const dayStart = props.currentDay.startOf('day')
+  
+  let startMinutes = start.diff(dayStart, 'minute')
+  const duration = end.diff(start, 'minute')
+  
+  const eventColor = event.color || '#4a5568'
+  
+  if (props.compactMode) {
+    if (startMinutes < 7 * 60) {
+      startMinutes = 7 * 60
+    } else if (startMinutes >= 24 * 60) {
+      return { display: 'none' }
+    }
+    
+    const offsetMinutes = 7 * 60
+    const top = ((startMinutes - offsetMinutes) / 60) * 120
+    const height = Math.max((duration / 60) * 120, 30)
+    
+    const maxTop = 17 * 120
+    const clampedTop = Math.max(0, Math.min(top, maxTop))
+    const clampedHeight = Math.min(height, maxTop - clampedTop)
+    
+    if (clampedTop >= maxTop || clampedHeight <= 0) {
+      return { display: 'none' }
+    }
+    
+    return {
+      top: `${clampedTop}px`,
+      height: `${clampedHeight}px`,
+      backgroundColor: eventColor,
+      position: 'absolute' as const,
+      left: '2px',
+      right: '2px',
+      zIndex: 10
+    }
+  }
+  
+  const top = (startMinutes / 60) * 120
+  const height = Math.max((duration / 60) * 120, 30)
+  
+  const maxTop = 24 * 120
+  const clampedTop = Math.max(0, Math.min(top, maxTop))
+  const clampedHeight = Math.min(height, maxTop - clampedTop)
+  
+  if (clampedTop >= maxTop || clampedHeight <= 0) {
+    return { display: 'none' }
+  }
+  
+  return {
+    top: `${clampedTop}px`,
+    height: `${clampedHeight}px`,
+    backgroundColor: eventColor,
+    position: 'absolute' as const,
+    left: '2px',
+    right: '2px',
+    zIndex: 10
+  }
 }
 
 const formatEventTime = (event: CalendarEvent) => {
@@ -178,24 +240,19 @@ const formatEventTime = (event: CalendarEvent) => {
 .day-grid {
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .day-hour-row {
   display: flex;
-  min-height: 60px;
+  min-height: 120px;
   border-bottom: 1px solid #1a1a1a;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.day-hour-row:hover {
-  background-color: rgba(255, 255, 255, 0.03);
 }
 
 .hour-label {
   width: 80px;
   padding: 10px;
-  font-size: 14px;
+  font-size: 18px;
   color: #666;
   flex-shrink: 0;
   border-right: 1px solid #1a1a1a;
@@ -203,18 +260,31 @@ const formatEventTime = (event: CalendarEvent) => {
 
 .hour-events {
   flex: 1;
-  padding: 5px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  cursor: pointer;
+}
+
+.hour-events:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.events-container {
+  position: absolute;
+  top: 0;
+  left: 80px;
+  right: 0;
+  pointer-events: none;
 }
 
 .day-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
   color: white;
   overflow: hidden;
+  pointer-events: auto;
   transition: transform 0.1s;
 }
 

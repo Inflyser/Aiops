@@ -74,9 +74,11 @@
         <DayView 
           :current-day="currentDay"
           :events="dayEvents"
+          :compact-mode="compactMode"
           @prev-day="prevDay"
           @next-day="nextDay"
           @go-today="goToToday"
+          @toggle-compact="toggleCompactMode"
           @hour-click="handleDayHourClick"
           @open-event="openEventModal"
         />
@@ -256,6 +258,10 @@ const nextDay = () => {
 const goToToday = () => {
   currentDay.value = dayjs()
   loadEventsForDay()
+}
+
+const toggleCompactMode = () => {
+  compactMode.value = !compactMode.value
 }
 
 const loadEventsForDay = async () => {

@@ -115,6 +115,7 @@ class TaskStatusUpdate(BaseModel):
     task_id: str
     status: str
     order: Optional[int] = None
+    completed: Optional[bool] = None
 
 
 class BulkUpdateRequest(BaseModel):
@@ -144,9 +145,10 @@ def bulk_update_tasks(
         
         if task:
             task.status = item.status
-            task.completed = item.status == "done"
             if item.order is not None:
                 task.order = item.order
+            if item.completed is not None:
+                task.completed = item.completed
             updated_tasks.append(task)
     
     db.commit()

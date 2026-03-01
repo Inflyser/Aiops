@@ -5,9 +5,9 @@
       <ThreeDotsMenu />
     </div>
     <div class="header-controls">
-      <!-- Кнопка переключения 0-24 / 7-24 только для недельного вида -->
+      <!-- Кнопка переключения 0-24 / 7-24 для недельного и дневного вида -->
       <button
-        v-if="currentView === 'week'"
+        v-if="currentView === 'week' || currentView === 'day'"
         class="compact-toggle-btn header-toggle"
         :class="{ active: compactMode }"
         @click="$emit('toggle-compact', !compactMode)"

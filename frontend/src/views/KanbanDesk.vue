@@ -65,11 +65,10 @@
               <!-- Draggable Task List -->
               <draggable
                 class="column-body"
-                :list="getColumnTasks(col.key)"
+                v-model="columnTasks[col.key]"
                 :group="{ name: 'tasks', pull: true, put: true }"
                 item-key="id"
                 @change="(e: any) => onTaskChange(e, col.key)"
-                @end="(e: any) => onTaskDrop(e, col.key)"
                 ghost-class="ghost"
                 chosen-class="chosen"
                 drag-class="drag"
@@ -155,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, reactive, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, computed, nextTick, watch } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import ThreeDotsMenu from '../components/ui/ThreeDotsMenu.vue'
@@ -189,17 +188,34 @@ const newTaskTitles = reactive<Record<string, string>>({})
 const isAddingTask = reactive<Record<string, boolean>>({})
 const collapsedColumns = reactive<Record<string, boolean>>({})
 
-// Computed for column order (for drag and drop)
-const columnOrder = computed({
-  get: () => columns.value,
-  set: (val) => {
-    // Handle column reorder if needed
-    if (val && val.length > 0) {
-      // Could save to backend here
-      console.log('Column order changed:', val.map(c => c.key))
+const columnTasks = ref<Record<string, any[]>>({})
+
+watch(() => tasksStore.tasks, () => {
+  const currentTasks = columnTasks.value
+  const newColumnTasks: Record<string, any[]> = {}
+  
+  columns.value.forEach(col => {
+    if (currentTasks[col.key] && currentTasks[col.key].length > 0) {
+      newColumnTasks[col.key] = currentTasks[col.key]
+    } else {
+      newColumnTasks[col.key] = tasksStore.tasks.filter((t: any) => t.status === col.key)
     }
+  })
+  
+  columnTasks.value = newColumnTasks
+}, { deep: true })
+
+// Ref for column order (drag and drop) - синхронизирован с store
+const columnOrder = ref<{ key: string; label: string; color?: string }[]>([])
+
+// Инициализация и синхронизация columnOrder с columns
+watch(columns, (newColumns) => {
+  // Обновляем columnOrder если его длина не совпадает или ключи разные
+  if (columnOrder.value.length !== newColumns.length || 
+      newColumns.some((c, i) => c.key !== columnOrder.value[i]?.key)) {
+    columnOrder.value = [...newColumns]
   }
-})
+}, { immediate: true })
 
 // Toggle column collapse
 const toggleCollapse = (colKey: string) => {
@@ -208,7 +224,9 @@ const toggleCollapse = (colKey: string) => {
 
 // Handle column reorder
 const onColumnReorder = () => {
-  // Save new order to backend if needed
+  // Сохраняем новый порядок в kanbanStore
+  const newOrder = columnOrder.value.map(c => c.key)
+  kanbanStore.updateColumnOrder(newOrder)
 }
 
 // Функции для управления добавлением задачи
@@ -250,16 +268,16 @@ const initializeTasks = async () => {
     }
   })
 
+  columns.value.forEach(col => {
+    columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.status === col.key)
+  })
+
   initializeTaskTitles()
 }
 
 // Используем статус из задачи напрямую
 const tasksByColumn = (colKey: string) => {
-  return tasksStore.tasks.filter((t: any) => t.status === colKey)
-}
-
-const getColumnTasks = (colKey: string) => {
-  return tasksStore.tasks.filter((t: any) => t.status === colKey)
+  return columnTasks.value[colKey] || []
 }
 
 const onMove = () => true
@@ -334,7 +352,7 @@ const onTaskChange = async (evt: any, colKey: string) => {
       try {
         await tasksStore.updateTask(task.id, { 
           status: colKey,
-          completed: colKey === 'done' 
+          completed: task.completed
         })
       } catch (err) {
         console.error('Failed to update task status on server:', err)
@@ -342,27 +360,25 @@ const onTaskChange = async (evt: any, colKey: string) => {
       }
     }
   }
-}
-
-const onTaskDrop = async (_evt: any, _colKey: string) => {
-  // Bulk update порядка задач после перетаскивания
-  const bulkItems: any[] = []
-  columns.value.forEach((col, colIndex) => {
-    const tasksInCol = getColumnTasks(col.key)
-    tasksInCol.forEach((task: any, taskIndex: number) => {
-      bulkItems.push({
-        task_id: task.id,
-        status: col.key,
-        order: colIndex * 100 + taskIndex
+  if (evt.moved) {
+    const bulkItems: any[] = []
+    columns.value.forEach((col, colIndex) => {
+      const tasksInCol = columnTasks.value[col.key] || []
+      tasksInCol.forEach((task: any, taskIndex: number) => {
+        bulkItems.push({
+          task_id: task.id,
+          status: col.key,
+          order: colIndex * 100 + taskIndex,
+          completed: task.completed
+        })
       })
     })
-  })
-  
-  if (bulkItems.length > 0) {
-    try {
-      await tasksStore.bulkUpdateTasks(bulkItems)
-    } catch (err) {
-      console.error('Failed to bulk update tasks order:', err)
+    if (bulkItems.length > 0) {
+      try {
+        await tasksStore.bulkUpdateTasks(bulkItems)
+      } catch (err) {
+        console.error('Failed to bulk update tasks order:', err)
+      }
     }
   }
 }
@@ -409,6 +425,14 @@ const deleteTask = async (taskId: string) => {
 const toggleTask = async (taskId: string) => {
   try {
     await tasksStore.toggleTask(taskId)
+    const updatedTask = tasksStore.tasks.find((t: any) => t.id === taskId)
+    for (const colKey of Object.keys(columnTasks.value)) {
+      const taskInCol = columnTasks.value[colKey].find((t: any) => t.id === taskId)
+      if (taskInCol && updatedTask) {
+        taskInCol.completed = updatedTask.completed
+        break
+      }
+    }
   } catch (err) {
     console.error('Failed to toggle task:', err)
   }
@@ -433,14 +457,17 @@ const handleKeydown = (event: KeyboardEvent) => {
 /* ─── Base ─────────────────────────────────────────────── */
 .kanban-desk {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   background-color: #050505;
   color: #ffffff;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
 /* ─── Top Bar ───────────────────────────────────────────── */
 .top-bar {
+  flex-shrink: 0;
   margin-top: 5px;
   display: flex;
   justify-content: space-between;
@@ -466,6 +493,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 /* ─── Board Header ──────────────────────────────────────── */
 .board-header {
+  flex-shrink: 0;
   padding: 20px 28px 0;
   display: flex;
   align-items: baseline;
@@ -495,8 +523,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 /* ─── Board Layout ──────────────────────────────────────── */
 .kanban-board {
+  flex: 1;
   padding: 24px 20px;
   overflow-x: auto;
+  overflow-y: auto;
   display: flex;
   gap: 16px;
   align-items: flex-start;
