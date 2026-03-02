@@ -45,7 +45,14 @@
           >
             <div class="event-indicator"></div>
             <div class="event-content">
-              <div class="event-title">{{ event.title }}</div>
+              <div class="event-title">
+                <img 
+                  v-if="event.tagIcon" 
+                  :src="getTagIconPath(event.tagIcon)" 
+                  class="event-tag-icon" 
+                />
+                {{ event.title }}
+              </div>
               <div class="event-time">
                 <img src="@/assets/icon-clock.svg" alt="clock" class="event-time-icon" />
                 {{ formatEventTime(event) }}
@@ -82,6 +89,18 @@ import 'dayjs/locale/ru'
 
 dayjs.locale('ru')
 
+const iconFiles: Record<string, string> = import.meta.glob('@/assets/icon/*.svg', { query: '?url', import: 'default', eager: true }) as any
+
+const getTagIconPath = (iconName: string): string => {
+  // import.meta.glob возвращает ключи в формате /src/assets/icon/filename.svg
+  for (const [path, url] of Object.entries(iconFiles)) {
+    if (path.includes(`/${iconName}.svg`) || path.includes(`/${iconName}`)) {
+      return url
+    }
+  }
+  return ''
+}
+
 interface CalendarEvent {
   id: string | number
   title: string
@@ -91,6 +110,7 @@ interface CalendarEvent {
   priority?: string
   color?: string
   bouncing?: boolean
+  tagIcon?: string
 }
 
 interface WeekDay {
@@ -505,6 +525,16 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   font-size: 22px;
   font-weight: 600;
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.event-tag-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  filter: invert(1);
 }
 
 .event-description {

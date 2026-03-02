@@ -144,7 +144,7 @@ const compactMode = ref(true)
 const showTagsPanel = ref(false)
 
 // Tags methods
-const addTag = async (tag: { name: string; color: string }) => {
+const addTag = async (tag: { name: string; color: string; icon?: string }) => {
   try {
     await tagsStore.createTag(tag)
   } catch (error) {
@@ -170,12 +170,21 @@ const getTagColor = (tagId: string | undefined): string => {
   return tag?.color || '#4a5568'
 }
 
+// Функция для получения иконки тега по ID
+const getTagIcon = (tagId: string | undefined): string | undefined => {
+  if (!tagId) return undefined
+  const tag = tags.value.find(t => t.id === tagId)
+  return tag?.icon
+}
+
 // Events from calendar store (с уже установленными цветами от тегов)
 const events = computed(() => {
   return calendarStore.events.map(event => ({
     ...event,
     // Используем цвет события или цвет тега, если он есть
     color: event.color || getTagColor(event.tag_id),
+    // Иконка тега
+    tagIcon: getTagIcon(event.tag_id),
     // Используем локальное состояние для bounce анимации
     bouncing: bouncingEvents.value.has(String(event.id))
   }))

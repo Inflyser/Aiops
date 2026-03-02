@@ -34,6 +34,11 @@
             @click.stop="$emit('open-event', event)"
           >
             <div class="event-time">{{ formatEventTime(event) }}</div>
+            <img 
+              v-if="event.tagIcon" 
+              :src="getTagIconPath(event.tagIcon)" 
+              class="event-tag-icon" 
+            />
             <div class="event-title">{{ event.title }}</div>
           </div>
         </div>
@@ -49,6 +54,17 @@ import 'dayjs/locale/ru'
 
 dayjs.locale('ru')
 
+const iconFiles: Record<string, string> = import.meta.glob('@/assets/icon/*.svg', { query: '?url', import: 'default', eager: true }) as any
+
+const getTagIconPath = (iconName: string): string => {
+  for (const [path, url] of Object.entries(iconFiles)) {
+    if (path.includes(`/${iconName}.svg`) || path.includes(`/${iconName}`)) {
+      return url
+    }
+  }
+  return ''
+}
+
 interface CalendarEvent {
   id: string | number
   title: string
@@ -58,6 +74,7 @@ interface CalendarEvent {
   location?: string
   priority?: string
   color?: string
+  tagIcon?: string
 }
 
 const props = defineProps<{
@@ -295,6 +312,14 @@ const formatEventTime = (event: CalendarEvent) => {
 .event-time {
   font-size: 12px;
   opacity: 0.8;
+}
+
+.event-tag-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  filter: invert(1);
+  margin-right: 4px;
 }
 
 .event-title {

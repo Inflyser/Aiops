@@ -36,6 +36,11 @@
             :style="{ backgroundColor: event.color || '#4a5568' }"
             @click.stop="$emit('open-event', event)"
           >
+            <img 
+              v-if="event.tagIcon" 
+              :src="getTagIconPath(event.tagIcon)" 
+              class="event-tag-icon" 
+            />
             {{ event.title }}
           </div>
         </div>
@@ -51,6 +56,17 @@ import 'dayjs/locale/ru'
 
 dayjs.locale('ru')
 
+const iconFiles: Record<string, string> = import.meta.glob('@/assets/icon/*.svg', { query: '?url', import: 'default', eager: true }) as any
+
+const getTagIconPath = (iconName: string): string => {
+  for (const [path, url] of Object.entries(iconFiles)) {
+    if (path.includes(`/${iconName}.svg`) || path.includes(`/${iconName}`)) {
+      return url
+    }
+  }
+  return ''
+}
+
 interface CalendarEvent {
   id: string | number
   title: string
@@ -60,6 +76,7 @@ interface CalendarEvent {
   location?: string
   priority?: string
   color?: string
+  tagIcon?: string
 }
 
 interface MonthDay {
@@ -227,6 +244,14 @@ const getEventsForDay = (date: string) => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.event-tag-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  filter: invert(1);
+  margin-right: 3px;
 }
 
 .month-event {

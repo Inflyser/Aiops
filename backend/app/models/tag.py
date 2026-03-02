@@ -8,6 +8,7 @@ class Tag(Base):
     id = Column(String, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     color = Column(String(7), nullable=False, default="#3B82F6")  # HEX цвет
+    icon = Column(String(100), nullable=True)  # имя файла иконки
     
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     

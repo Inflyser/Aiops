@@ -49,6 +49,11 @@
               :class="{ selected: selectedTagId === tag.id }"
               @click="selectTag(tag)"
             >
+              <img 
+                v-if="tag.icon" 
+                :src="getIconPath(tag.icon)" 
+                class="tag-icon"
+              />
               <span class="tag-color" :style="{ backgroundColor: tag.color }"></span>
               <span class="tag-name">{{ tag.name }}</span>
             </div>
@@ -151,10 +156,23 @@ import { ref, computed, watch } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
+const iconFiles = ref<{ name: string; path: string }[]>([])
+const iconUrls = import.meta.glob('@/assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
+iconFiles.value = Object.entries(iconUrls).map(([path, url]) => {
+  const name = path.split('/').pop()?.replace('.svg', '') || ''
+  return { name, path: url as string }
+})
+
+const getIconPath = (iconName: string) => {
+  const icon = iconFiles.value.find(i => i.name === iconName)
+  return icon?.path || ''
+}
+
 interface Tag {
   id: string
   name: string
   color: string
+  icon?: string
 }
 
 interface EventFormData {
@@ -596,6 +614,13 @@ const selectTag = (tag: Tag) => {
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.tag-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  filter: invert(1);
 }
 
 .tag-name {

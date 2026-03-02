@@ -32,6 +32,7 @@ def create_tag(
         id=str(uuid4()),
         name=tag_in.name,
         color=tag_in.color,
+        icon=tag_in.icon,
         user_id=current_user.id
     )
     db.add(tag)

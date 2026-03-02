@@ -6,6 +6,7 @@ interface Tag {
   id: string
   name: string
   color: string
+  icon?: string
   user_id: string
 }
 
@@ -35,7 +36,7 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  const createTag = async (tagData: { name: string; color: string }) => {
+  const createTag = async (tagData: { name: string; color: string; icon?: string }) => {
     loading.value = true
     error.value = null
     try {
@@ -51,7 +52,7 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  const updateTag = async (tagId: string, tagData: { name?: string; color?: string }) => {
+  const updateTag = async (tagId: string, tagData: { name?: string; color?: string; icon?: string }) => {
     loading.value = true
     error.value = null
     try {

@@ -191,18 +191,9 @@ const collapsedColumns = reactive<Record<string, boolean>>({})
 const columnTasks = ref<Record<string, any[]>>({})
 
 watch(() => tasksStore.tasks, () => {
-  const currentTasks = columnTasks.value
-  const newColumnTasks: Record<string, any[]> = {}
-  
   columns.value.forEach(col => {
-    if (currentTasks[col.key] && currentTasks[col.key].length > 0) {
-      newColumnTasks[col.key] = currentTasks[col.key]
-    } else {
-      newColumnTasks[col.key] = tasksStore.tasks.filter((t: any) => t.status === col.key)
-    }
+    columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.status === col.key)
   })
-  
-  columnTasks.value = newColumnTasks
 }, { deep: true })
 
 // Ref for column order (drag and drop) - синхронизирован с store

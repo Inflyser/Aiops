@@ -11,6 +11,12 @@
         :key="tag.id" 
         class="tag-item"
       >
+        <img 
+          v-if="tag.icon && getIconPath(tag.icon)" 
+          :src="getIconPath(tag.icon)" 
+          class="tag-icon"
+        />
+        <span v-else class="tag-icon-placeholder"></span>
         <span class="tag-color" :style="{ backgroundColor: tag.color }"></span>
         <span class="tag-name">{{ tag.name }}</span>
         <button class="delete-tag-btn" @click="$emit('delete-tag', tag.id)">×</button>
@@ -28,18 +34,51 @@
         placeholder="Название тега"
         class="tag-input"
       />
-      <input 
-        v-model="newTagColor" 
-        type="color" 
-        class="color-input"
-        title="Выберите цвет"
-      />
+      
+      <div class="form-row">
+        <label class="form-label">Цвет</label>
+        <div class="color-picker-wrap">
+          <input 
+            v-model="newTagColor" 
+            type="color" 
+            class="color-input"
+            title="Выберите цвет"
+          />
+          <span class="color-hex">{{ newTagColor }}</span>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <label class="form-label">Иконка</label>
+        <div class="icon-selector">
+          <button 
+            type="button"
+            class="icon-btn"
+            :class="{ selected: !newTagIcon }"
+            @click="selectIcon(undefined)"
+            title="Без иконки"
+          >
+            —
+          </button>
+          <button 
+            v-for="icon in iconFiles" 
+            :key="icon.name"
+            type="button"
+            class="icon-btn"
+            :class="{ selected: newTagIcon === icon.name }"
+            @click="selectIcon(icon.name)"
+          >
+            <img :src="icon.path" />
+          </button>
+        </div>
+      </div>
+      
       <button 
         class="add-tag-btn" 
         @click="handleAddTag"
         :disabled="!newTagName.trim()"
       >
-        +
+        Добавить тег
       </button>
     </div>
   </div>
@@ -52,6 +91,7 @@ interface Tag {
   id: string
   name: string
   color: string
+  icon?: string
 }
 
 defineProps<{
@@ -60,22 +100,46 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'add-tag', tag: { name: string; color: string }): void
+  (e: 'add-tag', tag: { name: string; color: string; icon?: string }): void
   (e: 'delete-tag', tagId: string): void
 }>()
 
 const newTagName = ref('')
 const newTagColor = ref('#3B82F6')
+const newTagIcon = ref<string | undefined>(undefined)
+
+const iconFiles = ref<{ name: string; path: string }[]>([])
+
+const loadIcons = async () => {
+  const icons = import.meta.glob('@/assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
+  iconFiles.value = Object.entries(icons).map(([path, url]) => {
+    const name = path.split('/').pop()?.replace('.svg', '') || ''
+    return { name, path: url as string }
+  })
+}
+
+loadIcons()
+
+const selectIcon = (iconName: string | undefined) => {
+  newTagIcon.value = iconName
+}
 
 const handleAddTag = () => {
   if (newTagName.value.trim()) {
     emit('add-tag', { 
       name: newTagName.value.trim(), 
-      color: newTagColor.value 
+      color: newTagColor.value,
+      icon: newTagIcon.value
     })
     newTagName.value = ''
     newTagColor.value = '#3B82F6'
+    newTagIcon.value = undefined
   }
+}
+
+const getIconPath = (iconName: string) => {
+  const icon = iconFiles.value.find(i => i.name === iconName)
+  return icon?.path || ''
 }
 </script>
 
@@ -84,7 +148,7 @@ const handleAddTag = () => {
   position: absolute;
   top: 60px;
   right: 20px;
-  width: 280px;
+  width: 320px;
   background: #1a1a1a;
   border: 1px solid #333;
   border-radius: 12px;
@@ -92,6 +156,9 @@ const handleAddTag = () => {
   z-index: 100;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   animation: slideIn 0.25s ease-out;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes slideIn {
@@ -136,9 +203,10 @@ const handleAddTag = () => {
 }
 
 .tags-list {
-  max-height: 240px;
+  flex: 1;
   overflow-y: auto;
   margin-bottom: 16px;
+  max-height: 200px;
 }
 
 .tag-item {
@@ -160,6 +228,20 @@ const handleAddTag = () => {
   height: 16px;
   border-radius: 4px;
   margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.tag-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.tag-icon-placeholder {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
   flex-shrink: 0;
 }
 
@@ -191,18 +273,21 @@ const handleAddTag = () => {
 
 .add-tag-form {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #333;
 }
 
 .tag-input {
-  flex: 1;
+  width: 100%;
   background: #252525;
   border: 1px solid #333;
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   color: #fff;
   font-size: 14px;
+  box-sizing: border-box;
 }
 
 .tag-input:focus {
@@ -214,9 +299,28 @@ const handleAddTag = () => {
   color: #666;
 }
 
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.color-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .color-input {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -233,18 +337,58 @@ const handleAddTag = () => {
   border-radius: 6px;
 }
 
-.add-tag-btn {
-  width: 36px;
-  height: 36px;
-  background: #3B82F6;
-  border: none;
+.color-hex {
+  font-size: 13px;
+  color: #888;
+  font-family: monospace;
+}
+
+.icon-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #333;
   border-radius: 6px;
-  color: #fff;
-  font-size: 20px;
+  background: #252525;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 6px;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: #333;
+}
+
+.icon-btn.selected {
+  border-color: #3B82F6;
+  background: #3B82F620;
+}
+
+.icon-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: invert(1);
+}
+
+.add-tag-btn {
+  width: 100%;
+  padding: 12px;
+  background: #3B82F6;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
   transition: background 0.2s;
 }
 
