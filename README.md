@@ -24,10 +24,6 @@ version 1.1
 Запуск проект:
 docker-compose up --build  
 
-<img width="1919" height="1031" alt="image" src="https://github.com/user-attachments/assets/e038521b-8b1e-4d26-b9d6-e0a05c55fcc6" />
-
-
-<img width="1919" height="1040" alt="Снимок экрана 2026-02-28 144242" src="https://github.com/user-attachments/assets/ad542222-e6db-45db-92d5-e6724a4a3217" />
-
-
-<img width="1918" height="1038" alt="Снимок экрана 2026-02-28 144305" src="https://github.com/user-attachments/assets/5659228a-b05c-48a5-9bbc-0d05dd62f9fc" />
+<img width="1919" height="1079" alt="Снимок экрана 2026-03-03 210143" src="https://github.com/user-attachments/assets/a07753ea-4e4e-4f5f-952a-dd5fb242b55b" />
+<img width="1919" height="1079" alt="Снимок экрана 2026-03-03 210218" src="https://github.com/user-attachments/assets/5676783d-8fb1-4e36-96ae-aefcc0c000b7" />
+<img width="1919" height="1079" alt="Снимок экрана 2026-03-03 210201" src="https://github.com/user-attachments/assets/30d47d51-807f-4899-8ca4-b4dd37bee845" />
