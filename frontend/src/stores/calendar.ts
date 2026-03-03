@@ -16,6 +16,11 @@ interface CalendarEvent {
   user_id: string
   created_at: string
   updated_at?: string
+  recurrence_type?: string
+  recurrence_days?: string
+  recurrence_end_date?: string
+  recurrence_count?: number
+  original_id?: string
 }
 
 // Для Ctrl+Z (история действий)

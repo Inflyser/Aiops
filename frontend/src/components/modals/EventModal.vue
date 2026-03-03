@@ -81,6 +81,41 @@
           </div>
         </div>
         
+        <!-- Повторение -->
+        <div class="form-group">
+          <label class="form-label">Повторение</label>
+          <div class="recurrence-options">
+            <select v-model="formData.recurrenceType" class="recurrence-select">
+              <option :value="undefined">Не повторяется</option>
+              <option value="weekly">Еженедельно</option>
+            </select>
+          </div>
+          
+          <!-- Выбор дней недели -->
+          <div v-if="formData.recurrenceType === 'weekly'" class="recurrence-days">
+            <button 
+              v-for="(day, index) in weekDaysFull" 
+              :key="index"
+              type="button"
+              class="day-btn"
+              :class="{ selected: isDaySelected(index) }"
+              @click="toggleDay(index)"
+            >
+              {{ day }}
+            </button>
+          </div>
+          
+          <!-- Дата окончания повторения -->
+          <div v-if="formData.recurrenceType === 'weekly'" class="recurrence-end">
+            <label class="small-label">Повторять до:</label>
+            <input 
+              type="date" 
+              v-model="formData.recurrenceEndDate" 
+              class="recurrence-end-input"
+            >
+          </div>
+        </div>
+        
         <!-- Разделитель -->
         <div class="divider"></div>
         
@@ -184,6 +219,9 @@ interface EventFormData {
   priority: string
   color: string
   tagId?: string
+  recurrenceType?: string
+  recurrenceDays?: string
+  recurrenceEndDate?: string
 }
 
 interface CalendarEvent {
@@ -195,6 +233,9 @@ interface CalendarEvent {
   priority?: string
   color?: string
   tagId?: string
+  recurrence_type?: string
+  recurrence_days?: string
+  recurrence_end_date?: string
 }
 
 const props = defineProps<{
@@ -213,6 +254,33 @@ defineEmits<{
 const selectedTagId = ref<string | null>(null)
 const calendarMonth = ref(dayjs())
 const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const weekDaysFull = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+const selectedDays = ref<number[]>([])
+
+const isDaySelected = (dayIndex: number) => {
+  return selectedDays.value.includes(dayIndex)
+}
+
+const toggleDay = (dayIndex: number) => {
+  const index = selectedDays.value.indexOf(dayIndex)
+  if (index === -1) {
+    selectedDays.value.push(dayIndex)
+  } else {
+    selectedDays.value.splice(index, 1)
+  }
+  // Обновляем formData.recurrenceDays
+  props.formData.recurrenceDays = selectedDays.value.join(',')
+}
+
+// Watch для обновления selectedDays при изменении formData
+watch(() => props.formData.recurrenceDays, (newVal) => {
+  if (newVal) {
+    selectedDays.value = newVal.split(',').map(d => parseInt(d)).filter(d => !isNaN(d))
+  } else {
+    selectedDays.value = []
+  }
+})
 
 // Header date/time display: "22 февраля, 09:00"
 const headerDateTime = computed(() => {
@@ -338,13 +406,28 @@ const selectTag = (tag: Tag) => {
 
 .modal-content {
   background-color: #121212;
-  padding: 30px;
-  border-radius: 35px;
+  padding: 20px;
+  border-radius: 25px;
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   position: relative;
   border: 1px solid #444;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
 }
 
 @keyframes slideUp {
@@ -372,27 +455,27 @@ const selectTag = (tag: Tag) => {
 }
 
 .modal-content h2 {
-  font-size: 20px;
+  font-size: 16px;
   text-align: center;
   display: flex;
   color: #ffffffd8;
-  gap: 15px;
+  gap: 10px;
 }
 
 .header-icon {
-  width: 30px;
-  height: 30px;
-  padding: 0 0 8px 0;
+  width: 24px;
+  height: 24px;
+  padding: 0 0 4px 0;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
+  margin-bottom: 4px;
+  font-size: 11px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -401,13 +484,13 @@ const selectTag = (tag: Tag) => {
 .form-group input,
 .form-group textarea {
   width: 100%;
-  padding: 12px;
+  padding: 8px 10px;
   background-color: #2a2a2a;
   border: 1px solid #444;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-family: inherit;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .form-group textarea {
@@ -437,26 +520,101 @@ const selectTag = (tag: Tag) => {
   font-size: 16px;
 }
 
+.recurrence-options {
+  margin-bottom: 10px;
+}
+
+.recurrence-select {
+  width: 100%;
+  padding: 10px;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  color: #fff;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.recurrence-days {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.day-btn {
+  width: 32px;
+  height: 28px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.day-btn:hover {
+  background: #333;
+  color: #fff;
+}
+
+.day-btn.selected {
+  background: #3B82F6;
+  border-color: #3B82F6;
+  color: #fff;
+}
+
+.recurrence-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.small-label {
+  font-size: 12px;
+  color: #888;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.recurrence-end-input {
+  padding: 8px;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  color: #fff;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .divider {
   height: 1px;
   background-color: #333;
-  margin: 20px -30px 20px -30px;
+  margin: 12px -20px 12px -20px;
 }
 
 .month-navigator {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .nav-btn {
   background: none;
   border: none;
   color: #888;
-  font-size: 18px;
+  font-size: 14px;
   cursor: pointer;
-  padding: 5px 10px;
+  padding: 4px 8px;
 }
 
 .nav-btn:hover {
@@ -464,7 +622,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .month-year {
-  font-size: 18px;
+  font-size: 14px;
   color: #fff;
   text-transform: capitalize;
 }
@@ -479,11 +637,11 @@ const selectTag = (tag: Tag) => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .weekdays span {
-  font-size: 16px;
+  font-size: 11px;
   color: #666;
   text-transform: uppercase;
 }
@@ -491,7 +649,7 @@ const selectTag = (tag: Tag) => {
 .calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
+  gap: 2px;
 }
 
 .calendar-day {
@@ -502,10 +660,11 @@ const selectTag = (tag: Tag) => {
   background: none;
   border: none;
   color: #ddd;
-  font-size: 16px;
+  font-size: 12px;
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: 6px;
   transition: all 0.2s;
+  padding: 2px;
 }
 
 .calendar-day:hover {
@@ -532,11 +691,11 @@ const selectTag = (tag: Tag) => {
 }
 
 .btn {
-  padding: 12px 12%;
+  padding: 10px 12%;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   transition: opacity 0.2s;
 }
 

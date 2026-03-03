@@ -208,7 +208,10 @@ const eventForm = ref({
   location: '',
   priority: 'medium',
   color: '#4a5568',
-  tagId: undefined as string | undefined
+  tagId: undefined as string | undefined,
+  recurrenceType: undefined as string | undefined,
+  recurrenceDays: undefined as string | undefined,
+  recurrenceEndDate: undefined as string | undefined
 })
 
 // Computed week days
@@ -294,7 +297,10 @@ const handleDayHourClick = (data: { hour: number; date: dayjs.Dayjs }) => {
     location: '',
     priority: 'medium',
     color: '#4a5568',
-    tagId: undefined
+    tagId: undefined,
+    recurrenceType: undefined,
+    recurrenceDays: undefined,
+    recurrenceEndDate: undefined
   }
   
   editingEvent.value = null
@@ -315,7 +321,10 @@ const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
     location: '',
     priority: 'medium',
     color: '#4a5568',
-    tagId: undefined
+    tagId: undefined,
+    recurrenceType: undefined,
+    recurrenceDays: undefined,
+    recurrenceEndDate: undefined
   }
   
   editingEvent.value = null
@@ -332,7 +341,10 @@ const handleMonthDayClick = (day: any) => {
     location: '',
     priority: 'medium',
     color: '#4a5568',
-    tagId: undefined
+    tagId: undefined,
+    recurrenceType: undefined,
+    recurrenceDays: undefined,
+    recurrenceEndDate: undefined
   }
   
   editingEvent.value = null
@@ -350,7 +362,10 @@ const handleMiniDayClick = (day: any) => {
       location: '',
       priority: 'medium',
       color: '#4a5568',
-      tagId: undefined
+      tagId: undefined,
+      recurrenceType: undefined,
+      recurrenceDays: undefined,
+      recurrenceEndDate: undefined
     }
     
     editingEvent.value = null
@@ -372,7 +387,10 @@ const openEventModal = (event: any) => {
     location: event.location || '',
     priority: event.priority || 'medium',
     color: event.color || '#4a5568',
-    tagId: event.tag_id || event.tagId || undefined
+    tagId: event.tag_id || event.tagId || undefined,
+    recurrenceType: event.recurrence_type || undefined,
+    recurrenceDays: event.recurrence_days || undefined,
+    recurrenceEndDate: event.recurrence_end_date ? dayjs(event.recurrence_end_date).format('YYYY-MM-DD') : undefined
   }
   
   showModal.value = true
@@ -390,7 +408,10 @@ const closeModal = () => {
     location: '',
     priority: 'medium',
     color: '#4a5568',
-    tagId: undefined
+    tagId: undefined,
+    recurrenceType: undefined,
+    recurrenceDays: undefined,
+    recurrenceEndDate: undefined
   }
 }
 
@@ -403,7 +424,7 @@ const saveEvent = async () => {
     ? getTagColor(eventForm.value.tagId)
     : '#4a5568'
   
-  const eventData = {
+  const eventData: any = {
     title: eventForm.value.title,
     description: eventForm.value.description || undefined,
     start: start.toISOString(),
@@ -412,17 +433,28 @@ const saveEvent = async () => {
     priority: eventForm.value.priority,
     color: eventColor,
     all_day: false,
-    tag_id: eventForm.value.tagId  // Используем tag_id для бэкенда
+    tag_id: eventForm.value.tagId
+  }
+  
+  // Добавляем данные о повторении
+  if (eventForm.value.recurrenceType) {
+    eventData.recurrence_type = eventForm.value.recurrenceType
+    eventData.recurrence_days = eventForm.value.recurrenceDays
+    if (eventForm.value.recurrenceEndDate) {
+      eventData.recurrence_end_date = dayjs(eventForm.value.recurrenceEndDate).toISOString()
+    }
   }
   
   if (editingEvent.value) {
     // Сохраняем старое событие для отмены
     const oldEvent = { ...editingEvent.value }
-    await calendarStore.updateEvent(editingEvent.value.id, eventData)
+    // Используем original_id если есть (для повторяющихся событий)
+    const eventIdToUpdate = editingEvent.value.original_id || editingEvent.value.id
+    await calendarStore.updateEvent(eventIdToUpdate, eventData)
     // Добавляем в историю
     calendarStore.addToHistory({
       type: 'update',
-      eventId: editingEvent.value.id,
+      eventId: eventIdToUpdate,
       oldEvent,
       newEvent: { ...editingEvent.value, ...eventData }
     })
@@ -444,11 +476,13 @@ const deleteEvent = async () => {
   if (editingEvent.value) {
     // Сохраняем событие для отмены
     const deletedEvent = { ...editingEvent.value }
-    await calendarStore.deleteEvent(editingEvent.value.id)
+    // Используем original_id если есть (для повторяющихся событий)
+    const eventIdToDelete = editingEvent.value.original_id || editingEvent.value.id
+    await calendarStore.deleteEvent(eventIdToDelete)
     // Добавляем в историю
     calendarStore.addToHistory({
       type: 'delete',
-      eventId: deletedEvent.id,
+      eventId: eventIdToDelete,
       oldEvent: deletedEvent
     })
     closeModal()
