@@ -531,10 +531,9 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 }
 
 .event-tag-icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
-  filter: invert(1);
 }
 
 .event-description {
