@@ -306,8 +306,9 @@ const removeColumn = async (colKey: string) => {
   }
 }
 
-const canRemoveColumn = (_colKey: string) => {
-  return kanbanStore.columns.length > 1
+const canRemoveColumn = (colKey: string) => {
+  const column = kanbanStore.columns.find(c => c.id === colKey)
+  return kanbanStore.columns.length > 1 && !column?.is_static
 }
 
 const addTask = async (colKey: string) => {

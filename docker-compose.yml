@@ -47,6 +47,13 @@ services:
       - backend
     ports:
       - "8080:8080"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tsconfig.tsbuildinfo:/app/tsconfig.tsbuildinfo
+      - ./frontend/package.json:/app/package.json
     networks:
       - app-network
 

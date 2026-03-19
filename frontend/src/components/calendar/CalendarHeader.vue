@@ -5,9 +5,11 @@
       <button class="nav-btn1" @click="$emit('prev-week')"><</button>
       <button class="nav-btn1" @click="$emit('next-week')">></button>
     </div>
-    <div class="days-header">
-      <div 
-        v-for="day in weekDays" 
+    <div class="days-header" :style="{ width: inboxPanelOpen ? 'calc(100% - 400px)' : '100%' }">
+      <!-- Empty column for time labels -->
+      <div class="time-header"></div>
+      <div
+        v-for="day in weekDays"
         :key="day.date"
         class="day-header"
         :class="{ 'is-today': day.isToday }"
@@ -28,6 +30,7 @@ dayjs.locale('ru')
 
 const props = defineProps<{
   currentWeekStart: dayjs.Dayjs
+  inboxPanelOpen?: boolean
 }>()
 
 defineEmits<{
@@ -59,10 +62,9 @@ const monthYear = computed(() => {
 
 <style scoped>
 .calendar-header {
-  padding: 20px;
-  border-bottom: 1px solid #80808021;
+  padding: 0;
   flex-shrink: 0;
-
+  width: 100%;
 }
 
 .calendar-header2 {
@@ -89,14 +91,25 @@ const monthYear = computed(() => {
 
 .days-header {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0px;
-  margin-bottom: 10px;
-  margin-left: 60px;
+  grid-template-columns: 90px repeat(7, 1fr);
+  box-sizing: border-box;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+.time-header {
+  width: 90px;
+  box-sizing: border-box;
 }
 
 .day-header {
   text-align: center;
+  box-sizing: border-box;
+  border-right: 1px solid #33333357;
+}
+
+.day-header:last-child {
+  border-right: none;
 }
 
 .day-name {

@@ -12,12 +12,12 @@
         </div>
       </div>
 
-      <div class="days-container" :style="{ minHeight: calendarHeight + 'px' }">
-        <div 
-          v-for="day in weekDays" 
+      <div class="days-container" :style="{ minHeight: calendarHeight + 'px', width: inboxPanelOpen ? 'calc(100% - 400px)' : '100%' }">
+        <div
+          v-for="day in weekDays"
           :key="day.date"
           class="day-column"
-          :class="{ 
+          :class="{
             'current-day': isCurrentDay(day),
             'drag-over': dragOverDay === day.date
           }"
@@ -38,10 +38,13 @@
             class="event-block"
             :class="{ 'dragging': draggedEvent?.id === event.id, 'bounce': event.bouncing }"
             :style="getEventStyle(event, day.date)"
+            :data-event-id="event.id"
             draggable="true"
-            @click.stop="$emit('open-event', event)"
+            @click.stop="handleEventClick(event)"
             @dragstart="handleDragStart($event, event)"
             @dragend="handleDragEnd"
+            @dragover="handleTaskDragOver($event)"
+            @drop="handleTaskDrop($event, day)"
           >
             <div class="event-indicator"></div>
             <div class="event-content">
@@ -58,6 +61,10 @@
                 {{ formatEventTime(event) }}
               </div>
               <div v-if="event.description" class="event-description">{{ event.description }}</div>
+              <div v-if="event.task_count && event.task_count > 0" class="event-tasks-indicator" @click.stop="handleEventClick(event)">
+                <span class="tasks-icon">•</span>
+                <span class="tasks-count">{{ event.task_count }} {{ getTaskWord(event.task_count) }}</span>
+              </div>
             </div>
             <button 
               class="event-menu-btn"
@@ -101,6 +108,13 @@ const getTagIconPath = (iconName: string): string => {
   return ''
 }
 
+interface WeekDay {
+  date: string
+  shortName: string
+  number: number
+  fullDate: dayjs.Dayjs
+}
+
 interface CalendarEvent {
   id: string | number
   title: string
@@ -111,27 +125,25 @@ interface CalendarEvent {
   color?: string
   bouncing?: boolean
   tagIcon?: string
-}
-
-interface WeekDay {
-  date: string
-  shortName: string
-  number: number
-  fullDate: dayjs.Dayjs
+  task_ids?: string[]
+  task_count?: number
 }
 
 const props = defineProps<{
   weekDays: WeekDay[]
   events: CalendarEvent[]
   compactMode: boolean
+  inboxPanelOpen: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'day-click', data: { day: WeekDay; dateTime: dayjs.Dayjs }): void
   (e: 'open-event', event: CalendarEvent): void
+  (e: 'open-event-tasks', event: CalendarEvent): void
   (e: 'event-drop', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'event-move-to-next-week', event: CalendarEvent): void
+  (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
 }>()
 
 // Drag and drop state
@@ -139,6 +151,11 @@ const draggedEvent = ref<CalendarEvent | null>(null)
 const dragOverDay = ref<string | null>(null)
 
 const isAltPressed = ref(false)
+
+// Double click detection
+const lastClickEvent = ref<{ event: CalendarEvent; time: number } | null>(null)
+const clickTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+const DOUBLE_CLICK_DELAY = 300 // ms
 
 const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
   draggedEvent.value = calendarEvent
@@ -216,6 +233,83 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
   
   draggedEvent.value = null
   isAltPressed.value = false
+}
+
+// Task drag and drop handlers
+const handleTaskDragOver = (event: DragEvent) => {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const handleTaskDrop = (event: DragEvent, _day: WeekDay) => {
+  event.preventDefault()
+  event.stopPropagation()
+  
+  try {
+    const taskData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
+    
+    // Находим событие, над которым была сброшена задача
+    const targetElement = event.target as HTMLElement
+    const eventBlock = targetElement.closest('.event-block')
+    
+    if (eventBlock) {
+      // Находим событие по его ID
+      const eventId = eventBlock.getAttribute('data-event-id')
+      const targetEvent = props.events.find(e => String(e.id) === eventId)
+      
+      if (targetEvent) {
+        emit('task-drop-to-event', { task: taskData, event: targetEvent })
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing task data:', error)
+  }
+}
+
+// Get correct word form for task count
+const getTaskWord = (count: number): string => {
+  const lastTwo = count % 100
+  const lastOne = count % 10
+  
+  if (lastTwo >= 11 && lastTwo <= 14) return 'задач'
+  if (lastOne === 1) return 'задача'
+  if (lastOne >= 2 && lastOne <= 4) return 'задачи'
+  return 'задач'
+}
+
+// Handle event click with double click detection
+const handleEventClick = (event: CalendarEvent) => {
+  const now = Date.now()
+  
+  // Clear previous timeout if exists
+  if (clickTimeout.value) {
+    clearTimeout(clickTimeout.value)
+    clickTimeout.value = null
+  }
+  
+  // Check if this is a double click
+  if (lastClickEvent.value &&
+      lastClickEvent.value.event.id === event.id &&
+      now - lastClickEvent.value.time < DOUBLE_CLICK_DELAY) {
+    // Double click detected - open event modal for editing
+    emit('open-event', event)
+    lastClickEvent.value = null
+  } else {
+    // Store click info and wait to see if it's a single or double click
+    lastClickEvent.value = { event, time: now }
+    
+    // Set timeout to handle single click
+    clickTimeout.value = setTimeout(() => {
+      // Single click - check if event has tasks
+      if (event.task_count && event.task_count > 0) {
+        emit('open-event-tasks', event)
+      }
+      lastClickEvent.value = null
+      clickTimeout.value = null
+    }, DOUBLE_CLICK_DELAY)
+  }
 }
 
 // Current time for the red line
@@ -504,6 +598,11 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 .event-content {
   flex: 1;
   overflow: hidden;
+  pointer-events: none;
+}
+
+.event-content * {
+  pointer-events: none;
 }
 
 .event-time {
@@ -543,6 +642,35 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   line-height: 1.3;
 }
 
+.event-tasks-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  pointer-events: auto;
+}
+
+.event-tasks-indicator:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.tasks-icon {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.tasks-count {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .event-location {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
@@ -559,6 +687,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   cursor: pointer;
   padding: 4px;
   opacity: 0;
+  pointer-events: auto;
   transition: opacity 0.2s;
   z-index: 15;
 }

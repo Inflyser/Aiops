@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -10,6 +10,7 @@ class KanbanColumn(Base):
     title = Column(String(255), nullable=False)
     order = Column(Integer, default=0)
     color = Column(String(7), default="#555555")  # HEX цвет
+    is_static = Column(Boolean, default=False)  # Статичная колонка (не может быть удалена)
     
     user_id = Column(String, ForeignKey("users.id"))
     

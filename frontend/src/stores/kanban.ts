@@ -7,6 +7,7 @@ interface KanbanColumn {
   title: string
   order: number
   color: string
+  is_static: boolean
   user_id: string
 }
 

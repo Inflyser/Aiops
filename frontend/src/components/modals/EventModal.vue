@@ -15,14 +15,15 @@
 
       <div class="divider"></div>
       
-      <form @submit.prevent="$emit('save')">
+      <form @submit.prevent="viewMode !== 'view' ? $emit('save') : null">
         <!-- Название задачи -->
         <div class="form-group">
           
-          <input 
-            type="text" 
-            id="eventTitle" 
-            v-model="formData.title" 
+          <input
+            type="text"
+            id="eventTitle"
+            v-model="formData.title"
+            :disabled="viewMode === 'view'"
             required
             placeholder="Введите название задачи"
           >
@@ -30,9 +31,10 @@
         
         <!-- Описание -->
         <div class="form-group">
-          <textarea 
-            id="eventDescription" 
+          <textarea
+            id="eventDescription"
             v-model="formData.description"
+            :disabled="viewMode === 'view'"
             placeholder="Добавьте описание задачи"
             rows="2"
           ></textarea>
@@ -161,25 +163,30 @@
         <!-- Кнопки -->
         <div class="form-actions">
           
-          
-          <button 
-            v-if="editingEvent"
-            type="button" 
-            class="btn-icon delete-btn" 
+          <button
+            v-if="editingEvent && viewMode !== 'view'"
+            type="button"
+            class="btn-icon delete-btn"
             @click="$emit('delete')"
             title="Удалить"
           >
             <img src="@/assets/icon-delete.svg" alt="Удалить" />
           </button>
           
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
+          <button
+            type="button"
+            class="btn btn-secondary"
             @click="$emit('close')"
           >
-            Отмена
+            {{ viewMode === 'view' ? 'Закрыть' : 'Отмена' }}
           </button>
-          <button type="submit" class="btn btn-primary">Сохранить</button>
+          <button
+            v-if="viewMode !== 'view'"
+            type="submit"
+            class="btn btn-primary"
+          >
+            Сохранить
+          </button>
         </div>
       </form>
     </div>
@@ -243,6 +250,7 @@ const props = defineProps<{
   editingEvent: CalendarEvent | null
   formData: EventFormData
   availableTags: Tag[]
+  viewMode?: 'view' | 'edit' | null
 }>()
 
 defineEmits<{
@@ -256,6 +264,7 @@ const calendarMonth = ref(dayjs())
 const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const weekDaysFull = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
+// Задачи события
 const selectedDays = ref<number[]>([])
 
 const isDaySelected = (dayIndex: number) => {
@@ -793,5 +802,81 @@ const selectTag = (tag: Tag) => {
   padding: 10px;
   text-align: center;
   width: 100%;
+}
+
+/* Event Tasks Styles */
+.event-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.event-task-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  gap: 10px;
+}
+
+.task-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #666;
+  border-radius: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+}
+
+.task-checkbox:hover {
+  border-color: #4A90E2;
+}
+
+.task-checkbox .checked {
+  color: #4A90E2;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  color: #fff;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.task-description {
+  color: #888;
+  font-size: 12px;
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+.remove-task-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-task-btn:hover {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
 }
 </style>

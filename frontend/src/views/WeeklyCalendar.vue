@@ -1,12 +1,14 @@
 <template>
   <div class="weekly-calendar">
     <!-- Top Bar -->
-    <CalendarTopBar 
+    <CalendarTopBar
       :compact-mode="compactMode"
       :current-view="currentView"
       :show-tags-panel="showTagsPanel"
+      :show-inbox-panel="showInboxPanel"
       @toggle-compact="compactMode = $event"
       @toggle-tags="showTagsPanel = !showTagsPanel"
+      @toggle-inbox="showInboxPanel = !showInboxPanel"
     />
 
     <!-- Tags Panel -->
@@ -28,22 +30,28 @@
     <Transition name="slide-fade" mode="out-in">
       <div v-if="currentView === 'week'" key="week" class="week-view-container">
         <!-- Calendar Header -->
-        <CalendarHeader 
-          :current-week-start="currentWeekStart"
-          @prev-week="lastWeek"
-          @next-week="nextWeek"
-        />
+        <div class="calendar-header-with-inbox">
+          <CalendarHeader
+            :current-week-start="currentWeekStart"
+            :inbox-panel-open="showInboxPanel"
+            @prev-week="lastWeek"
+            @next-week="nextWeek"
+          />
+        </div>
 
         <!-- Calendar Grid -->
-        <WeekView 
+        <WeekView
           :week-days="weekDays"
           :events="events"
           :compact-mode="compactMode"
+          :inbox-panel-open="showInboxPanel"
           @day-click="handleWeekDayClick"
           @open-event="openEventModal"
+          @open-event-tasks="openEventTasksModal"
           @event-drop="handleEventDrop"
           @event-copy="handleEventCopy"
           @event-move-to-next-week="handleMoveToNextWeek"
+          @task-drop-to-event="handleTaskDropToEvent"
         />
       </div>
 
@@ -59,19 +67,20 @@
 
       <!-- Month View -->
       <div v-else-if="currentView === 'month'" key="month">
-        <MonthView 
+        <MonthView
           :current-month="currentMonth"
           :events="events"
           @prev-month="prevMonth"
           @next-month="nextMonth"
           @day-click="handleMonthDayClick"
           @open-event="openEventModal"
+          @open-event-tasks="openEventTasksModal"
         />
       </div>
 
       <!-- Day View -->
       <div v-else-if="currentView === 'day'" key="day" class="day-view-container" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
-        <DayView 
+        <DayView
           :current-day="currentDay"
           :events="dayEvents"
           :compact-mode="compactMode"
@@ -81,19 +90,35 @@
           @toggle-compact="toggleCompactMode"
           @hour-click="handleDayHourClick"
           @open-event="openEventModal"
+          @open-event-tasks="openEventTasksModal"
         />
       </div>
     </Transition>
 
     <!-- Event Modal -->
-    <EventModal 
+    <EventModal
       :show="showModal"
       :editing-event="editingEvent"
       :form-data="eventForm"
       :available-tags="tags"
+      :view-mode="viewMode"
       @close="closeModal"
       @save="saveEvent"
       @delete="deleteEvent"
+    />
+
+    <!-- Event Tasks Modal -->
+    <EventTasksModal
+      :show="showEventTasksModal"
+      :event="selectedEventForTasks"
+      @close="closeEventTasksModal"
+      @task-removed="loadEvents"
+    />
+
+    <!-- Inbox Panel -->
+    <InboxPanel
+      :is-open="showInboxPanel"
+      @close="showInboxPanel = false"
     />
   </div>
 </template>
@@ -104,6 +129,9 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { useCalendarStore } from '../stores/calendar'
 import { useTagsStore } from '../stores/tags'
+import { useTasksStore } from '../stores/tasks'
+import { useKanbanStore } from '../stores/kanban'
+import axios from 'axios'
 
 // Components
 import CalendarTopBar from '../components/calendar/CalendarTopBar.vue'
@@ -114,12 +142,24 @@ import MonthView from '../components/calendar/MonthView.vue'
 import YearView from '../components/calendar/YearView.vue'
 import DayView from '../components/calendar/DayView.vue'
 import EventModal from '../components/modals/EventModal.vue'
+import EventTasksModal from '../components/modals/EventTasksModal.vue'
 import TagsPanel from '../components/modals/TagsPanel.vue'
+import InboxPanel from '../components/calendar/InboxPanel.vue'
 
 dayjs.locale('ru')
 
 const calendarStore = useCalendarStore()
 const tagsStore = useTagsStore()
+const tasksStore = useTasksStore()
+const kanbanStore = useKanbanStore()
+
+// API для связи задач с событиями
+const eventTasksApi = axios.create({
+  baseURL: '/api/v1/event-tasks',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
 
 // Выбранное событие (для копирования)
 const selectedEventId = ref<string | null>(null)
@@ -132,6 +172,9 @@ const currentMonth = ref(dayjs().startOf('month'))
 const currentYear = ref(dayjs().year())
 const showModal = ref(false)
 const editingEvent = ref<any>(null)
+const viewMode = ref<'view' | 'edit' | null>(null)
+const showEventTasksModal = ref(false)
+const selectedEventForTasks = ref<any>(null)
 
 // Локальное состояние для bounce анимации
 const bouncingEvents = ref<Set<string>>(new Set())
@@ -142,6 +185,9 @@ const compactMode = ref(true)
 
 // Tags state
 const showTagsPanel = ref(false)
+
+// Inbox state
+const showInboxPanel = ref(false)
 
 // Tags methods
 const addTag = async (tag: { name: string; color: string; icon?: string }) => {
@@ -399,6 +445,7 @@ const openEventModal = (event: any) => {
 const closeModal = () => {
   showModal.value = false
   editingEvent.value = null
+  viewMode.value = null
   eventForm.value = {
     title: '',
     description: '',
@@ -413,6 +460,16 @@ const closeModal = () => {
     recurrenceDays: undefined,
     recurrenceEndDate: undefined
   }
+}
+
+const openEventTasksModal = (event: any) => {
+  selectedEventForTasks.value = event
+  showEventTasksModal.value = true
+}
+
+const closeEventTasksModal = () => {
+  showEventTasksModal.value = false
+  selectedEventForTasks.value = null
 }
 
 const saveEvent = async () => {
@@ -567,6 +624,27 @@ const handleMoveToNextWeek = async (event: any) => {
   console.log('Event moved to next week:', event.title, 'to', newStart.format('YYYY-MM-DD HH:mm'))
 }
 
+// Handle task drop to event
+const handleTaskDropToEvent = async (data: { task: any; event: any }) => {
+  const { task, event } = data
+  
+  try {
+    // Добавляем задачу к событию через API
+    await eventTasksApi.post('/', {
+      event_id: event.id,
+      task_id: task.id,
+      order: 0
+    })
+    
+    // Обновляем события, чтобы отобразить количество задач
+    await loadEvents()
+    
+    console.log('Task added to event:', task.title, '->', event.title)
+  } catch (error) {
+    console.error('Failed to add task to event:', error)
+  }
+}
+
 // Handle Alt+drag copy event
 const handleEventCopy = async (data: { event: any; newDate: string; newStart: string; newEnd: string }) => {
   const { event, newStart, newEnd } = data
@@ -702,6 +780,9 @@ onMounted(() => {
   // Load events for current week by default (so we have data for all views)
   loadEvents()
   tagsStore.fetchTags()
+  // Load tasks and kanban columns for Inbox panel
+  tasksStore.fetchTasks()
+  kanbanStore.fetchColumns()
   window.addEventListener('keydown', handleKeydown)
 })
 
@@ -726,6 +807,15 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+/* Calendar Header */
+.calendar-header-with-inbox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid #333;
 }
 
 /* DAY VIEW */

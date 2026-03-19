@@ -6,13 +6,28 @@ from uuid import uuid4
 
 from app.db.base import get_db
 from app.models.calendar import CalendarEvent
+from app.models.event_task import EventTask
 from app.models.user import User
 from app.core.security import get_current_user
 from app.schemas.calendar import CalendarEventCreate, CalendarEventUpdate, CalendarEvent as CalendarEventSchema
 
 router = APIRouter()
 
-def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: datetime) -> List[dict]:
+
+def get_event_tasks_info(db: Session, event_id: str) -> dict:
+    """Получить информацию о задачах события"""
+    event_tasks = db.query(EventTask).filter(
+        EventTask.event_id == event_id
+    ).order_by(EventTask.order).all()
+    
+    task_ids = [et.task_id for et in event_tasks]
+    
+    return {
+        'task_ids': task_ids,
+        'task_count': len(task_ids)
+    }
+
+def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: datetime, db: Session) -> List[dict]:
     """Развернуть повторяющиеся события в отдельные экземпляры"""
     expanded = []
     
@@ -25,6 +40,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                 recurrence_days = []
             
             if not recurrence_days:
+                tasks_info = get_event_tasks_info(db, event.id)
                 expanded.append({
                     'id': event.id,
                     'title': event.title,
@@ -42,6 +58,8 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                     'recurrence_count': event.recurrence_count,
                     'created_at': event.created_at,
                     'updated_at': event.updated_at,
+                    'task_ids': tasks_info['task_ids'],
+                    'task_count': tasks_info['task_count'],
                 })
                 continue
             
@@ -82,6 +100,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                     weekday = current_date_cmp.weekday()
                     if weekday in recurrence_days:
                         # Создаём словарь с данными события
+                        tasks_info = get_event_tasks_info(db, event.id)
                         expanded.append({
                             'id': f"{event.id}_{occurrence_count}",
                             'original_id': event.id,  # Оригинальный ID для edit/delete
@@ -98,6 +117,8 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                             'recurrence_days': event.recurrence_days,
                             'recurrence_end_date': event.recurrence_end_date,
                             'recurrence_count': event.recurrence_count,
+                            'task_ids': tasks_info['task_ids'],
+                            'task_count': tasks_info['task_count'],
                             'created_at': event.created_at,
                             'updated_at': event.updated_at,
                         })
@@ -119,6 +140,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                     break
         else:
             # Обычное событие без повторения
+            tasks_info = get_event_tasks_info(db, event.id)
             expanded.append({
                 'id': event.id,
                 'title': event.title,
@@ -136,6 +158,8 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                 'recurrence_count': event.recurrence_count,
                 'created_at': event.created_at,
                 'updated_at': event.updated_at,
+                'task_ids': tasks_info['task_ids'],
+                'task_count': tasks_info['task_count'],
             })
     
     return expanded
@@ -162,7 +186,7 @@ def get_calendar_events(
     
     # Разворачиваем повторяющиеся события
     if start and end:
-        events = expand_recurring_events(events, start, end)
+        events = expand_recurring_events(events, start, end, db)
     
     return events
 
@@ -182,6 +206,12 @@ def create_calendar_event(
     db.add(event)
     db.commit()
     db.refresh(event)
+    
+    # Добавляем информацию о задачах
+    tasks_info = get_event_tasks_info(db, event.id)
+    event.task_ids = tasks_info['task_ids']
+    event.task_count = tasks_info['task_count']
+    
     return event
 
 @router.put("/{event_id}", response_model=CalendarEventSchema)
@@ -208,6 +238,12 @@ def update_calendar_event(
     
     db.commit()
     db.refresh(event)
+    
+    # Добавляем информацию о задачах
+    tasks_info = get_event_tasks_info(db, event.id)
+    event.task_ids = tasks_info['task_ids']
+    event.task_count = tasks_info['task_count']
+    
     return event
 
 @router.delete("/{event_id}")

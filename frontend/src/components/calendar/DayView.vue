@@ -31,7 +31,7 @@
             :key="event.id"
             class="day-event"
             :style="getEventStyle(event)"
-            @click.stop="$emit('open-event', event)"
+            @click.stop="handleEventClick(event)"
           >
             <div class="event-time">{{ formatEventTime(event) }}</div>
             <img 
@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -75,6 +75,7 @@ interface CalendarEvent {
   priority?: string
   color?: string
   tagIcon?: string
+  task_count?: number
 }
 
 const props = defineProps<{
@@ -89,7 +90,13 @@ const emit = defineEmits<{
   (e: 'go-today'): void
   (e: 'hour-click', data: { hour: number; date: dayjs.Dayjs }): void
   (e: 'open-event', event: CalendarEvent): void
+  (e: 'open-event-tasks', event: CalendarEvent): void
 }>()
+
+// Double click detection
+const lastClickEvent = ref<{ event: CalendarEvent; time: number } | null>(null)
+const clickTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+const DOUBLE_CLICK_DELAY = 300 // ms
 
 const hours = computed(() => {
   if (props.compactMode) {
@@ -105,6 +112,39 @@ const calendarHeight = computed(() => {
 
 const handleRowClick = (hour: number) => {
   emit('hour-click', { hour, date: props.currentDay })
+}
+
+// Handle event click with double click detection
+const handleEventClick = (event: CalendarEvent) => {
+  const now = Date.now()
+  
+  // Clear previous timeout if exists
+  if (clickTimeout.value) {
+    clearTimeout(clickTimeout.value)
+    clickTimeout.value = null
+  }
+  
+  // Check if this is a double click
+  if (lastClickEvent.value &&
+      lastClickEvent.value.event.id === event.id &&
+      now - lastClickEvent.value.time < DOUBLE_CLICK_DELAY) {
+    // Double click detected - open event modal for editing
+    emit('open-event', event)
+    lastClickEvent.value = null
+  } else {
+    // Store click info and wait to see if it's a single or double click
+    lastClickEvent.value = { event, time: now }
+    
+    // Set timeout to handle single click
+    clickTimeout.value = setTimeout(() => {
+      // Single click - check if event has tasks
+      if (event.task_count && event.task_count > 0) {
+        emit('open-event-tasks', event)
+      }
+      lastClickEvent.value = null
+      clickTimeout.value = null
+    }, DOUBLE_CLICK_DELAY)
+  }
 }
 
 const getEventStyle = (event: CalendarEvent) => {

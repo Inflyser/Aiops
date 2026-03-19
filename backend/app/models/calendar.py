@@ -29,3 +29,4 @@ class CalendarEvent(Base):
     
     user = relationship("User", back_populates="calendar_events")
     tag = relationship("Tag", foreign_keys=[tag_id])
+    event_tasks = relationship("EventTask", back_populates="event", cascade="all, delete-orphan")

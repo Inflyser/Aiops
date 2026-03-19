@@ -26,6 +26,17 @@
         <span class="toggle-icon">🏷</span>
         <span class="toggle-label">Tags</span>
       </button>
+      <!-- Кнопка Inbox -->
+      <button
+        v-if="currentView === 'week'"
+        class="inbox-toggle-btn header-toggle"
+        :class="{ active: showInboxPanel }"
+        @click="$emit('toggle-inbox')"
+        title="Открыть Inbox"
+      >
+        <span class="toggle-icon">📥</span>
+        <span class="toggle-label">Inbox</span>
+      </button>
     </div>
   </div>
 </template>
@@ -42,11 +53,13 @@ defineProps<{
   compactMode: boolean
   currentView: string
   showTagsPanel: boolean
+  showInboxPanel: boolean
 }>()
 
 defineEmits<{
   (e: 'toggle-compact', value: boolean): void
   (e: 'toggle-tags'): void
+  (e: 'toggle-inbox'): void
 }>()
 
 const currentTime = ref('')
@@ -144,6 +157,31 @@ onUnmounted(() => {
 
 .tags-toggle-btn.active {
   background: #4a5568;
+  color: #fff;
+}
+
+.inbox-toggle-btn {
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.inbox-toggle-btn:hover {
+  background: #444;
+}
+
+.inbox-toggle-btn.active {
+  background: #4A90E2;
+  border-color: #4A90E2;
   color: #fff;
 }
 

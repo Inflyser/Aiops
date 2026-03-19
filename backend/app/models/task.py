@@ -27,6 +27,7 @@ class Task(Base):
     user = relationship("User", back_populates="tasks")
     subtasks = relationship("Subtask", back_populates="task", cascade="all, delete-orphan")
     column = relationship("KanbanColumn", back_populates="tasks")
+    event_tasks = relationship("EventTask", back_populates="task", cascade="all, delete-orphan")
 
 class Subtask(Base):
     __tablename__ = "subtasks"

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 class CalendarEventBase(BaseModel):
     title: str
@@ -41,4 +41,6 @@ class CalendarEvent(CalendarEventBase):
     user_id: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+    task_ids: List[str] = []  # Список ID задач, связанных с событием
+    task_count: int = 0  # Количество задач в событии
 
