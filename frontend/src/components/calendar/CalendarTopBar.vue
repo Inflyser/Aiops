@@ -90,6 +90,7 @@ onUnmounted(() => {
   padding: 10px 20px;
   flex-shrink: 0;
   position: relative;
+  z-index: 100;
 }
 
 .time-display {

@@ -781,12 +781,14 @@ watch([currentPeriod, currentDate], async () => {
 .month-chart {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 4px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .month-day {
   aspect-ratio: 1;
-  border-radius: 8px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -799,7 +801,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .month-day-number {
-  font-size: 14px;
+  font-size: 10px;
   font-weight: 600;
   color: #888;
 }

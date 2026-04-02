@@ -34,10 +34,10 @@
             @click.stop="handleEventClick(event)"
           >
             <div class="event-time">{{ formatEventTime(event) }}</div>
-            <img 
-              v-if="event.tagIcon" 
-              :src="getTagIconPath(event.tagIcon)" 
-              class="event-tag-icon" 
+            <img
+              v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+              :src="getTagIconPath(event.tagIcon)"
+              class="event-tag-icon"
             />
             <div class="event-title">{{ event.title }}</div>
           </div>
@@ -54,12 +54,12 @@ import 'dayjs/locale/ru'
 
 dayjs.locale('ru')
 
-const iconFiles: Record<string, string> = import.meta.glob('@/assets/icon/*.svg', { query: '?url', import: 'default', eager: true }) as any
+const iconModules = import.meta.glob<{ default: string }>('../../assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
 
 const getTagIconPath = (iconName: string): string => {
-  for (const [path, url] of Object.entries(iconFiles)) {
+  for (const [path, url] of Object.entries(iconModules)) {
     if (path.includes(`/${iconName}.svg`) || path.includes(`/${iconName}`)) {
-      return url
+      return (url as unknown as string)
     }
   }
   return ''

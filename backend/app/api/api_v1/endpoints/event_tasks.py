@@ -58,6 +58,10 @@ async def add_task_to_event(
     )
     
     db.add(event_task)
+    
+    # Обновляем статус задачи на 'event', чтобы она не отображалась в Inbox
+    task.status = 'event'
+    
     db.commit()
     db.refresh(event_task)
     
@@ -89,6 +93,9 @@ async def remove_task_from_event(
     
     if not event_task:
         raise HTTPException(status_code=404, detail="Связь не найдена")
+    
+    # Возвращаем статус задачи на 'todo', чтобы она снова отображалась в Inbox
+    task.status = 'todo'
     
     db.delete(event_task)
     db.commit()
@@ -158,3 +165,56 @@ async def reorder_event_tasks(
     db.commit()
     
     return {"message": "Порядок задач обновлен"}
+
+
+@router.post("/add-category-to-event", response_model=dict)
+async def add_category_to_event(
+    event_id: str,
+    category_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Добавить все задачи категории к событию"""
+    # Проверяем существование события
+    event = db.query(CalendarEvent).filter(
+        CalendarEvent.id == event_id,
+        CalendarEvent.user_id == current_user.id
+    ).first()
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+    
+    # Получаем задачи категории
+    category_tasks = db.query(Task).filter(
+        Task.column_id == category_id,
+        Task.user_id == current_user.id
+    ).all()
+    
+    # Добавляем задачи к событию
+    for task in category_tasks:
+        # Проверяем, что связь уже существует
+        existing = db.query(EventTask).filter(
+            EventTask.event_id == event_id,
+            EventTask.task_id == task.id
+        ).first()
+        
+        if not existing:
+            event_task = EventTask(
+                id=str(uuid4()),
+                event_id=event_id,
+                task_id=task.id,
+                order=0
+            )
+            db.add(event_task)
+    
+    db.commit()
+    
+    # Обновляем статус задач на 'event'
+    for task in category_tasks:
+        task.status = 'event'
+    
+    db.commit()
+    
+    return {
+        "message": f"Добавлено {len(category_tasks)} задач к событию"
+    }

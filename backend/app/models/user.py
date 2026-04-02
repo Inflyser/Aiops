@@ -20,4 +20,4 @@ class User(Base):
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
     calendar_events = relationship("CalendarEvent", back_populates="user", cascade="all, delete-orphan")
     tags = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
-    kanban_columns = relationship("KanbanColumn", back_populates="user", cascade="all, delete-orphan")
+    kanban_boards = relationship("KanbanBoard", back_populates="user", cascade="all, delete-orphan")

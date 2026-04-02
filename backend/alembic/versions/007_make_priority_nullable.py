@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '007_make_priority_nullable'
-down_revision = '006_create_kanban_columns'
+revision = '007'
+down_revision = '006'
 branch_labels = None
 depends_on = None
 

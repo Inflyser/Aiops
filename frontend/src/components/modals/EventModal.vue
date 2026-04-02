@@ -51,9 +51,9 @@
               :class="{ selected: selectedTagId === tag.id }"
               @click="selectTag(tag)"
             >
-              <img 
-                v-if="tag.icon" 
-                :src="getIconPath(tag.icon)" 
+              <img
+                v-if="tag.icon && getIconPath(tag.icon)"
+                :src="getIconPath(tag.icon)"
                 class="tag-icon"
               />
               <span class="tag-color" :style="{ backgroundColor: tag.color }"></span>
@@ -198,11 +198,13 @@ import { ref, computed, watch } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
-const iconFiles = ref<{ name: string; path: string }[]>([])
-const iconUrls = import.meta.glob('@/assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
-iconFiles.value = Object.entries(iconUrls).map(([path, url]) => {
-  const name = path.split('/').pop()?.replace('.svg', '') || ''
-  return { name, path: url as string }
+const iconModules = import.meta.glob<{ default: string }>('../../assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
+
+const iconFiles = computed(() => {
+  return Object.entries(iconModules).map(([path, url]) => {
+    const name = path.split('/').pop()?.replace('.svg', '') || ''
+    return { name, path: (url as unknown as string) }
+  })
 })
 
 const getIconPath = (iconName: string) => {

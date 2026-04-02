@@ -11,9 +11,9 @@
         :key="tag.id" 
         class="tag-item"
       >
-        <img 
-          v-if="tag.icon && getIconPath(tag.icon)" 
-          :src="getIconPath(tag.icon)" 
+        <img
+          v-if="tag.icon"
+          :src="getIconPath(tag.icon)"
           class="tag-icon"
         />
         <span v-else class="tag-icon-placeholder"></span>
@@ -60,8 +60,8 @@
           >
             —
           </button>
-          <button 
-            v-for="icon in iconFiles" 
+          <button
+            v-for="icon in iconFiles"
             :key="icon.name"
             type="button"
             class="icon-btn"
@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 interface Tag {
   id: string
@@ -108,17 +108,14 @@ const newTagName = ref('')
 const newTagColor = ref('#3B82F6')
 const newTagIcon = ref<string | undefined>(undefined)
 
-const iconFiles = ref<{ name: string; path: string }[]>([])
+const iconModules = import.meta.glob<{ default: string }>('../../assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
 
-const loadIcons = async () => {
-  const icons = import.meta.glob('@/assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
-  iconFiles.value = Object.entries(icons).map(([path, url]) => {
+const iconFiles = computed(() => {
+  return Object.entries(iconModules).map(([path, url]) => {
     const name = path.split('/').pop()?.replace('.svg', '') || ''
-    return { name, path: url as string }
+    return { name, path: (url as unknown as string) }
   })
-}
-
-loadIcons()
+})
 
 const selectIcon = (iconName: string | undefined) => {
   newTagIcon.value = iconName
@@ -126,8 +123,8 @@ const selectIcon = (iconName: string | undefined) => {
 
 const handleAddTag = () => {
   if (newTagName.value.trim()) {
-    emit('add-tag', { 
-      name: newTagName.value.trim(), 
+    emit('add-tag', {
+      name: newTagName.value.trim(),
       color: newTagColor.value,
       icon: newTagIcon.value
     })
@@ -137,9 +134,9 @@ const handleAddTag = () => {
   }
 }
 
-const getIconPath = (iconName: string) => {
+const getIconPath = (iconName: string): string | undefined => {
   const icon = iconFiles.value.find(i => i.name === iconName)
-  return icon?.path || ''
+  return icon?.path
 }
 </script>
 

@@ -8,9 +8,52 @@
       </div>
     </div>
 
+    <!-- Board Tabs (Browser-like tabs) -->
+    <div class="board-tabs">
+      <draggable
+        v-model="boardOrder"
+        class="tabs-container"
+        group="boards"
+        item-key="id"
+        handle=".tab-drag-handle"
+        @end="onBoardReorder"
+      >
+        <template #item="{ element: board }">
+          <div
+            class="board-tab"
+            :class="{ 'tab-active': currentBoardId === board.id && !isInboxActive }"
+            @click="selectBoard(board.id)"
+          >
+            <div class="tab-drag-handle" title="Перетащить вкладку">⋮⋮</div>
+            <span class="tab-title">{{ board.title }}</span>
+            <button
+              v-if="boards.length > 1"
+              class="tab-close"
+              @click.stop="deleteBoard(board.id)"
+              title="Закрыть вкладку"
+            >✕</button>
+          </div>
+        </template>
+      </draggable>
+      
+      <!-- Add Board Button -->
+      <button class="add-tab-btn" @click="showAddBoardModal = true" title="Добавить доску">
+        +
+      </button>
+      
+      <!-- Inbox Tab (always last) -->
+      <div
+        class="board-tab inbox-tab"
+        :class="{ 'tab-active': isInboxActive }"
+        @click="selectInbox"
+      >
+        <span class="tab-title">Inbox</span>
+      </div>
+    </div>
+
     <!-- Board Header -->
     <div class="board-header">
-      <h1 class="board-title">Kanban</h1>
+      <h1 class="board-title">{{ isInboxActive ? 'Inbox' : (currentBoard?.title || 'Kanban') }}</h1>
       <div class="board-meta">
         <span class="task-count">{{ tasksStore.tasks.length }} задач</span>
       </div>
@@ -103,7 +146,7 @@
                 >
                   + Добавить карточку
                 </button>
-                
+               
                 <!-- Поле ввода при добавлении -->
                 <form 
                   v-else 
@@ -126,14 +169,14 @@
         </template>
       </draggable>
 
-      <!-- Add Column (at the end) -->
+      <!-- Add Column (at the end) - показываем и в Inbox и на досках -->
       <div class="add-col">
         <div class="add-col-inner">
-          <p class="add-col-label">Новая колонка</p>
+          <p class="add-col-label">{{ isInboxActive ? 'Новая категория' : 'Новая колонка' }}</p>
           <form @submit.prevent="addColumn" class="add-col-form">
             <input
               v-model="newColTitle"
-              placeholder="Название..."
+              :placeholder="isInboxActive ? 'Название категории...' : 'Название...'"
               class="task-input"
             />
             <button type="submit" class="add-task-btn" title="Создать">+</button>
@@ -150,6 +193,24 @@
       @update:visible="editingTask = null"
       @save="updateTask"
     />
+
+    <!-- Add Board Modal -->
+    <div v-if="showAddBoardModal" class="modal-overlay" @click.self="showAddBoardModal = false">
+      <div class="modal-content">
+        <h2>Новая доска</h2>
+        <form @submit.prevent="addBoard" class="add-board-form">
+          <input
+            v-model="newBoardTitle"
+            placeholder="Название доски..."
+            class="task-input"
+          />
+          <div class="modal-buttons">
+            <button type="button" class="btn-cancel" @click="showAddBoardModal = false">Отмена</button>
+            <button type="submit" class="btn-confirm">Создать</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -176,12 +237,94 @@ const updateTime = () => {
 const tasksStore = useTasksStore()
 const kanbanStore = useKanbanStore()
 
+// Boards
+const boards = computed(() => kanbanStore.boards)
+const currentBoardId = computed(() => kanbanStore.currentBoardId)
+const currentBoard = computed(() => kanbanStore.currentBoard)
+const boardOrder = ref<{ id: string; title: string }[]>([])
+
+// Inbox state
+const isInboxActive = ref(true)
+
+// Sync boardOrder with boards
+watch(boards, (newBoards) => {
+  if (boardOrder.value.length !== newBoards.length ||
+      newBoards.some((b, i) => b.id !== boardOrder.value[i]?.id)) {
+    boardOrder.value = [...newBoards]
+  }
+}, { immediate: true, deep: true })
+
+// Select board
+const selectBoard = async (boardId: string) => {
+  kanbanStore.setCurrentBoard(boardId)
+  isInboxActive.value = false
+  await initializeTasks()
+}
+
+// Select Inbox (always active by default)
+const selectInbox = async () => {
+  isInboxActive.value = true
+  // Clear current board to show all tasks
+  kanbanStore.setCurrentBoard('')
+  // Загружаем Inbox категории вместо колонок доски
+  await kanbanStore.fetchInboxCategories()
+  await initializeTasks()
+}
+
+// Add board
+const showAddBoardModal = ref(false)
+const newBoardTitle = ref('')
+
+const addBoard = async () => {
+  const title = newBoardTitle.value.trim()
+  if (!title) return
+  
+  try {
+    const newBoard = await kanbanStore.createBoard({ title })
+    await kanbanStore.setCurrentBoard(newBoard.id)
+    await initializeTasks()
+    newBoardTitle.value = ''
+    showAddBoardModal.value = false
+  } catch (err) {
+    console.error('Failed to create board:', err)
+  }
+}
+
+// Delete board
+const deleteBoard = async (boardId: string) => {
+  if (!confirm('Удалить эту доску? Все задачи будут перемещены на дефолтную доску.')) return
+  
+  try {
+    await kanbanStore.deleteBoard(boardId)
+    await initializeTasks()
+  } catch (err) {
+    console.error('Failed to delete board:', err)
+  }
+}
+
+// Reorder boards
+const onBoardReorder = () => {
+  const newOrder = boardOrder.value.map(b => b.id)
+  kanbanStore.reorderBoards(newOrder)
+}
+
 // Получаем колонки из store
-const columns = computed(() => kanbanStore.columns.map(col => ({
-  key: col.id,
-  label: col.title,
-  color: col.color
-})))
+const columns = computed(() => {
+  // Если активна вкладка Inbox - показываем Inbox категории
+  if (isInboxActive.value) {
+    return kanbanStore.columns.map(col => ({
+      key: col.id,
+      label: col.title,
+      color: col.color
+    }))
+  }
+  // Иначе показываем колонки текущей доски
+  return kanbanStore.columns.map(col => ({
+    key: col.id,
+    label: col.title,
+    color: col.color
+  }))
+})
 
 const newColTitle = ref('')
 const newTaskTitles = reactive<Record<string, string>>({})
@@ -192,7 +335,15 @@ const columnTasks = ref<Record<string, any[]>>({})
 
 watch(() => tasksStore.tasks, () => {
   columns.value.forEach(col => {
-    columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.status === col.key)
+    if (isInboxActive.value && col.key === 'inbox') {
+      // Для Inbox показываем задачи без колонки И со статусом 'todo'
+      columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) =>
+        !t.column_id && t.status === 'todo'
+      )
+    } else {
+      // Для обычных колонок фильтруем по column_id
+      columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.column_id === col.key)
+    }
   })
 }, { deep: true })
 
@@ -217,7 +368,7 @@ const toggleCollapse = (colKey: string) => {
 const onColumnReorder = () => {
   // Сохраняем новый порядок в kanbanStore
   const newOrder = columnOrder.value.map(c => c.key)
-  kanbanStore.updateColumnOrder(newOrder)
+  kanbanStore.reorderColumns(newOrder)
 }
 
 // Функции для управления добавлением задачи
@@ -260,7 +411,13 @@ const initializeTasks = async () => {
   })
 
   columns.value.forEach(col => {
-    columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.status === col.key)
+    if (isInboxActive.value) {
+      // Для Inbox категорий фильтруем по column_id
+      columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.column_id === col.key)
+    } else {
+      // Для обычных колонок фильтруем по column_id
+      columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.column_id === col.key)
+    }
   })
 
   initializeTaskTitles()
@@ -277,7 +434,14 @@ const addColumn = async () => {
   const title = newColTitle.value.trim()
   if (!title) return
   try {
-    const newCol = await kanbanStore.createColumn({ title, color: '#555555' })
+    let newCol
+    if (isInboxActive.value) {
+      // Создаём Inbox категорию
+      newCol = await kanbanStore.createInboxCategory({ title, color: '#555555' })
+    } else {
+      // Создаём обычную колонку для доски
+      newCol = await kanbanStore.createColumn({ title, color: '#555555' })
+    }
     newTaskTitles[newCol.id] = ''
     newColTitle.value = ''
   } catch (err) {
@@ -286,7 +450,11 @@ const addColumn = async () => {
 }
 
 const removeColumn = async (colKey: string) => {
-  if (kanbanStore.columns.length <= 1) return
+  // Не позволяем удалять колонку Inbox во вкладке Inbox
+  if (isInboxActive.value && colKey === 'inbox') return
+  
+  // Не позволяем удалять последнюю колонку на доске
+  if (!isInboxActive.value && kanbanStore.columns.length <= 1) return
   
   const tasksToRemove = tasksByColumn(colKey)
   
@@ -298,7 +466,7 @@ const removeColumn = async (colKey: string) => {
     if (kanbanStore.columns.length > 0) {
       const firstColumn = kanbanStore.columns[0]
       for (const t of tasksToRemove) {
-        await tasksStore.updateTask(t.id, { column_id: firstColumn.id })
+        await tasksStore.updateTask(t.id, { status: firstColumn.id })
       }
     }
   } catch (err) {
@@ -307,6 +475,9 @@ const removeColumn = async (colKey: string) => {
 }
 
 const canRemoveColumn = (colKey: string) => {
+  // Не позволяем удалять Inbox колонку во вкладке Inbox
+  if (isInboxActive.value && colKey === 'inbox') return false
+  
   const column = kanbanStore.columns.find(c => c.id === colKey)
   return kanbanStore.columns.length > 1 && !column?.is_static
 }
@@ -319,13 +490,22 @@ const addTask = async (colKey: string) => {
     return
   }
   try {
-    const taskData = {
+    const taskData: any = {
       title,
-      status: colKey,
-      completed: colKey === 'done',
+      completed: false,
       priority: undefined,
       description: ''
     }
+    
+    if (isInboxActive.value && colKey === 'inbox') {
+      // Для Inbox не устанавливаем column_id, задача будет в Inbox
+      taskData.status = 'todo'
+    } else {
+      // Для обычных колонок устанавливаем column_id
+      taskData.column_id = colKey
+      taskData.status = colKey
+    }
+    
     await tasksStore.createTask(taskData)
     newTaskTitles[colKey] = ''
     // Закрываем режим добавления после создания
@@ -338,17 +518,31 @@ const addTask = async (colKey: string) => {
 const onTaskChange = async (evt: any, colKey: string) => {
   if (evt.added) {
     const task = evt.added.element
-    if (task && task.status !== colKey) {
+    const updateData: any = {
+      completed: task.completed
+    }
+    
+    if (isInboxActive.value && colKey === 'inbox') {
+      // При перемещении в Inbox - убираем column_id
+      updateData.column_id = null
+      updateData.status = 'todo'
+    } else {
+      // При перемещении в обычную колонку - устанавливаем column_id
+      updateData.column_id = colKey
+      updateData.status = colKey
+    }
+    
+    if (task && (task.status !== updateData.status || task.column_id !== updateData.column_id)) {
       const prevStatus = task.status
-      task.status = colKey
+      const prevColumnId = task.column_id
+      task.status = updateData.status
+      task.column_id = updateData.column_id
       try {
-        await tasksStore.updateTask(task.id, { 
-          status: colKey,
-          completed: task.completed
-        })
+        await tasksStore.updateTask(task.id, updateData)
       } catch (err) {
         console.error('Failed to update task status on server:', err)
         task.status = prevStatus
+        task.column_id = prevColumnId
       }
     }
   }
@@ -357,12 +551,20 @@ const onTaskChange = async (evt: any, colKey: string) => {
     columns.value.forEach((col, colIndex) => {
       const tasksInCol = columnTasks.value[col.key] || []
       tasksInCol.forEach((task: any, taskIndex: number) => {
-        bulkItems.push({
+        const updateData: any = {
           task_id: task.id,
-          status: col.key,
           order: colIndex * 100 + taskIndex,
-          completed: task.completed
-        })
+        }
+        
+        if (isInboxActive.value && col.key === 'inbox') {
+          updateData.status = 'todo'
+          updateData.column_id = null
+        } else {
+          updateData.status = col.key
+          updateData.column_id = col.key
+        }
+        
+        bulkItems.push(updateData)
       })
     })
     if (bulkItems.length > 0) {
@@ -381,7 +583,12 @@ onMounted(async () => {
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
   
+  await kanbanStore.fetchBoards()
   await kanbanStore.fetchColumns()
+  
+  // Set Inbox as active by default
+  isInboxActive.value = true
+  kanbanStore.setCurrentBoard('')
   
   await initializeTasks()
   window.addEventListener('keydown', handleKeydown)
@@ -438,7 +645,7 @@ const handleKeydown = (event: KeyboardEvent) => {
     // Используем undo из calendar store (общий)
     const calendarStore = useCalendarStore()
     calendarStore.undo().then(() => {
-      // Перезагрузить задачи
+      // Перезагружаем задачи
       tasksStore.fetchTasks()
     })
   }
@@ -481,6 +688,136 @@ const handleKeydown = (event: KeyboardEvent) => {
   font-size: 22px;
   color: #ffffff;
   font-weight: 500;
+}
+
+/* ─── Board Tabs ────────────────────────────────────────── */
+.board-tabs {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 8px 20px 0;
+  gap: 4px;
+  background: transparent;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.tabs-container {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.board-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+  max-width: 200px;
+  position: relative;
+}
+
+.board-tab:hover {
+  background: #252525;
+  border-color: #3a3a3a;
+}
+
+.board-tab.tab-active {
+  background: #0f0f0f;
+  border-color: #3a3a3a;
+  border-bottom-color: #0f0f0f;
+}
+
+.board-tab.tab-default .tab-title {
+  font-weight: 600;
+}
+
+.tab-drag-handle {
+  font-size: 12px;
+  color: #666;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.board-tab:hover .tab-drag-handle {
+  opacity: 1;
+}
+
+.tab-title {
+  font-size: 14px;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.board-tab.tab-active .tab-title {
+  color: #fff;
+}
+
+.tab-close {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.tab-close:hover {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.add-tab-btn {
+  background: #1a1a1a;
+  border: 1px dashed #3a3a3a;
+  color: #666;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.add-tab-btn:hover {
+  background: #252525;
+  color: #fff;
+  border-color: #3a3a3a;
+}
+
+/* ─── Inbox Tab ─────────────────────────────────────────── */
+.inbox-tab {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+}
+
+.inbox-tab:hover {
+  background: #252525;
+  border-color: #3a3a3a;
+}
+
+.inbox-tab.tab-active {
+  background: #0f0f0f;
+  border-color: #3a3a3a;
+  border-bottom-color: #0f0f0f;
 }
 
 /* ─── Board Header ──────────────────────────────────────── */
@@ -598,247 +935,176 @@ const handleKeydown = (event: KeyboardEvent) => {
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
   border-radius: 10px;
-  padding: 1px 7px;
-  font-weight: 500;
+  padding: 2px 8px;
 }
 
-.del-col-btn {
-  background: transparent;
-  border: none;
-  color: #333;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 3px 5px;
-  border-radius: 4px;
-  line-height: 1;
-  transition: color 0.2s, background 0.2s;
-}
-
-.del-col-btn:hover {
-  color: #888;
-  background: #1a1a1a;
-}
-
-/* Column drag handle */
-.column-drag-handle {
-  cursor: grab;
-  color: #444;
-  font-size: 14px;
-  padding: 4px;
-  margin-right: 4px;
-  transition: color 0.2s;
-}
-
-.column-drag-handle:hover {
-  color: #888;
-}
-
-.column-drag-handle:active {
-  cursor: grabbing;
-}
-
-/* Collapse button */
-.collapse-col-btn {
-  background: transparent;
-  border: none;
-  color: #444;
-  font-size: 10px;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  line-height: 1;
-  transition: color 0.2s, background 0.2s;
-}
-
-.collapse-col-btn:hover {
-  color: #888;
-  background: #1a1a1a;
-}
-
-/* Collapsed column - title rotated */
-.column-collapsed {
-  width: 60px !important;
-  height: auto;
-  min-height: 100px;
-  padding: 12px 4px;
-  align-self: stretch;
-}
-
-.column-collapsed .column-header {
-  flex-direction: column-reverse;
-  border-bottom: none;
-  margin-bottom: 0;
-  padding: 0;
-  justify-content: flex-start;
-  gap: 8px;
-}
-
-.column-collapsed .column-drag-handle {
-  display: none;
-}
-
-.column-collapsed .column-dot,
-.column-collapsed .column-count,
-.column-collapsed .column-body,
-.column-collapsed .add-task-container,
-.column-collapsed .empty-column {
-  display: none !important;
-}
-
-.column-collapsed .header-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.column-collapsed .column-title {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-  white-space: nowrap;
-  font-size: 16px;
-  margin: 0;
-  max-height: 150px;
-}
-
-/* Header buttons wrapper */
 .header-buttons {
   display: flex;
   gap: 4px;
 }
 
-/* ─── Column Body (droppable zone) ─────────────────────── */
+.collapse-col-btn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.collapse-col-btn:hover {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.del-col-btn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.del-col-btn:hover {
+  background: #3a1a1a;
+  color: #ff6b6b;
+}
+
+/* ─── Column Body ───────────────────────────────────────── */
 .column-body {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 120px;
-  border-radius: 8px;
-  padding: 4px 0;
-  transition: background-color 0.15s;
+  min-height: 100px;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
-.column-body.sortable-drag-over {
-  background-color: rgba(255, 255, 255, 0.03);
+.column-body::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* ─── Card Wrapper ──────────────────────────────────────── */
+.column-body::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+.column-body::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 3px;
+}
+
+.column-body::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* ─── Column Collapsed ─────────────────────────────────── */
+.column-collapsed {
+  min-height: auto;
+}
+
+.column-collapsed .column-body {
+  display: none;
+}
+
+.header-collapsed {
+  margin-bottom: 0;
+  padding-bottom: 8px;
+}
+
+.title-collapsed {
+  font-size: 14px;
+}
+
+/* ─── Task Card Wrapper ─────────────────────────────────── */
 .kanban-card-wrapper {
   cursor: grab;
-  transition: transform 0.15s;
-}
-
-.kanban-card-wrapper:hover {
-  transform: translateY(-1px);
 }
 
 .kanban-card-wrapper:active {
   cursor: grabbing;
 }
 
-/* ─── Empty State ───────────────────────────────────────── */
+/* ─── Empty Column ─────────────────────────────────────── */
 .empty-column {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 24px 0;
-  color: #2e2e2e;
-  font-size: 13px;
-  font-style: italic;
-  flex: 1;
+  padding: 40px 20px;
+  color: #444;
+  gap: 12px;
 }
 
 .empty-icon {
-  font-size: 20px;
-  line-height: 1;
+  font-size: 32px;
+  opacity: 0.5;
 }
 
-/* ─── Add Task Container ───────────────────────────────── */
+/* ─── Add Task ─────────────────────────────────────────── */
 .add-task-container {
   margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #1a1a1a;
 }
 
-/* Кнопка добавления */
 .add-task-btn-new {
   width: 100%;
-  background: transparent;
-  border: none;
-  color: #555;
-  padding: 8px 12px;
+  padding: 12px;
+  background: #1a1a1a;
+  border: 1px dashed #3a3a3a;
+  border-radius: 8px;
+  color: #666;
   cursor: pointer;
-  font-size: 15px;
-  text-align: left;
-  transition: color 0.2s;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
 .add-task-btn-new:hover {
-  color: #888;
+  background: #252525;
+  color: #fff;
+  border-color: #3a3a3a;
 }
 
-/* ─── Add Task Form ─────────────────────────────────────── */
 .add-task-form {
-  display: flex;
-  gap: 6px;
+  width: 100%;
 }
 
 .task-input {
-  flex: 1;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #1e1e1e;
+  width: 100%;
+  padding: 12px;
   background: #0a0a0a;
-  color: #ccc;
-  font-size: 15px;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
 }
 
-.task-input::placeholder {
-  color: #333;
-}
-
 .task-input:focus {
-  border-color: #333;
-  color: #fff;
+  border-color: #3a3a3a;
 }
 
-.add-task-btn {
-  background: #1a1a1a;
-  color: #666;
-  border: 1px solid #1e1e1e;
-  border-radius: 6px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  transition: background 0.2s, color 0.2s;
-  flex-shrink: 0;
+.task-input::placeholder {
+  color: #444;
 }
 
-.add-task-btn:hover {
-  background: #222;
-  color: #fff;
-}
-
-/* ─── Add Column ────────────────────────────────────────── */
+/* ─── Add Column ───────────────────────────────────────── */
 .add-col {
-  width: 400px;
+  width: 300px;
   flex-shrink: 0;
-  border: 1px dashed #1e1e1e;
-  border-radius: 12px;
   padding: 16px;
+  border: 2px dashed #2a2a2a;
+  border-radius: 12px;
   display: flex;
-  align-items: flex-start;
-  transition: border-color 0.2s, background 0.2s;
-}
-
-.add-col:hover {
-  border-color: #333;
-  background: #0a0a0a;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
 }
 
 .add-col-inner {
@@ -847,31 +1113,113 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .add-col-label {
   font-size: 12px;
-  color: #333;
-  margin: 0 0 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
+  color: #444;
+  margin-bottom: 12px;
+  text-align: center;
 }
 
 .add-col-form {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
-/* ─── Drag & Drop States ────────────────────────────────── */
-.ghost {
-  opacity: 0.3;
-  background: #1a1a1a;
+.add-task-btn {
+  background: #3a3a3a;
+  border: none;
+  color: #fff;
+  width: 40px;
   border-radius: 8px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.2s;
+}
+
+.add-task-btn:hover {
+  background: #4a4a4a;
+}
+
+/* ─── Modal ───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 32px;
+  width: 400px;
+}
+
+.modal-content h2 {
+  margin: 0 0 24px;
+  font-size: 24px;
+  color: #fff;
+}
+
+.add-board-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+}
+
+.btn-cancel:hover {
+  background: #252525;
+  color: #fff;
+}
+
+.btn-confirm {
+  background: #3a3a3a;
+  border: none;
+  color: #fff;
+}
+
+.btn-confirm:hover {
+  background: #4a4a4a;
+}
+
+/* ─── Drag and Drop ───────────────────────────────────── */
+.ghost {
+  opacity: 0.4;
+  background: #1a1a1a;
 }
 
 .chosen {
-  opacity: 0.9;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  opacity: 0.8;
 }
 
 .drag {
-  user-select: none;
+  opacity: 0.5;
 }
 </style>

@@ -112,13 +112,14 @@
       :show="showEventTasksModal"
       :event="selectedEventForTasks"
       @close="closeEventTasksModal"
-      @task-removed="loadEvents"
+      @task-removed="handleTaskRemoved"
     />
 
     <!-- Inbox Panel -->
     <InboxPanel
       :is-open="showInboxPanel"
       @close="showInboxPanel = false"
+      @category-dropped-to-event="handleCategoryDroppedToEvent"
     />
   </div>
 </template>
@@ -131,6 +132,7 @@ import { useCalendarStore } from '../stores/calendar'
 import { useTagsStore } from '../stores/tags'
 import { useTasksStore } from '../stores/tasks'
 import { useKanbanStore } from '../stores/kanban'
+import type { InboxCategory } from '../stores/kanban'
 import axios from 'axios'
 
 // Components
@@ -472,6 +474,18 @@ const closeEventTasksModal = () => {
   selectedEventForTasks.value = null
 }
 
+const handleTaskRemoved = async () => {
+  // Перезагружаем события и задачи
+  await loadEvents()
+  await tasksStore.fetchTasks()
+}
+
+const handleCategoryDroppedToEvent = async (_data: { event: any; category: InboxCategory }) => {
+  // Перезагружаем события и задачи
+  await loadEvents()
+  await tasksStore.fetchTasks()
+}
+
 const saveEvent = async () => {
   const start = dayjs(`${eventForm.value.date} ${eventForm.value.startTime}`)
   const end = dayjs(`${eventForm.value.date} ${eventForm.value.endTime}`)
@@ -780,9 +794,9 @@ onMounted(() => {
   // Load events for current week by default (so we have data for all views)
   loadEvents()
   tagsStore.fetchTags()
-  // Load tasks and kanban columns for Inbox panel
+  // Load tasks and inbox categories for Inbox panel
   tasksStore.fetchTasks()
-  kanbanStore.fetchColumns()
+  kanbanStore.fetchInboxCategories()
   window.addEventListener('keydown', handleKeydown)
 })
 

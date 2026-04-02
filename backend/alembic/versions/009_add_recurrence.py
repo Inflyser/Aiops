@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '009_add_recurrence'
-down_revision = '008_add_icon_to_tags'
+revision = '009'
+down_revision = '008'
 branch_labels = None
 depends_on = None
 

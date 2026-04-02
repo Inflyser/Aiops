@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '011_add_is_static_to_kanban_columns'
-down_revision = '010_add_event_tasks_table'
+revision = '011'
+down_revision = '010'
 branch_labels = None
 depends_on = None
 
