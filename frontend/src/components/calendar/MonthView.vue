@@ -78,6 +78,7 @@ interface CalendarEvent {
   color?: string
   tagIcon?: string
   task_count?: number
+  completed_task_count?: number
 }
 
 interface MonthDay {

@@ -204,8 +204,8 @@ const toggleTask = async (task: Task) => {
   right: -400px;
   width: 400px;
   height: 100vh;
-  background: #1a1a1a;
-  border-left: 1px solid #333;
+  background: #0a0a0a;
+  border-left: 1px solid #33333357;
   transition: right 0.3s ease;
   z-index: 1000;
   display: flex;
@@ -218,7 +218,7 @@ const toggleTask = async (task: Task) => {
 
 .inbox-header {
   padding: 20px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #33333357;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -274,7 +274,7 @@ const toggleTask = async (task: Task) => {
 
 .inbox-category {
   margin-bottom: 20px;
-  border: 1px solid #333;
+  border: 1px solid #33333357;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -284,8 +284,8 @@ const toggleTask = async (task: Task) => {
   align-items: center;
   padding: 12px;
   gap: 10px;
-  background: #2a2a2a;
-  border-bottom: 1px solid #333;
+  background: #0d0d0d;
+  border-bottom: 1px solid #33333357;
 }
 
 .category-dot {
@@ -317,7 +317,7 @@ const toggleTask = async (task: Task) => {
 }
 
 .delete-category-btn:hover {
-  background: #333;
+  background: #33333357;
   color: #fff;
 }
 
@@ -325,13 +325,14 @@ const toggleTask = async (task: Task) => {
   padding: 10px;
   max-height: 300px;
   overflow-y: auto;
+  background: #0a0a0a;
 }
 
 .inbox-task {
   display: flex;
   align-items: flex-start;
   padding: 8px;
-  background: #2a2a2a;
+  background: #0d0d0d;
   margin-bottom: 4px;
   border-radius: 4px;
   cursor: grab;
@@ -344,7 +345,7 @@ const toggleTask = async (task: Task) => {
 .task-checkbox {
   width: 20px;
   height: 20px;
-  border: 1px solid #444;
+  border: 1px solid #33333357;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -397,15 +398,15 @@ const toggleTask = async (task: Task) => {
 
 .add-category-form {
   padding: 10px;
-  border-top: 1px solid #333;
+  border-top: 1px solid #33333357;
 }
 
 .category-input {
   width: 100%;
   padding: 10px;
-  background: #2a2a2a;
+  background: #0d0d0d;
   color: #fff;
-  border: 1px solid #444;
+  border: 1px solid #33333357;
   border-radius: 4px;
   font-size: 14px;
 }
@@ -413,6 +414,7 @@ const toggleTask = async (task: Task) => {
 .category-input:focus {
   outline: none;
   border-color: #4A90E2;
+  background: #101010;
 }
 
 .add-category-submit {
@@ -432,5 +434,6 @@ const toggleTask = async (task: Task) => {
 
 .add-category-submit:hover {
   background: #3a7bd5;
+  transform: scale(1.05);
 }
 </style>

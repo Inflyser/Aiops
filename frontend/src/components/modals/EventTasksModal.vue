@@ -23,7 +23,7 @@
       
       <!-- Задачи события -->
       <div class="form-group">
-        <label class="form-label">Задачи ({{ eventTasks.length }})</label>
+        <label class="form-label">Задачи ({{ completedTasksCount }}/{{ eventTasks.length }})</label>
         <div v-if="eventTasks.length === 0" class="empty-tasks">
           Нет привязанных задач
         </div>
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import axios from 'axios'
@@ -83,6 +83,7 @@ interface CalendarEvent {
   start: string
   end: string
   task_count?: number
+  completed_task_count?: number
   task_ids?: string[]
 }
 
@@ -105,6 +106,11 @@ const emit = defineEmits<{
 
 // Задачи события
 const eventTasks = ref<Task[]>([])
+
+// Количество выполненных задач
+const completedTasksCount = computed(() => {
+  return eventTasks.value.filter(task => task.completed).length
+})
 
 // API для работы с задачами событий
 const eventTasksApi = axios.create({
@@ -143,6 +149,8 @@ const toggleTaskComplete = async (task: Task) => {
       completed: !task.completed
     })
     task.completed = !task.completed
+    // Emit event to refresh calendar events
+    emit('task-removed')
   } catch (error) {
     console.error('Failed to toggle task:', error)
   }

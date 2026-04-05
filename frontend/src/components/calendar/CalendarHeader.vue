@@ -5,7 +5,7 @@
       <button class="nav-btn1" @click="$emit('prev-week')"><</button>
       <button class="nav-btn1" @click="$emit('next-week')">></button>
     </div>
-    <div class="days-header" :style="{ width: inboxPanelOpen ? 'calc(100% - 400px)' : '100%' }">
+    <div class="days-header">
       <!-- Empty column for time labels -->
       <div class="time-header"></div>
       <div
@@ -30,7 +30,6 @@ dayjs.locale('ru')
 
 const props = defineProps<{
   currentWeekStart: dayjs.Dayjs
-  inboxPanelOpen?: boolean
 }>()
 
 defineEmits<{
@@ -65,6 +64,7 @@ const monthYear = computed(() => {
   padding: 0;
   flex-shrink: 0;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .calendar-header2 {
@@ -95,6 +95,7 @@ const monthYear = computed(() => {
   box-sizing: border-box;
   padding-left: 0;
   margin-left: 0;
+  width: 100%;
 }
 
 .time-header {
@@ -104,8 +105,8 @@ const monthYear = computed(() => {
 
 .day-header {
   text-align: center;
-  box-sizing: border-box;
   border-right: 1px solid #33333357;
+  box-sizing: border-box;
 }
 
 .day-header:last-child {

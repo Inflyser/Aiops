@@ -7,6 +7,7 @@ from uuid import uuid4
 from app.db.base import get_db
 from app.models.calendar import CalendarEvent
 from app.models.event_task import EventTask
+from app.models.task import Task
 from app.models.user import User
 from app.core.security import get_current_user
 from app.schemas.calendar import CalendarEventCreate, CalendarEventUpdate, CalendarEvent as CalendarEventSchema
@@ -22,9 +23,17 @@ def get_event_tasks_info(db: Session, event_id: str) -> dict:
     
     task_ids = [et.task_id for et in event_tasks]
     
+    # Получаем задачи, чтобы подсчитать выполненные
+    if task_ids:
+        tasks = db.query(Task).filter(Task.id.in_(task_ids)).all()
+        completed_task_count = sum(1 for task in tasks if task.completed)
+    else:
+        completed_task_count = 0
+    
     return {
         'task_ids': task_ids,
-        'task_count': len(task_ids)
+        'task_count': len(task_ids),
+        'completed_task_count': completed_task_count
     }
 
 def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: datetime, db: Session) -> List[dict]:
@@ -60,6 +69,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                     'updated_at': event.updated_at,
                     'task_ids': tasks_info['task_ids'],
                     'task_count': tasks_info['task_count'],
+                    'completed_task_count': tasks_info['completed_task_count'],
                 })
                 continue
             
@@ -119,6 +129,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                             'recurrence_count': event.recurrence_count,
                             'task_ids': tasks_info['task_ids'],
                             'task_count': tasks_info['task_count'],
+                            'completed_task_count': tasks_info['completed_task_count'],
                             'created_at': event.created_at,
                             'updated_at': event.updated_at,
                         })
@@ -160,6 +171,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                 'updated_at': event.updated_at,
                 'task_ids': tasks_info['task_ids'],
                 'task_count': tasks_info['task_count'],
+                'completed_task_count': tasks_info['completed_task_count'],
             })
     
     return expanded
@@ -211,6 +223,7 @@ def create_calendar_event(
     tasks_info = get_event_tasks_info(db, event.id)
     event.task_ids = tasks_info['task_ids']
     event.task_count = tasks_info['task_count']
+    event.completed_task_count = tasks_info['completed_task_count']
     
     return event
 
@@ -243,6 +256,7 @@ def update_calendar_event(
     tasks_info = get_event_tasks_info(db, event.id)
     event.task_ids = tasks_info['task_ids']
     event.task_count = tasks_info['task_count']
+    event.completed_task_count = tasks_info['completed_task_count']
     
     return event
 

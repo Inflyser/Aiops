@@ -10,6 +10,14 @@
           <button class="nav-btn1" @click="$emit('prev-day')"><</button>
           <button class="today-btn" @click="$emit('go-today')">Сегодня</button>
           <button class="nav-btn1" @click="$emit('next-day')">></button>
+          <button
+            class="focus-btn"
+            :class="{ active: focusMode }"
+            @click="toggleFocusMode"
+            title="Режим фокуса"
+          >
+            🎯
+          </button>
         </div>
       </div>
     </div>
@@ -31,15 +39,50 @@
             :key="event.id"
             class="day-event"
             :style="getEventStyle(event)"
+            :data-event-id="event.id"
+            draggable="true"
             @click.stop="handleEventClick(event)"
+            @dragstart="handleDragStart($event, event)"
+            @dragend="handleDragEnd"
+            @dragover="handleTaskDragOver($event)"
+            @drop="handleTaskDrop($event)"
           >
-            <div class="event-time">{{ formatEventTime(event) }}</div>
-            <img
-              v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
-              :src="getTagIconPath(event.tagIcon)"
-              class="event-tag-icon"
-            />
-            <div class="event-title">{{ event.title }}</div>
+            <div class="event-indicator"></div>
+            <div class="event-content">
+              <div class="event-title">
+                <img
+                  v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                  :src="getTagIconPath(event.tagIcon)"
+                  class="event-tag-icon"
+                />
+                {{ event.title }}
+              </div>
+              <div class="event-time">
+                <img src="@/assets/icon-clock.svg" alt="clock" class="event-time-icon" />
+                {{ formatEventTime(event) }}
+              </div>
+              <div v-if="event.description" class="event-description">{{ event.description }}</div>
+              <div v-if="event.task_count && event.task_count > 0" class="event-tasks-indicator" @click.stop="handleEventClick(event)">
+                <span class="tasks-icon">•</span>
+                <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.task_count }} {{ getTaskWord(event.task_count) }}</span>
+              </div>
+            </div>
+            <button 
+              class="event-menu-btn"
+              @click.stop="$emit('event-move-to-next-week', event)"
+              title="Перенести на следующую неделю"
+            >
+              <img src="@/assets/three-point.svg" alt="menu" />
+            </button>
+          </div>
+          
+          <!-- Current Time Line (only for today) -->
+          <div 
+            v-if="isCurrentDay()"
+            class="current-time-line"
+            :style="currentTimeLineStyle"
+          >
+            <div class="current-time-dot"></div>
           </div>
         </div>
       </div>
@@ -48,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -76,6 +119,7 @@ interface CalendarEvent {
   color?: string
   tagIcon?: string
   task_count?: number
+  completed_task_count?: number
 }
 
 const props = defineProps<{
@@ -91,12 +135,31 @@ const emit = defineEmits<{
   (e: 'hour-click', data: { hour: number; date: dayjs.Dayjs }): void
   (e: 'open-event', event: CalendarEvent): void
   (e: 'open-event-tasks', event: CalendarEvent): void
+  (e: 'event-move-to-next-week', event: CalendarEvent): void
+  (e: 'event-drop', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
+  (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
+  (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
 }>()
 
 // Double click detection
 const lastClickEvent = ref<{ event: CalendarEvent; time: number } | null>(null)
 const clickTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 const DOUBLE_CLICK_DELAY = 300 // ms
+
+// Focus mode state
+const focusMode = ref(false)
+
+const toggleFocusMode = () => {
+  focusMode.value = !focusMode.value
+}
+
+// Drag and drop state
+const draggedEvent = ref<CalendarEvent | null>(null)
+const isAltPressed = ref(false)
+
+// Current time for red line
+const currentTime = ref(dayjs())
+let timeInterval: ReturnType<typeof setInterval> | null = null
 
 const hours = computed(() => {
   if (props.compactMode) {
@@ -113,6 +176,85 @@ const calendarHeight = computed(() => {
 const handleRowClick = (hour: number) => {
   emit('hour-click', { hour, date: props.currentDay })
 }
+
+const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
+  draggedEvent.value = calendarEvent
+  isAltPressed.value = event.altKey
+  
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = event.altKey ? 'copy' : 'move'
+    event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent))
+    event.dataTransfer.setData('application/x-alt-drag', String(event.altKey))
+  }
+}
+
+const handleDragEnd = () => {
+  draggedEvent.value = null
+  isAltPressed.value = false
+}
+
+const handleTaskDragOver = (event: DragEvent) => {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const handleTaskDrop = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  
+  try {
+    const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
+    
+    if (droppedData.id && droppedData.title) {
+      const targetElement = event.target as HTMLElement
+      const eventBlock = targetElement.closest('.day-event')
+      
+      if (eventBlock) {
+        const eventId = eventBlock.getAttribute('data-event-id')
+        const targetEvent = props.events.find(e => String(e.id) === eventId)
+        
+        if (targetEvent) {
+          emit('task-drop-to-event', { task: droppedData, event: targetEvent })
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing task data:', error)
+  }
+}
+
+// Get correct word form for task count
+const getTaskWord = (count: number): string => {
+  const lastTwo = count % 100
+  const lastOne = count % 10
+  
+  if (lastTwo >= 11 && lastTwo <= 14) return 'задач'
+  if (lastOne === 1) return 'задача'
+  if (lastOne >= 2 && lastOne <= 4) return 'задачи'
+  return 'задач'
+}
+
+// Check if current day is today
+const isCurrentDay = () => {
+  return dayjs().isSame(props.currentDay, 'day')
+}
+
+// Calculate the position of the current time line
+const currentTimeLineStyle = computed(() => {
+  const hours = currentTime.value.hour()
+  const minutes = currentTime.value.minute()
+  
+  const startHour = props.compactMode ? 7 : 0
+  const totalMinutes = (hours - startHour) * 60 + minutes
+  
+  const top = (totalMinutes / 60) * 120
+  
+  return {
+    top: `${top}px`
+  }
+})
 
 // Handle event click with double click detection
 const handleEventClick = (event: CalendarEvent) => {
@@ -176,6 +318,20 @@ const getEventStyle = (event: CalendarEvent) => {
       return { display: 'none' }
     }
     
+    if (focusMode.value) {
+      // Focus mode: 25% width, centered
+      return {
+        top: `${clampedTop}px`,
+        height: `${clampedHeight}px`,
+        backgroundColor: eventColor,
+        position: 'absolute' as const,
+        left: '37.5%', // (100% - 25%) / 2
+        width: '25%',
+        right: 'auto',
+        zIndex: 10
+      }
+    }
+    
     return {
       top: `${clampedTop}px`,
       height: `${clampedHeight}px`,
@@ -198,6 +354,20 @@ const getEventStyle = (event: CalendarEvent) => {
     return { display: 'none' }
   }
   
+  if (focusMode.value) {
+    // Focus mode: 25% width, centered
+    return {
+      top: `${clampedTop}px`,
+      height: `${clampedHeight}px`,
+      backgroundColor: eventColor,
+      position: 'absolute' as const,
+      left: '37.5%', // (100% - 25%) / 2
+      width: '25%',
+      right: 'auto',
+      zIndex: 10
+    }
+  }
+  
   return {
     top: `${clampedTop}px`,
     height: `${clampedHeight}px`,
@@ -214,6 +384,19 @@ const formatEventTime = (event: CalendarEvent) => {
   const end = dayjs(event.end)
   return `${start.format('HH:mm')} - ${end.format('HH:mm')}`
 }
+
+// Lifecycle hooks
+onMounted(() => {
+  timeInterval = setInterval(() => {
+    currentTime.value = dayjs()
+  }, 60000)
+})
+
+onUnmounted(() => {
+  if (timeInterval) {
+    clearInterval(timeInterval)
+  }
+})
 </script>
 
 <style scoped>
@@ -294,6 +477,26 @@ const formatEventTime = (event: CalendarEvent) => {
   background: #2a2a2a;
 }
 
+.focus-btn {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.focus-btn:hover {
+  background: #2a2a2a;
+}
+
+.focus-btn.active {
+  background: #4a5568;
+  border-color: #4a5568;
+}
+
 .day-grid {
   display: flex;
   flex-direction: column;
@@ -321,7 +524,7 @@ const formatEventTime = (event: CalendarEvent) => {
 }
 
 .hour-events:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: rgba(255,255,255, 0.03);
 }
 
 .events-container {
@@ -349,21 +552,136 @@ const formatEventTime = (event: CalendarEvent) => {
   transform: scale(1.02);
 }
 
-.event-time {
-  font-size: 12px;
-  opacity: 0.8;
+.event-indicator {
+  width: 7px;
+  border-radius: 6px;
+  background-color: #ffffff;
+  margin-right: 8px;
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
-.event-tag-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  filter: invert(1);
-  margin-right: 4px;
+.event-content {
+  flex: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.event-content * {
+  pointer-events: none;
+}
+
+.event-time {
+  font-size: 16px;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-time-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .event-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-tag-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  filter: invert(1);
+}
+
+.event-description {
   font-size: 14px;
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.event-tasks-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  pointer-events: auto;
+}
+
+.event-tasks-indicator:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.tasks-icon {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tasks-count {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.event-menu-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity 0.2s;
+  z-index: 15;
+}
+
+.day-event:hover .event-menu-btn {
+  opacity: 1;
+}
+
+.event-menu-btn:hover {
+  opacity: 0.8 !important;
+}
+
+.event-menu-btn img {
+  display: block;
+  width: 20px;
+  height: auto;
+}
+
+/* Current Time Line */
+.current-time-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #ff4444;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.current-time-dot {
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  background-color: #ff4444;
+  border-radius: 50%;
 }
 </style>

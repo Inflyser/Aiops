@@ -43,4 +43,5 @@ class CalendarEvent(CalendarEventBase):
     updated_at: Optional[datetime] = None
     task_ids: List[str] = []  # Список ID задач, связанных с событием
     task_count: int = 0  # Количество задач в событии
+    completed_task_count: int = 0  # Количество выполненных задач в событии
 

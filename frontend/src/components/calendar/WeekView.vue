@@ -3,8 +3,8 @@
     <!-- Calendar Grid -->
     <div class="calendar-grid">
       <div class="time-column">
-        <div 
-          v-for="hour in hours" 
+        <div
+          v-for="hour in hours"
           :key="hour"
           class="time-slot"
         >
@@ -12,7 +12,7 @@
         </div>
       </div>
 
-      <div class="days-container" :style="{ minHeight: calendarHeight + 'px', width: inboxPanelOpen ? 'calc(100% - 400px)' : '100%' }">
+      <div class="days-container" :style="{ minHeight: calendarHeight + 'px' }">
         <div
           v-for="day in weekDays"
           :key="day.date"
@@ -27,8 +27,8 @@
           @dragleave="handleDragLeave"
           @drop="handleDrop($event, day)"
         >
-          <div 
-            v-for="hour in hours" 
+          <div
+            v-for="hour in hours"
             :key="hour"
             class="hour-slot"
           ></div>
@@ -63,7 +63,7 @@
               <div v-if="event.description" class="event-description">{{ event.description }}</div>
               <div v-if="event.task_count && event.task_count > 0" class="event-tasks-indicator" @click.stop="handleEventClick(event)">
                 <span class="tasks-icon">•</span>
-                <span class="tasks-count">{{ event.task_count }} {{ getTaskWord(event.task_count) }}</span>
+                <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.task_count }} {{ getTaskWord(event.task_count) }}</span>
               </div>
             </div>
             <button 
@@ -127,6 +127,7 @@ interface CalendarEvent {
   tagIcon?: string
   task_ids?: string[]
   task_count?: number
+  completed_task_count?: number
 }
 
 const props = defineProps<{
@@ -144,6 +145,8 @@ const emit = defineEmits<{
   (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'event-move-to-next-week', event: CalendarEvent): void
   (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
+  (e: 'task-drop-to-day', data: { task: any; time: dayjs.Dayjs }): void
+  (e: 'category-drop-to-day', data: { categoryId: string; categoryTitle: string; time: dayjs.Dayjs }): void
 }>()
 
 // Drag and drop state
@@ -191,44 +194,83 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
   event.preventDefault()
   dragOverDay.value = null
   
-  if (draggedEvent.value) {
-    const eventData = draggedEvent.value
-    const isCopy = event.altKey || isAltPressed.value // Проверяем Alt при сбросе
+  try {
+    const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
     
-    // Calculate the time offset from the original start
-    const originalStart = dayjs(eventData.start)
-    const originalEnd = dayjs(eventData.end)
-    const duration = originalEnd.diff(originalStart, 'minute')
-    
-    // Get the time from the drop position
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-    const dropY = event.clientY - rect.top
-    const slotIndex = Math.floor(dropY / 120)
-    const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
-    const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
-    
-    const hour = props.compactMode ? slotIndex + 7 : slotIndex
-    
-    // Calculate new start and end times
-    const newStart = day.fullDate.hour(hour).minute(minutes)
-    const newEnd = newStart.add(duration, 'minute')
-    
-    // Если Alt зажат - это копирование, иначе - перемещение
-    if (isCopy) {
-      emit('event-copy', {
-        event: eventData,
-        newDate: day.date,
-        newStart: newStart.toISOString(),
-        newEnd: newEnd.toISOString()
+    // Проверяем, это перетаскивание события календаря или задачи/категории из Inbox
+    if (draggedEvent.value) {
+      // Перетаскивание события календаря
+      const eventData = draggedEvent.value
+      const isCopy = event.altKey || isAltPressed.value // Проверяем Alt при сбросе
+      
+      // Calculate the time offset from the original start
+      const originalStart = dayjs(eventData.start)
+      const originalEnd = dayjs(eventData.end)
+      const duration = originalEnd.diff(originalStart, 'minute')
+      
+      // Get the time from the drop position
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+      const dropY = event.clientY - rect.top
+      const slotIndex = Math.floor(dropY / 120)
+      const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
+      const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
+      
+      const hour = props.compactMode ? slotIndex + 7 : slotIndex
+      
+      // Calculate new start and end times
+      const newStart = day.fullDate.hour(hour).minute(minutes)
+      const newEnd = newStart.add(duration, 'minute')
+      
+      // Если Alt зажат - это копирование, иначе - перемещение
+      if (isCopy) {
+        emit('event-copy', {
+          event: eventData,
+          newDate: day.date,
+          newStart: newStart.toISOString(),
+          newEnd: newEnd.toISOString()
+        })
+      } else {
+        emit('event-drop', {
+          event: eventData,
+          newDate: day.date,
+          newStart: newStart.toISOString(),
+          newEnd: newEnd.toISOString()
+        })
+      }
+    } else if (droppedData.type === 'category') {
+      // Перетаскивание категории из Inbox
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+      const dropY = event.clientY - rect.top
+      const slotIndex = Math.floor(dropY / 120)
+      const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
+      const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
+      
+      const hour = props.compactMode ? slotIndex + 7 : slotIndex
+      const dropTime = day.fullDate.hour(hour).minute(minutes)
+      
+      emit('category-drop-to-day', {
+        categoryId: droppedData.categoryId,
+        categoryTitle: droppedData.categoryTitle,
+        time: dropTime
       })
-    } else {
-      emit('event-drop', {
-        event: eventData,
-        newDate: day.date,
-        newStart: newStart.toISOString(),
-        newEnd: newEnd.toISOString()
+    } else if (droppedData.id && droppedData.title) {
+      // Перетаскивание задачи из Inbox (проверяем по наличию id и title)
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+      const dropY = event.clientY - rect.top
+      const slotIndex = Math.floor(dropY / 120)
+      const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
+      const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
+      
+      const hour = props.compactMode ? slotIndex + 7 : slotIndex
+      const dropTime = day.fullDate.hour(hour).minute(minutes)
+      
+      emit('task-drop-to-day', {
+        task: droppedData,
+        time: dropTime
       })
     }
+  } catch (error) {
+    console.error('Error parsing drop data:', error)
   }
   
   draggedEvent.value = null
@@ -248,19 +290,36 @@ const handleTaskDrop = (event: DragEvent, _day: WeekDay) => {
   event.stopPropagation()
   
   try {
-    const taskData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
+    const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
     
-    // Находим событие, над которым была сброшена задача
-    const targetElement = event.target as HTMLElement
-    const eventBlock = targetElement.closest('.event-block')
-    
-    if (eventBlock) {
-      // Находим событие по его ID
-      const eventId = eventBlock.getAttribute('data-event-id')
-      const targetEvent = props.events.find(e => String(e.id) === eventId)
+    // Проверяем, это категория или задача
+    if (droppedData.type === 'category') {
+      // Находим событие, над которым была сброшена категория
+      const targetElement = event.target as HTMLElement
+      const eventBlock = targetElement.closest('.event-block')
       
-      if (targetEvent) {
-        emit('task-drop-to-event', { task: taskData, event: targetEvent })
+      if (eventBlock) {
+        // Находим событие по его ID
+        const eventId = eventBlock.getAttribute('data-event-id')
+        const targetEvent = props.events.find(e => String(e.id) === eventId)
+        
+        if (targetEvent) {
+          emit('task-drop-to-event', { task: droppedData, event: targetEvent })
+        }
+      }
+    } else if (droppedData.id && droppedData.title) {
+      // Находим событие, над которым была сброшена задача
+      const targetElement = event.target as HTMLElement
+      const eventBlock = targetElement.closest('.event-block')
+      
+      if (eventBlock) {
+        // Находим событие по его ID
+        const eventId = eventBlock.getAttribute('data-event-id')
+        const targetEvent = props.events.find(e => String(e.id) === eventId)
+        
+        if (targetEvent) {
+          emit('task-drop-to-event', { task: droppedData, event: targetEvent })
+        }
       }
     }
   } catch (error) {
@@ -476,6 +535,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  box-sizing: border-box;
 }
 
 .calendar-grid {
@@ -485,6 +545,9 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  transition: min-height 0.3s ease;
 }
 
 .time-column {
@@ -497,6 +560,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   left: 0;
   background-color: #050505;
   z-index: 5;
+  box-sizing: border-box;
 }
 
 .time-slot {
@@ -518,6 +582,8 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   grid-template-columns: repeat(7, 1fr);
   flex: 1;
   position: relative;
+  box-sizing: border-box;
+  transition: min-height 0.3s ease;
 }
 
 .day-column {
@@ -525,6 +591,8 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   position: relative;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  transition: min-height 0.3s ease;
 }
 
 .hour-slot {

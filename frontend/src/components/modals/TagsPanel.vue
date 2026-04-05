@@ -146,8 +146,8 @@ const getIconPath = (iconName: string): string | undefined => {
   top: 60px;
   right: 20px;
   width: 320px;
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: #0a0a0a;
+  border: 1px solid #33333357;
   border-radius: 12px;
   padding: 16px;
   z-index: 100;
@@ -175,7 +175,7 @@ const getIconPath = (iconName: string): string | undefined => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #33333357;
 }
 
 .tags-panel-header h3 {
@@ -212,12 +212,12 @@ const getIconPath = (iconName: string): string | undefined => {
   padding: 8px;
   border-radius: 6px;
   margin-bottom: 4px;
-  background: #252525;
+  background: #0d0d0d;
   transition: background 0.2s;
 }
 
 .tag-item:hover {
-  background: #2a2a2a;
+  background: #151515;
 }
 
 .tag-color {
@@ -273,13 +273,13 @@ const getIconPath = (iconName: string): string | undefined => {
   flex-direction: column;
   gap: 12px;
   padding-top: 12px;
-  border-top: 1px solid #333;
+  border-top: 1px solid #33333357;
 }
 
 .tag-input {
   width: 100%;
-  background: #252525;
-  border: 1px solid #333;
+  background: #0d0d0d;
+  border: 1px solid #33333357;
   border-radius: 6px;
   padding: 10px 12px;
   color: #fff;
@@ -290,6 +290,7 @@ const getIconPath = (iconName: string): string | undefined => {
 .tag-input:focus {
   outline: none;
   border-color: #3B82F6;
+  background: #101010;
 }
 
 .tag-input::placeholder {
@@ -349,9 +350,9 @@ const getIconPath = (iconName: string): string | undefined => {
 .icon-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid #333;
+  border: 1px solid #33333357;
   border-radius: 6px;
-  background: #252525;
+  background: #0d0d0d;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -361,7 +362,7 @@ const getIconPath = (iconName: string): string | undefined => {
 }
 
 .icon-btn:hover {
-  background: #333;
+  background: #151515;
 }
 
 .icon-btn.selected {
@@ -391,10 +392,11 @@ const getIconPath = (iconName: string): string | undefined => {
 
 .add-tag-btn:hover:not(:disabled) {
   background: #2563eb;
+  transform: scale(1.02);
 }
 
 .add-tag-btn:disabled {
-  background: #333;
+  background: #33333357;
   cursor: not-allowed;
 }
 </style>

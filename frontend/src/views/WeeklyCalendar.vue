@@ -1,5 +1,5 @@
 <template>
-  <div class="weekly-calendar">
+  <div class="weekly-calendar" :class="{ 'inbox-open': showInboxPanel }">
     <!-- Top Bar -->
     <CalendarTopBar
       :compact-mode="compactMode"
@@ -33,7 +33,6 @@
         <div class="calendar-header-with-inbox">
           <CalendarHeader
             :current-week-start="currentWeekStart"
-            :inbox-panel-open="showInboxPanel"
             @prev-week="lastWeek"
             @next-week="nextWeek"
           />
@@ -52,6 +51,8 @@
           @event-copy="handleEventCopy"
           @event-move-to-next-week="handleMoveToNextWeek"
           @task-drop-to-event="handleTaskDropToEvent"
+          @task-drop-to-day="handleTaskDropToDay"
+          @category-drop-to-day="handleCategoryDropToDay"
         />
       </div>
 
@@ -87,10 +88,13 @@
           @prev-day="prevDay"
           @next-day="nextDay"
           @go-today="goToToday"
-          @toggle-compact="toggleCompactMode"
           @hour-click="handleDayHourClick"
           @open-event="openEventModal"
           @open-event-tasks="openEventTasksModal"
+          @event-move-to-next-week="handleMoveToNextWeekForDay"
+          @event-drop="handleEventDropForDay"
+          @event-copy="handleEventCopyForDay"
+          @task-drop-to-event="handleTaskDropToEventForDay"
         />
       </div>
     </Transition>
@@ -320,10 +324,6 @@ const goToToday = () => {
   loadEventsForDay()
 }
 
-const toggleCompactMode = () => {
-  compactMode.value = !compactMode.value
-}
-
 const loadEventsForDay = async () => {
   // Загружаем всю неделю чтобы данные были доступны для фильтрации
   const startOfWeek = currentDay.value.startOf('week').format('YYYY-MM-DD')
@@ -480,10 +480,51 @@ const handleTaskRemoved = async () => {
   await tasksStore.fetchTasks()
 }
 
-const handleCategoryDroppedToEvent = async (_data: { event: any; category: InboxCategory }) => {
-  // Перезагружаем события и задачи
-  await loadEvents()
-  await tasksStore.fetchTasks()
+const handleCategoryDroppedToEvent = async (data: { event: any; category: InboxCategory }) => {
+  const { event, category } = data
+  
+  try {
+    // Получаем задачи категории
+    const categoryTasks = tasksStore.tasks.filter((t: any) => t.column_id === category.id)
+    
+    console.log('DEBUG: categoryTasks:', categoryTasks)
+    console.log('DEBUG: event:', event)
+    console.log('DEBUG: category:', category)
+    
+    if (categoryTasks.length === 0) {
+      console.log('No tasks in category:', category.title)
+      return
+    }
+    
+    // Добавляем все задачи категории к событию
+    for (let i = 0; i < categoryTasks.length; i++) {
+      const taskData = categoryTasks[i]
+      
+      // Проверяем, что task.id существует
+      if (!taskData.id) {
+        console.error(`DEBUG: Task ${i} has no id:`, taskData)
+        continue
+      }
+      
+      console.log(`DEBUG: Adding task ${i}:`, taskData)
+      console.log(`DEBUG: event_id type: ${typeof event.id}, value: ${event.id}`)
+      console.log(`DEBUG: task_id type: ${typeof taskData.id}, value: ${taskData.id}`)
+      console.log(`DEBUG: order type: ${typeof i}, value: ${i}`)
+      
+      await eventTasksApi.post('/', {
+        event_id: String(event.id),
+        task_id: String(taskData.id),
+        order: Number(i)
+      })
+    }
+    
+    // Обновляем события
+    await loadEvents()
+    
+    console.log('Category tasks added to event:', category.title, '->', event.title)
+  } catch (error) {
+    console.error('Failed to add category tasks to event:', error)
+  }
 }
 
 const saveEvent = async () => {
@@ -611,6 +652,150 @@ const handleEventDrop = async (data: { event: any; newDate: string; newStart: st
   }, 500)
 }
 
+// Handle event drop for day view
+const handleEventDropForDay = async (data: { event: any; newDate: string; newStart: string; newEnd: string }) => {
+  const { event, newStart, newEnd } = data
+  
+  const oldEvent = { ...event }
+  
+  const eventData = {
+    title: event.title,
+    description: event.description || undefined,
+    start: newStart,
+    end: newEnd,
+    location: event.location || undefined,
+    priority: event.priority || 'medium',
+    color: event.color || '#4a5568',
+    all_day: false,
+    tag_id: event.tag_id || event.tagId || undefined
+  }
+  
+  bouncingEvents.value.add(String(event.id))
+  await calendarStore.updateEvent(event.id, eventData)
+  
+  calendarStore.addToHistory({
+    type: 'update',
+    eventId: event.id,
+    oldEvent,
+    newEvent: { ...event, ...eventData }
+  })
+  
+  setTimeout(() => {
+    const newSet = new Set(bouncingEvents.value)
+    newSet.delete(String(event.id))
+    bouncingEvents.value = newSet
+  }, 500)
+  
+  // Reload events for day view
+  await loadEventsForDay()
+}
+
+// Handle event copy for day view
+const handleEventCopyForDay = async (data: { event: any; newDate: string; newStart: string; newEnd: string }) => {
+  const { event, newStart, newEnd } = data
+  
+  const eventData = {
+    title: event.title,
+    description: event.description || undefined,
+    start: newStart,
+    end: newEnd,
+    location: event.location || undefined,
+    priority: event.priority || 'medium',
+    color: event.color || '#4a5568',
+    all_day: false,
+    tag_id: event.tag_id || event.tagId || undefined
+  }
+  
+  const newEvent = await calendarStore.createEvent(eventData)
+  
+  calendarStore.addToHistory({
+    type: 'create',
+    eventId: newEvent.id,
+    newEvent
+  })
+  
+  loadEventsForDay()
+  
+  console.log('Event copied:', event.title, 'to', newStart)
+}
+
+// Handle task drop to event for day view
+const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
+  const { task, event } = data
+  
+  try {
+    if (task.type === 'category') {
+      const categoryTasks = tasksStore.tasks.filter((t: any) => t.column_id === task.categoryId)
+      
+      if (categoryTasks.length === 0) {
+        console.log('No tasks in category:', task.categoryTitle)
+        return
+      }
+      
+      for (let i = 0; i < categoryTasks.length; i++) {
+        const taskData = categoryTasks[i]
+        
+        if (!taskData.id) {
+          console.error(`Task ${i} has no id:`, taskData)
+          continue
+        }
+        
+        await eventTasksApi.post('/', {
+          event_id: String(event.id),
+          task_id: String(taskData.id),
+          order: Number(i)
+        })
+      }
+      
+      await loadEventsForDay()
+      
+      console.log('Category tasks added to event:', task.categoryTitle, '->', event.title)
+    } else {
+      if (!task.id) {
+        console.error('Task.id is undefined or null')
+        return
+      }
+      
+      await eventTasksApi.post('/', {
+        event_id: String(event.id),
+        task_id: String(task.id),
+        order: Number(0)
+      })
+    
+      await loadEventsForDay()
+      
+      console.log('Task added to event:', task.title, '->', event.title)
+    }
+  } catch (error) {
+    console.error('Failed to add task to event:', error)
+  }
+}
+
+// Handle move event to next week for day view
+const handleMoveToNextWeekForDay = async (event: any) => {
+  const originalStart = dayjs(event.start)
+  const originalEnd = dayjs(event.end)
+  
+  const newStart = originalStart.add(7, 'day')
+  const newEnd = originalEnd.add(7, 'day')
+  
+  const eventData = {
+    title: event.title,
+    description: event.description || undefined,
+    start: newStart.toISOString(),
+    end: newEnd.toISOString(),
+    location: event.location || undefined,
+    priority: event.priority || 'medium',
+    color: event.color || '#4a5568',
+    all_day: false,
+    tag_id: event.tag_id || event.tagId || undefined
+  }
+  
+  await calendarStore.updateEvent(event.id, eventData)
+  
+  console.log('Event moved to next week:', event.title, 'to', newStart.format('YYYY-MM-DD HH:mm'))
+}
+
 // Handle move event to next week (+7 days)
 const handleMoveToNextWeek = async (event: any) => {
   const originalStart = dayjs(event.start)
@@ -643,20 +828,79 @@ const handleTaskDropToEvent = async (data: { task: any; event: any }) => {
   const { task, event } = data
   
   try {
-    // Добавляем задачу к событию через API
-    await eventTasksApi.post('/', {
-      event_id: event.id,
-      task_id: task.id,
-      order: 0
-    })
+    // Проверяем, это категория или задача
+    if (task.type === 'category') {
+      // Получаем задачи категории
+      const categoryTasks = tasksStore.tasks.filter((t: any) => t.column_id === task.categoryId)
+      
+      if (categoryTasks.length === 0) {
+        console.log('No tasks in category:', task.categoryTitle)
+        return
+      }
+      
+      // Добавляем все задачи категории к событию
+      for (let i = 0; i < categoryTasks.length; i++) {
+        const taskData = categoryTasks[i]
+        
+        // Проверяем, что taskData.id существует
+        if (!taskData.id) {
+          console.error(`Task ${i} has no id:`, taskData)
+          continue
+        }
+        
+        await eventTasksApi.post('/', {
+          event_id: String(event.id),
+          task_id: String(taskData.id),
+          order: Number(i)
+        })
+      }
+      
+      // Обновляем события
+      await loadEvents()
+      
+      console.log('Category tasks added to event:', task.categoryTitle, '->', event.title)
+    } else {
+      // Проверяем, что task.id существует
+      if (!task.id) {
+        console.error('Task.id is undefined or null')
+        return
+      }
+      
+      // Добавляем задачу к событию через API
+      await eventTasksApi.post('/', {
+        event_id: String(event.id),
+        task_id: String(task.id),
+        order: Number(0)
+      })
     
-    // Обновляем события, чтобы отобразить количество задач
-    await loadEvents()
-    
-    console.log('Task added to event:', task.title, '->', event.title)
+      // Обновляем события, чтобы отобразить количество задач
+      await loadEvents()
+      
+      console.log('Task added to event:', task.title, '->', event.title)
+    }
   } catch (error) {
     console.error('Failed to add task to event:', error)
   }
+}
+
+// Handle task drop to day
+const handleTaskDropToDay = async (_data: { task: any; time: dayjs.Dayjs }) => {
+  // Не создаем новые события при перетаскивании на пустое место
+  // Задачи должны прикрепляться только к существующим событиям
+  console.log('Task dropped on empty day. Please drop task on an existing event.')
+  
+  // Можно показать уведомление пользователю
+  alert('Перетащите задачу на существующее событие календаря')
+}
+
+// Handle category drop to day
+const handleCategoryDropToDay = async (_data: { categoryId: string; categoryTitle: string; time: dayjs.Dayjs }) => {
+  // Не создаем новые события при перетаскивании на пустое место
+  // Задачи должны прикрепляться только к существующим событиям
+  console.log('Category dropped on empty day. Please drop category on an existing event.')
+  
+  // Можно показать уведомление пользователю
+  alert('Перетащите категорию на существующее событие календаря')
 }
 
 // Handle Alt+drag copy event
@@ -813,6 +1057,13 @@ onUnmounted(() => {
   color: #ffffff;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  transition: padding-right 0.3s ease;
+  padding-right: 0;
+}
+
+.weekly-calendar.inbox-open {
+  padding-right: 400px;
 }
 
 /* Week View Container - with internal scrolling */
@@ -821,6 +1072,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  width: 100%;
 }
 
 /* Calendar Header */
@@ -828,8 +1080,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  padding: 10px 0;
   border-bottom: 1px solid #333;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* DAY VIEW */
