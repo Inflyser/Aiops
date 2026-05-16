@@ -345,6 +345,27 @@ const getIconPath = (iconName: string): string | undefined => {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.icon-selector::-webkit-scrollbar {
+  width: 6px;
+}
+
+.icon-selector::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 3px;
+}
+
+.icon-selector::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.icon-selector::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .icon-btn {

@@ -15,10 +15,9 @@
 
       <div class="divider"></div>
       
-      <form @submit.prevent="viewMode !== 'view' ? $emit('save') : null">
-        <!-- Название задачи -->
+<form @submit.prevent="viewMode !== 'view' ? $emit('save') : null">
+        <!-- Название -->
         <div class="form-group">
-          
           <input
             type="text"
             id="eventTitle"
@@ -28,6 +27,27 @@
             placeholder="Введите название задачи"
           >
         </div>
+        
+        <div class="divider"></div>
+        
+        <!-- Время -->
+        <div class="form-group">
+          <div class="time-range">
+            <input 
+              type="time" 
+              v-model="formData.startTime" 
+              required
+            >
+            <span class="time-separator">—</span>
+            <input 
+              type="time" 
+              v-model="formData.endTime" 
+              required
+            >
+          </div>
+        </div>
+        
+        <div class="divider"></div>
         
         <!-- Описание -->
         <div class="form-group">
@@ -40,9 +60,10 @@
           ></textarea>
         </div>
         
-        <!-- Тег -->
+        <div class="divider"></div>
+        
+        <!-- Теги -->
         <div class="form-group">
-          
           <div class="tags-selector">
             <div 
               v-for="tag in availableTags" 
@@ -65,23 +86,31 @@
           </div>
         </div>
         
-        <!-- Время начало - конец -->
+        <div class="divider"></div>
+        
+        <!-- Дата -->
         <div class="form-group">
-         
-          <div class="time-range">
-            <input 
-              type="time" 
-              v-model="formData.startTime" 
-              required
+          <label class="form-label">Дата</label>
+          <div class="date-selector">
+            <button 
+              v-for="day in upcomingDays" 
+              :key="day.date"
+              type="button"
+              class="date-btn"
+              :class="{ 
+                'selected': day.date === formData.date,
+                'is-today': day.isToday
+              }"
+              @click="selectDate(day.date)"
             >
-            <span class="time-separator">—</span>
-            <input 
-              type="time" 
-              v-model="formData.endTime" 
-              required
-            >
+              <span class="date-day-name">{{ day.dayName }}</span>
+              <span class="date-day-num">{{ day.dayNum }}</span>
+              <span class="date-month">{{ day.month }}</span>
+            </button>
           </div>
         </div>
+        
+        <div class="divider"></div>
         
         <!-- Повторение -->
         <div class="form-group">
@@ -93,7 +122,6 @@
             </select>
           </div>
           
-          <!-- Выбор дней недели -->
           <div v-if="formData.recurrenceType === 'weekly'" class="recurrence-days">
             <button 
               v-for="(day, index) in weekDaysFull" 
@@ -107,7 +135,6 @@
             </button>
           </div>
           
-          <!-- Дата окончания повторения -->
           <div v-if="formData.recurrenceType === 'weekly'" class="recurrence-end">
             <label class="small-label">Повторять до:</label>
             <input 
@@ -115,45 +142,6 @@
               v-model="formData.recurrenceEndDate" 
               class="recurrence-end-input"
             >
-          </div>
-        </div>
-        
-        <!-- Разделитель -->
-        <div class="divider"></div>
-        
-        <!-- Выбор даты -->
-        <div class="form-group">
-          
-          <!-- Навигация по месяцам -->
-          <div class="month-navigator">
-            <button type="button" class="nav-btn" @click="prevMonth">←</button>
-            <span class="month-year">{{ monthYearDisplay }}</span>
-            <button type="button" class="nav-btn" @click="nextMonth">→</button>
-          </div>
-
-          <div class="divider"></div>
-          
-          <!-- Мини календарь -->
-          <div class="mini-calendar">
-            <div class="weekdays">
-              <span v-for="day in weekDays" :key="day">{{ day }}</span>
-            </div>
-            <div class="calendar-days">
-              <button 
-                v-for="(day, index) in calendarDays" 
-                :key="index"
-                type="button"
-                class="calendar-day"
-                :class="{ 
-                  'other-month': !day.isCurrentMonth,
-                  'selected': day.date === formData.date,
-                  'today': day.isToday
-                }"
-                @click="selectDate(day.date)"
-              >
-                {{ day.dayNumber }}
-              </button>
-            </div>
           </div>
         </div>
         
@@ -262,9 +250,23 @@ defineEmits<{
 }>()
 
 const selectedTagId = ref<string | null>(null)
-const calendarMonth = ref(dayjs())
-const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const weekDaysFull = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+const upcomingDays = computed(() => {
+  const days = []
+  const today = dayjs()
+  for (let i = 0; i < 5; i++) {
+    const d = today.add(i, 'day')
+    days.push({
+      date: d.format('YYYY-MM-DD'),
+      dayName: weekDaysFull[d.day() - 1],
+      dayNum: d.format('D'),
+      month: d.format('MMMM'),
+      isToday: i === 0
+    })
+  }
+  return days
+})
 
 // Задачи события
 const selectedDays = ref<number[]>([])
@@ -301,61 +303,6 @@ const headerDateTime = computed(() => {
   return timeStr ? `${dateStr}, ${timeStr}` : dateStr
 })
 
-const monthYearDisplay = computed(() => {
-  return calendarMonth.value.format('MMMM YYYY')
-})
-
-const calendarDays = computed(() => {
-  const days: Array<{dayNumber: number, date: string, isCurrentMonth: boolean, isToday: boolean}> = []
-  const startOfMonth = calendarMonth.value.startOf('month')
-  const endOfMonth = calendarMonth.value.endOf('month')
-  const startDay = startOfMonth.day() || 7
-  const today = dayjs().format('YYYY-MM-DD')
-  
-  const prevMonth = calendarMonth.value.subtract(1, 'month')
-  const prevMonthDays = prevMonth.daysInMonth()
-  for (let i = startDay - 1; i > 0; i--) {
-    const dayNum = prevMonthDays - i + 1
-    days.push({
-      dayNumber: dayNum,
-      date: prevMonth.format(`YYYY-MM-${String(dayNum).padStart(2, '0')}`),
-      isCurrentMonth: false,
-      isToday: false
-    })
-  }
-  
-  for (let i = 1; i <= endOfMonth.date(); i++) {
-    const dateStr = calendarMonth.value.format(`YYYY-MM-${String(i).padStart(2, '0')}`)
-    days.push({
-      dayNumber: i,
-      date: dateStr,
-      isCurrentMonth: true,
-      isToday: dateStr === today
-    })
-  }
-  
-  const remainingDays = 42 - days.length
-  for (let i = 1; i <= remainingDays; i++) {
-    const nextMonth = calendarMonth.value.add(1, 'month')
-    days.push({
-      dayNumber: i,
-      date: nextMonth.format(`YYYY-MM-${String(i).padStart(2, '0')}`),
-      isCurrentMonth: false,
-      isToday: false
-    })
-  }
-  
-  return days
-})
-
-const prevMonth = () => {
-  calendarMonth.value = calendarMonth.value.subtract(1, 'month')
-}
-
-const nextMonth = () => {
-  calendarMonth.value = calendarMonth.value.add(1, 'month')
-}
-
 const selectDate = (date: string) => {
   const fData = props.formData as any
   fData.date = date
@@ -363,16 +310,11 @@ const selectDate = (date: string) => {
 
 watch(() => props.formData, (newFormData) => {
   selectedTagId.value = newFormData.tagId || null
-  if (newFormData.date) {
-    calendarMonth.value = dayjs(newFormData.date)
-  }
 }, { immediate: true })
 
 watch(() => props.show, (isVisible) => {
   if (isVisible && props.editingEvent) {
     selectedTagId.value = props.editingEvent.tagId || null
-  } else if (isVisible && props.formData.date) {
-    calendarMonth.value = dayjs(props.formData.date)
   }
 })
 
@@ -612,6 +554,65 @@ const selectTag = (tag: Tag) => {
   margin: 12px -20px 12px -20px;
 }
 
+.date-selector {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.date-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 14px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 60px;
+}
+
+.date-btn:hover {
+  background: #333;
+  border-color: #666;
+}
+
+.date-btn.selected {
+  background: #1c3496;
+  border-color: #1c3496;
+}
+
+.date-btn.is-today {
+  border-color: #1c3496;
+}
+
+.date-day-name {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.date-btn.selected .date-day-name {
+  color: #aaa;
+}
+
+.date-day-num {
+  font-size: 18px;
+  color: #fff;
+  font-weight: 600;
+  margin: 2px 0;
+}
+
+.date-month {
+  font-size: 10px;
+  color: #666;
+}
+
+.date-btn.selected .date-month {
+  color: #aaa;
+}
+
 .month-navigator {
   display: flex;
   align-items: center;
@@ -756,6 +757,13 @@ const selectTag = (tag: Tag) => {
   background-color: #2a2a2a;
   border: 1px solid #444;
   border-radius: 10px;
+  max-height: 100px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.tags-selector::-webkit-scrollbar {
+  display: none;
 }
 
 .tag-option {
