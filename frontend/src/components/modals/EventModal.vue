@@ -32,18 +32,41 @@
         
         <!-- Время -->
         <div class="form-group">
-          <div class="time-range">
-            <input 
-              type="time" 
-              v-model="formData.startTime" 
-              required
-            >
-            <span class="time-separator">—</span>
-            <input 
-              type="time" 
-              v-model="formData.endTime" 
-              required
-            >
+          <div class="time-slider-group">
+            <div class="slider-labels">
+              <span class="time-display">Начало: {{ formData.startTime }}</span>
+              <span class="time-display">Конец: {{ formData.endTime }}</span>
+            </div>
+            <div class="dual-slider">
+              <div class="track">
+                <div class="track-fill" :style="rangeStyle"></div>
+              </div>
+              <input 
+                type="range" 
+                class="range-input range-min"
+                min="0" 
+                max="1439"
+                step="10"
+                :value="timeToMinutes(formData.startTime)"
+                @input="updateStartTime($event)"
+              >
+              <input 
+                type="range" 
+                class="range-input range-max"
+                min="0" 
+                max="1439"
+                step="10"
+                :value="timeToMinutes(formData.endTime)"
+                @input="updateEndTime($event)"
+              >
+            </div>
+            <div class="slider-ticks">
+              <span>00:00</span>
+              <span>06:00</span>
+              <span>12:00</span>
+              <span>18:00</span>
+              <span>23:59</span>
+            </div>
           </div>
         </div>
         
@@ -318,6 +341,46 @@ watch(() => props.show, (isVisible) => {
   }
 })
 
+const timeToMinutes = (time: string): number => {
+  if (!time) return 0
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + (minutes || 0)
+}
+
+const minutesToTime = (mins: number): string => {
+  const rounded = Math.round(mins / 10) * 10
+  const h = Math.floor(rounded / 60)
+  const m = rounded % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+const updateStartTime = (event: Event) => {
+  const mins = Math.round(parseInt((event.target as HTMLInputElement).value) / 10) * 10
+  const fData = props.formData as any
+  fData.startTime = minutesToTime(mins)
+  if (timeToMinutes(fData.endTime) <= mins) {
+    fData.endTime = minutesToTime(Math.min(mins + 30, 1430))
+  }
+}
+
+const updateEndTime = (event: Event) => {
+  const mins = Math.round(parseInt((event.target as HTMLInputElement).value) / 10) * 10
+  const fData = props.formData as any
+  if (mins <= timeToMinutes(fData.startTime)) {
+    fData.endTime = minutesToTime(Math.max(mins, timeToMinutes(fData.startTime) + 30))
+  } else {
+    fData.endTime = minutesToTime(mins)
+  }
+}
+
+const rangeStyle = computed(() => {
+  const start = timeToMinutes(props.formData.startTime)
+  const end = timeToMinutes(props.formData.endTime)
+  const left = (start / 1439) * 100
+  const width = ((end - start) / 1439) * 100
+  return { left: `${left}%`, width: `${width}%` }
+})
+
 const selectTag = (tag: Tag) => {
   const fData = props.formData as any
   
@@ -358,15 +421,16 @@ const selectTag = (tag: Tag) => {
 }
 
 .modal-content {
-  background-color: #121212;
+  background-color: #0a0a0a;
   padding: 20px;
-  border-radius: 25px;
+  border-radius: 12px;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  border: 1px solid #444;
+  border: 1px solid #33333357;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -438,12 +502,12 @@ const selectTag = (tag: Tag) => {
 .form-group textarea {
   width: 100%;
   padding: 8px 10px;
-  background-color: #2a2a2a;
-  border: 1px solid #444;
+  background-color: #0d0d0d;
+  border: 1px solid #33333357;
   color: #fff;
   font-size: 13px;
   font-family: inherit;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .form-group textarea {
@@ -453,24 +517,86 @@ const selectTag = (tag: Tag) => {
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #1c3496;
+  border-color: #3B82F6;
 }
 
-.time-range {
+.dual-slider {
+  position: relative;
+  height: 24px;
+  margin: 12px 0 8px;
+}
+
+.track {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: #333;
+  border-radius: 999px;
+}
+
+.track-fill {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  border-radius: 999px;
+}
+
+.range-input {
+  position: absolute;
+  width: 100%;
+  height: 24px;
+  -webkit-appearance: none;
+  background: transparent;
+  pointer-events: none;
+  top: 0;
+  margin: 0;
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.08), 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.range-min::-webkit-slider-thumb {
+  background: #3B82F6;
+}
+
+.range-max::-webkit-slider-thumb {
+  background: #22c55e;
+}
+
+.range-input::-webkit-slider-runnable-track {
+  height: 0;
+}
+
+.slider-labels {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
 
-.time-range input {
-  width: 100px;
-  text-align: center;
+.time-display {
+  font-size: 12px;
+  color: #aaa;
+  background: #0d0d0d;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
-.time-separator {
+.slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
   color: #666;
-  font-size: 16px;
+  margin-top: 4px;
 }
 
 .recurrence-options {
@@ -480,11 +606,11 @@ const selectTag = (tag: Tag) => {
 .recurrence-select {
   width: 100%;
   padding: 10px;
-  background-color: #2a2a2a;
-  border: 1px solid #444;
+  background-color: #0d0d0d;
+  border: 1px solid #33333357;
   color: #fff;
   font-size: 14px;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
@@ -497,9 +623,9 @@ const selectTag = (tag: Tag) => {
 .day-btn {
   width: 32px;
   height: 28px;
-  border: 1px solid #444;
+  border: 1px solid #33333357;
   border-radius: 4px;
-  background: #2a2a2a;
+  background: #0d0d0d;
   color: #888;
   font-size: 11px;
   cursor: pointer;
@@ -507,7 +633,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .day-btn:hover {
-  background: #333;
+  background: #151515;
   color: #fff;
 }
 
@@ -716,13 +842,13 @@ const selectTag = (tag: Tag) => {
 }
 
 .btn-primary {
-  background-color: #1c3496;
+  background-color: #3B82F6;
   color: #fff;
 }
 
 .btn-secondary {
-  background-color: #333;
-  color: #fff;
+  background-color: #151515;
+  color: #aaa;
 }
 
 .btn-icon {
@@ -754,8 +880,8 @@ const selectTag = (tag: Tag) => {
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px;
-  background-color: #2a2a2a;
-  border: 1px solid #444;
+  background-color: #0d0d0d;
+  border: 1px solid #33333357;
   border-radius: 10px;
   max-height: 100px;
   overflow-y: auto;

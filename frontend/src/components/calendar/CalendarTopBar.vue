@@ -1,6 +1,10 @@
 <template>
   <div class="top-bar">
+
     <div class="time-display">{{ currentTime }}</div>
+    <button class="settings-btn" @click="$emit('open-settings')" title="Настройки">
+      <img src="@/assets/icon-settings_alert.svg" alt="Настройки" />
+    </button>
     <div class="menu-wrapper">
       <ThreeDotsMenu />
     </div>
@@ -23,7 +27,7 @@
         @click="$emit('toggle-tags')"
         title="Теги"
       >
-        <span class="toggle-icon">🏷</span>
+        <img src="@/assets/icon-tags.svg" style="width: 20px; height: 20px;"/>
         <span class="toggle-label">Tags</span>
       </button>
       <!-- Кнопка Inbox -->
@@ -60,6 +64,7 @@ defineEmits<{
   (e: 'toggle-compact', value: boolean): void
   (e: 'toggle-tags'): void
   (e: 'toggle-inbox'): void
+  (e: 'open-settings'): void
 }>()
 
 const currentTime = ref('')
@@ -97,6 +102,27 @@ onUnmounted(() => {
   font-size: 22px;
   color: #ffffff;
   font-weight: 500;
+  margin-left: 12px;
+}
+
+.settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.settings-btn:hover {
+  opacity: 1;
+}
+
+.settings-btn img {
+  width: 24px;
+  height: 24px;
 }
 
 .menu-wrapper {

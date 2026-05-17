@@ -1,5 +1,8 @@
 <template>
-  <div class="weekly-calendar" :class="{ 'inbox-open': showInboxPanel }">
+  <div class="weekly-calendar" :class="{ 
+    'inbox-open': showInboxPanel,
+    'with-background': currentBackground
+  }" :style="currentBackground ? { backgroundColor: `rgba(5, 5, 5, ${1 - backgroundOpacity})` } : {}">
     <!-- Top Bar -->
     <CalendarTopBar
       :compact-mode="compactMode"
@@ -9,6 +12,7 @@
       @toggle-compact="compactMode = $event"
       @toggle-tags="showTagsPanel = !showTagsPanel"
       @toggle-inbox="showInboxPanel = !showInboxPanel"
+      @open-settings="showBackgroundSettings = true"
     />
 
     <!-- Tags Panel -->
@@ -125,6 +129,56 @@
       @close="showInboxPanel = false"
       @category-dropped-to-event="handleCategoryDroppedToEvent"
     />
+
+    <!-- Background Settings Modal -->
+    <div v-if="showBackgroundSettings" class="modal-overlay" @click.self="showBackgroundSettings = false">
+      <div class="background-settings-modal">
+        <div class="modal-header">
+          <h3>Настройки фона</h3>
+          <button class="close-btn" @click="showBackgroundSettings = false">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="current-background" v-if="currentBackground">
+            <p>Текущий фон:</p>
+            <img :src="currentBackground" class="preview-img" />
+          </div>
+          
+          <div class="upload-section">
+            <label class="upload-label">
+              <input 
+                type="file" 
+                accept="image/*" 
+                @change="handleBackgroundUpload"
+                class="file-input"
+              />
+              <span>Загрузить картинку</span>
+            </label>
+          </div>
+          
+          <div class="opacity-section" v-if="currentBackground">
+            <label>Прозрачность: {{ backgroundOpacity }}</label>
+            <input 
+              type="range" 
+              min="0.1" 
+              max="1" 
+              step="0.1"
+              v-model.number="backgroundOpacity"
+              @input="updateBackgroundOpacity"
+              class="opacity-slider"
+            />
+          </div>
+          
+          <button 
+            v-if="currentBackground" 
+            class="remove-bg-btn"
+            @click="removeBackground"
+          >
+            Убрать фон
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -194,6 +248,49 @@ const showTagsPanel = ref(false)
 
 // Inbox state
 const showInboxPanel = ref(false)
+
+// Background state
+const showBackgroundSettings = ref(false)
+const currentBackground = ref<string | null>(null)
+const backgroundOpacity = ref(0.5)
+
+onMounted(() => {
+  const saved = localStorage.getItem('app-background')
+  if (saved) {
+    const { url, opacity } = JSON.parse(saved)
+    currentBackground.value = url
+    backgroundOpacity.value = opacity
+  }
+})
+
+const handleBackgroundUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const url = e.target?.result as string
+      currentBackground.value = url
+      localStorage.setItem('app-background', JSON.stringify({ url, opacity: backgroundOpacity.value }))
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const updateBackgroundOpacity = () => {
+  if (currentBackground.value) {
+    localStorage.setItem('app-background', JSON.stringify({ 
+      url: currentBackground.value, 
+      opacity: backgroundOpacity.value 
+    }))
+  }
+}
+
+const removeBackground = () => {
+  currentBackground.value = null
+  backgroundOpacity.value = 0.5
+  localStorage.removeItem('app-background')
+}
 
 // Tags methods
 const addTag = async (tag: { name: string; color: string; icon?: string }) => {
@@ -1039,7 +1136,7 @@ onMounted(() => {
   loadEvents()
   tagsStore.fetchTags()
   // Load tasks and inbox categories for Inbox panel
-  tasksStore.fetchTasks()
+tasksStore.fetchTasks()
   kanbanStore.fetchInboxCategories()
   window.addEventListener('keydown', handleKeydown)
 })
@@ -1053,13 +1150,17 @@ onUnmounted(() => {
 .weekly-calendar {
   width: 100%;
   height: 100vh;
-  background-color: #050505;
+  background-color: rgba(5, 5, 5, 0.95);
   color: #ffffff;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: padding-right 0.3s ease;
+  transition: padding-right 0.3s ease, background-color 0.3s;
   padding-right: 0;
+}
+
+.weekly-calendar.with-background {
+  background-color: rgba(5, 5, 5, 0.6);
 }
 
 .weekly-calendar.inbox-open {
@@ -1111,5 +1212,165 @@ onUnmounted(() => {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateX(-40px) scale(0.95);
+}
+
+/* Background Settings Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.background-settings-modal {
+  background-color: #121212;
+  border: 1px solid #444;
+  border-radius: 25px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.background-settings-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.background-settings-modal .modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #fff;
+}
+
+.background-settings-modal .close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.background-settings-modal .close-btn:hover {
+  color: #fff;
+}
+
+.background-settings-modal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.background-settings-modal .current-background {
+  text-align: center;
+}
+
+.background-settings-modal .current-background p {
+  color: #888;
+  font-size: 14px;
+  margin: 0 0 10px 0;
+}
+
+.background-settings-modal .preview-img {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 10px;
+  border: 1px solid #444;
+}
+
+.background-settings-modal .upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #2a2a2a;
+  border: 1px dashed #444;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.background-settings-modal .upload-label:hover {
+  background: #333;
+  border-color: #666;
+  color: #fff;
+}
+
+.background-settings-modal .file-input {
+  display: none;
+}
+
+.background-settings-modal .opacity-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.background-settings-modal .opacity-section label {
+  color: #888;
+  font-size: 13px;
+}
+
+.background-settings-modal .opacity-slider {
+  width: 100%;
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.background-settings-modal .opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #1c3496;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.background-settings-modal .remove-bg-btn {
+  padding: 10px;
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.background-settings-modal .remove-bg-btn:hover {
+  background: #444;
 }
 </style>
