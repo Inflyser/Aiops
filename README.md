@@ -74,7 +74,7 @@ docker-compose up --build
 
 ---
 
-## 📸 Скриншоты
+## 📸 Скриншоты - v 1.0
 
 <img width="1919" height="1079" alt="Календарь" src="https://github.com/user-attachments/assets/a07753ea-4e4e-4f5f-952a-dd5fb242b55b" />
 <img width="1919" height="1079" alt="Канбан" src="https://github.com/user-attachments/assets/5676783d-8fb1-4e36-96ae-aefcc0c000b7" />
