@@ -2,9 +2,6 @@
   <div class="top-bar">
 
     <div class="time-display">{{ currentTime }}</div>
-    <button class="settings-btn" @click="$emit('open-settings')" title="Настройки">
-      <img src="@/assets/icon-settings_alert.svg" alt="Настройки" />
-    </button>
     <div class="menu-wrapper">
       <ThreeDotsMenu />
     </div>
@@ -40,6 +37,10 @@
       >
         <span class="toggle-icon">📥</span>
         <span class="toggle-label">Inbox</span>
+      </button>
+      <!-- Кнопка настроек -->
+      <button class="settings-btn" @click="$emit('open-settings')" title="Настройки">
+        <img src="@/assets/icon-settings_alert.svg" alt="Настройки" />
       </button>
     </div>
   </div>

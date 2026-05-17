@@ -27,51 +27,8 @@
             placeholder="Введите название задачи"
           >
         </div>
-        
-        <div class="divider"></div>
-        
-        <!-- Время -->
-        <div class="form-group">
-          <div class="time-slider-group">
-            <div class="slider-labels">
-              <span class="time-display">Начало: {{ formData.startTime }}</span>
-              <span class="time-display">Конец: {{ formData.endTime }}</span>
-            </div>
-            <div class="dual-slider">
-              <div class="track">
-                <div class="track-fill" :style="rangeStyle"></div>
-              </div>
-              <input 
-                type="range" 
-                class="range-input range-min"
-                min="0" 
-                max="1439"
-                step="10"
-                :value="timeToMinutes(formData.startTime)"
-                @input="updateStartTime($event)"
-              >
-              <input 
-                type="range" 
-                class="range-input range-max"
-                min="0" 
-                max="1439"
-                step="10"
-                :value="timeToMinutes(formData.endTime)"
-                @input="updateEndTime($event)"
-              >
-            </div>
-            <div class="slider-ticks">
-              <span>00:00</span>
-              <span>06:00</span>
-              <span>12:00</span>
-              <span>18:00</span>
-              <span>23:59</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="divider"></div>
-        
+
+
         <!-- Описание -->
         <div class="form-group">
           <textarea
@@ -82,14 +39,14 @@
             rows="2"
           ></textarea>
         </div>
-        
-        <div class="divider"></div>
-        
+
+   
+
         <!-- Теги -->
         <div class="form-group">
           <div class="tags-selector">
-            <div 
-              v-for="tag in availableTags" 
+            <div
+              v-for="tag in availableTags"
               :key="tag.id"
               class="tag-option"
               :class="{ selected: selectedTagId === tag.id }"
@@ -108,19 +65,61 @@
             </div>
           </div>
         </div>
-        
+
         <div class="divider"></div>
-        
+
+        <!-- Время -->
+        <div class="form-group">
+          <div class="time-slider-group">
+            <div class="slider-labels">
+              <span class="time-display">Начало: {{ formData.startTime }}</span>
+              <span class="time-display">Конец: {{ formData.endTime }}</span>
+            </div>
+            <div class="dual-slider">
+              <div class="track">
+                <div class="track-fill" :style="rangeStyle"></div>
+              </div>
+              <input
+                type="range"
+                class="range-input range-min"
+                min="0"
+                max="1439"
+                step="10"
+                :value="timeToMinutes(formData.startTime)"
+                @input="updateStartTime($event)"
+              >
+              <input
+                type="range"
+                class="range-input range-max"
+                min="0"
+                max="1439"
+                step="10"
+                :value="timeToMinutes(formData.endTime)"
+                @input="updateEndTime($event)"
+              >
+            </div>
+            <div class="slider-ticks">
+              <span>00:00</span>
+              <span>06:00</span>
+              <span>12:00</span>
+              <span>18:00</span>
+              <span>23:59</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
         <!-- Дата -->
         <div class="form-group">
           <label class="form-label">Дата</label>
           <div class="date-selector">
-            <button 
-              v-for="day in upcomingDays" 
+            <button
+              v-for="day in upcomingDays"
               :key="day.date"
               type="button"
               class="date-btn"
-              :class="{ 
+              :class="{
                 'selected': day.date === formData.date,
                 'is-today': day.isToday
               }"
@@ -132,9 +131,9 @@
             </button>
           </div>
         </div>
-        
+
         <div class="divider"></div>
-        
+
         <!-- Повторение -->
         <div class="form-group">
           <label class="form-label">Повторение</label>
@@ -144,10 +143,10 @@
               <option value="weekly">Еженедельно</option>
             </select>
           </div>
-          
+
           <div v-if="formData.recurrenceType === 'weekly'" class="recurrence-days">
-            <button 
-              v-for="(day, index) in weekDaysFull" 
+            <button
+              v-for="(day, index) in weekDaysFull"
               :key="index"
               type="button"
               class="day-btn"
@@ -157,17 +156,17 @@
               {{ day }}
             </button>
           </div>
-          
+
           <div v-if="formData.recurrenceType === 'weekly'" class="recurrence-end">
             <label class="small-label">Повторять до:</label>
-            <input 
-              type="date" 
-              v-model="formData.recurrenceEndDate" 
+            <input
+              type="date"
+              v-model="formData.recurrenceEndDate"
               class="recurrence-end-input"
             >
           </div>
         </div>
-        
+
         <!-- Разделитель -->
         <div class="divider"></div>
         
@@ -534,6 +533,8 @@ const selectTag = (tag: Tag) => {
   height: 6px;
   background: #333;
   border-radius: 999px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .track-fill {
@@ -549,20 +550,22 @@ const selectTag = (tag: Tag) => {
   height: 24px;
   -webkit-appearance: none;
   background: transparent;
-  pointer-events: none;
+  pointer-events: auto;
   top: 0;
   margin: 0;
+  z-index: 2;
 }
 
 .range-input::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
   border: 2px solid #fff;
   box-shadow: 0 0 0 3px rgba(255,255,255,0.08), 0 2px 4px rgba(0,0,0,0.4);
+  z-index: 3;
 }
 
 .range-min::-webkit-slider-thumb {

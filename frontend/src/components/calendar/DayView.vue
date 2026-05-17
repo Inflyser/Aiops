@@ -596,7 +596,6 @@ onUnmounted(() => {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  filter: invert(1);
 }
 
 .event-description {

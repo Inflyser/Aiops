@@ -34,12 +34,13 @@
             >✕</button>
           </div>
         </template>
+        <template #footer>
+          <!-- Add Board Button - inside draggable, right after tabs -->
+          <button class="add-tab-btn" @click="showAddBoardModal = true" title="Добавить доску">
+            +
+          </button>
+        </template>
       </draggable>
-      
-      <!-- Add Board Button -->
-      <button class="add-tab-btn" @click="showAddBoardModal = true" title="Добавить доску">
-        +
-      </button>
       
       <!-- Inbox Tab (always last) -->
       <div
@@ -705,13 +706,13 @@ const handleKeydown = (event: KeyboardEvent) => {
   display: flex;
   align-items: center;
   gap: 2px;
-  flex: 1;
-  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .board-tab {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 8px 16px;
   background: #1a1a1a;
@@ -757,7 +758,8 @@ const handleKeydown = (event: KeyboardEvent) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
+  text-align: center;
+  display: block;
 }
 
 .board-tab.tab-active .tab-title {
@@ -795,6 +797,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   transition: all 0.2s;
   flex-shrink: 0;
   line-height: 1;
+  margin-left: auto;
 }
 
 .add-tab-btn:hover {
@@ -807,6 +810,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 .inbox-tab {
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
+  margin-left: auto;
 }
 
 .inbox-tab:hover {

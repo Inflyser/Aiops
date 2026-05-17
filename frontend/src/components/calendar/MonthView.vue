@@ -30,7 +30,7 @@
         <div class="month-day-number">{{ day.number }}</div>
         <div class="month-day-events">
           <div
-            v-for="event in getEventsForDay(day.date)"
+            v-for="event in getVisibleEvents(day.date)"
             :key="event.id"
             class="month-event"
             :style="{ backgroundColor: event.color || '#4a5568' }"
@@ -42,6 +42,13 @@
               class="event-tag-icon"
             />
             {{ event.title }}
+          </div>
+          <div
+            v-if="getExtraEventsCount(day.date) > 0"
+            class="more-events"
+            @click.stop="$emit('day-click', day)"
+          >
+            +{{ getExtraEventsCount(day.date) }} ещё
           </div>
         </div>
       </div>
@@ -163,11 +170,22 @@ const monthDays = computed(() => {
   return days
 })
 
-const getEventsForDay = (date: string) => {
+const MAX_VISIBLE_EVENTS = 3
+
+const getAllEventsForDay = (date: string) => {
   return props.events.filter(event => {
     const eventDate = dayjs(event.start).format('YYYY-MM-DD')
     return eventDate === date
   })
+}
+
+const getVisibleEvents = (date: string) => {
+  return getAllEventsForDay(date).slice(0, MAX_VISIBLE_EVENTS)
+}
+
+const getExtraEventsCount = (date: string) => {
+  const allEvents = getAllEventsForDay(date)
+  return Math.max(0, allEvents.length - MAX_VISIBLE_EVENTS)
 }
 </script>
 
@@ -291,7 +309,6 @@ const getEventsForDay = (date: string) => {
   width: 12px;
   height: 12px;
   flex-shrink: 0;
-  filter: invert(1);
   margin-right: 3px;
 }
 
@@ -304,5 +321,16 @@ const getEventsForDay = (date: string) => {
   white-space: nowrap;
   cursor: pointer;
   color: white;
+}
+
+.more-events {
+  font-size: 11px;
+  color: #888;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.more-events:hover {
+  color: #aaa;
 }
 </style>

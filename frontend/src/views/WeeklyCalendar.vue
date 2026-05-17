@@ -391,10 +391,18 @@ const lastWeek = () => {
 
 const nextMonth = () => {
   currentMonth.value = currentMonth.value.add(1, 'month')
+  loadEventsForMonth()
 }
 
 const prevMonth = () => {
   currentMonth.value = currentMonth.value.add(-1, 'month')
+  loadEventsForMonth()
+}
+
+const loadEventsForMonth = async () => {
+  const startOfMonth = currentMonth.value.startOf('month').format('YYYY-MM-DD')
+  const endOfMonth = currentMonth.value.endOf('month').format('YYYY-MM-DD')
+  await calendarStore.fetchEvents(startOfMonth, endOfMonth)
 }
 
 const nextYear = () => {
@@ -1128,6 +1136,9 @@ watch(currentView, async (newView) => {
   if (newView === 'day') {
     // For day view, also load a wider range (week) to have data available
     loadEvents()
+  } else if (newView === 'month') {
+    // Load events for current month
+    loadEventsForMonth()
   }
 })
 
