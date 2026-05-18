@@ -59,6 +59,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                     'all_day': event.all_day,
                     'color': event.color,
                     'priority': event.priority,
+                    'is_important': event.is_important,
                     'tag_id': event.tag_id,
                     'user_id': event.user_id,
                     'recurrence_type': event.recurrence_type,
@@ -121,6 +122,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                             'all_day': event.all_day,
                             'color': event.color,
                             'priority': event.priority,
+                            'is_important': event.is_important,
                             'tag_id': event.tag_id,
                             'user_id': event.user_id,
                             'recurrence_type': event.recurrence_type,
@@ -161,6 +163,7 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                 'all_day': event.all_day,
                 'color': event.color,
                 'priority': event.priority,
+                'is_important': event.is_important,
                 'tag_id': event.tag_id,
                 'user_id': event.user_id,
                 'recurrence_type': event.recurrence_type,
@@ -244,10 +247,14 @@ def update_calendar_event(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     
-    update_data = event_in.model_dump(exclude_unset=True)
+    update_data = event_in.model_dump(exclude_unset=True, exclude={'is_important'})
     
     for field, value in update_data.items():
         setattr(event, field, value)
+    
+    # Handle is_important separately
+    if event_in.is_important is not None:
+        event.is_important = event_in.is_important
     
     db.commit()
     db.refresh(event)

@@ -257,8 +257,8 @@ watch(boards, (newBoards) => {
 
 // Select board
 const selectBoard = async (boardId: string) => {
-  kanbanStore.setCurrentBoard(boardId)
   isInboxActive.value = false
+  await kanbanStore.setCurrentBoard(boardId)
   await initializeTasks()
 }
 
@@ -585,11 +585,11 @@ onMounted(async () => {
   timeInterval = setInterval(updateTime, 1000)
   
   await kanbanStore.fetchBoards()
-  await kanbanStore.fetchColumns()
   
   // Set Inbox as active by default
   isInboxActive.value = true
   kanbanStore.setCurrentBoard('')
+  await kanbanStore.fetchInboxCategories()
   
   await initializeTasks()
   window.addEventListener('keydown', handleKeydown)

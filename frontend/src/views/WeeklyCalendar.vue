@@ -9,9 +9,11 @@
       :current-view="currentView"
       :show-tags-panel="showTagsPanel"
       :show-inbox-panel="showInboxPanel"
+      :show-important-panel="showImportantPanel"
       @toggle-compact="compactMode = $event"
       @toggle-tags="showTagsPanel = !showTagsPanel"
       @toggle-inbox="showInboxPanel = !showInboxPanel"
+      @toggle-important="showImportantPanel = !showImportantPanel"
       @open-settings="showBackgroundSettings = true"
     />
 
@@ -22,6 +24,14 @@
       @close="showTagsPanel = false"
       @add-tag="addTag"
       @delete-tag="deleteTag"
+    />
+
+    <!-- Important Events Panel -->
+    <ImportantEventsPanel 
+      v-if="showImportantPanel"
+      :important-events="importantEvents"
+      @close="showImportantPanel = false"
+      @open-event="openImportantEvent"
     />
 
     <!-- View Selector -->
@@ -204,6 +214,7 @@ import DayView from '../components/calendar/DayView.vue'
 import EventModal from '../components/modals/EventModal.vue'
 import EventTasksModal from '../components/modals/EventTasksModal.vue'
 import TagsPanel from '../components/modals/TagsPanel.vue'
+import ImportantEventsPanel from '../components/modals/ImportantEventsPanel.vue'
 import InboxPanel from '../components/calendar/InboxPanel.vue'
 
 dayjs.locale('ru')
@@ -248,6 +259,9 @@ const showTagsPanel = ref(false)
 
 // Inbox state
 const showInboxPanel = ref(false)
+
+// Important panel state
+const showImportantPanel = ref(false)
 
 // Background state
 const showBackgroundSettings = ref(false)
@@ -312,6 +326,13 @@ const deleteTag = async (tagId: string) => {
 // Computed for tags from store
 const tags = computed(() => tagsStore.tags)
 
+// Important events
+const importantEvents = computed(() => {
+  return calendarStore.events
+    .filter(event => event.is_important)
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+})
+
 // Функция для получения цвета тега по ID
 const getTagColor = (tagId: string | undefined): string => {
   if (!tagId) return '#4a5568'
@@ -360,7 +381,8 @@ const eventForm = ref({
   tagId: undefined as string | undefined,
   recurrenceType: undefined as string | undefined,
   recurrenceDays: undefined as string | undefined,
-  recurrenceEndDate: undefined as string | undefined
+  recurrenceEndDate: undefined as string | undefined,
+  is_important: false
 })
 
 // Computed week days
@@ -453,7 +475,8 @@ const handleDayHourClick = (data: { hour: number; date: dayjs.Dayjs }) => {
     tagId: undefined,
     recurrenceType: undefined,
     recurrenceDays: undefined,
-    recurrenceEndDate: undefined
+    recurrenceEndDate: undefined,
+    is_important: false
   }
   
   editingEvent.value = null
@@ -477,7 +500,8 @@ const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
     tagId: undefined,
     recurrenceType: undefined,
     recurrenceDays: undefined,
-    recurrenceEndDate: undefined
+    recurrenceEndDate: undefined,
+    is_important: false
   }
   
   editingEvent.value = null
@@ -497,7 +521,8 @@ const handleMonthDayClick = (day: any) => {
     tagId: undefined,
     recurrenceType: undefined,
     recurrenceDays: undefined,
-    recurrenceEndDate: undefined
+    recurrenceEndDate: undefined,
+    is_important: false
   }
   
   editingEvent.value = null
@@ -518,12 +543,18 @@ const handleMiniDayClick = (day: any) => {
       tagId: undefined,
       recurrenceType: undefined,
       recurrenceDays: undefined,
-      recurrenceEndDate: undefined
+      recurrenceEndDate: undefined,
+      is_important: false
     }
     
     editingEvent.value = null
     showModal.value = true
   }
+}
+
+const openImportantEvent = (event: any) => {
+  openEventModal(event)
+  showImportantPanel.value = false
 }
 
 const openEventModal = (event: any) => {
@@ -543,7 +574,8 @@ const openEventModal = (event: any) => {
     tagId: event.tag_id || event.tagId || undefined,
     recurrenceType: event.recurrence_type || undefined,
     recurrenceDays: event.recurrence_days || undefined,
-    recurrenceEndDate: event.recurrence_end_date ? dayjs(event.recurrence_end_date).format('YYYY-MM-DD') : undefined
+    recurrenceEndDate: event.recurrence_end_date ? dayjs(event.recurrence_end_date).format('YYYY-MM-DD') : undefined,
+    is_important: event.is_important || false
   }
   
   showModal.value = true
@@ -565,7 +597,8 @@ const closeModal = () => {
     tagId: undefined,
     recurrenceType: undefined,
     recurrenceDays: undefined,
-    recurrenceEndDate: undefined
+    recurrenceEndDate: undefined,
+    is_important: false
   }
 }
 
@@ -650,7 +683,8 @@ const saveEvent = async () => {
     priority: eventForm.value.priority,
     color: eventColor,
     all_day: false,
-    tag_id: eventForm.value.tagId
+    tag_id: eventForm.value.tagId,
+    is_important: eventForm.value.is_important === true
   }
   
   // Добавляем данные о повторении

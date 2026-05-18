@@ -10,6 +10,7 @@ class CalendarEventBase(BaseModel):
     all_day: bool = False
     color: str = "#4a5568"
     priority: str = "medium"
+    is_important: bool = False  # Важное событие
     tag_id: Optional[str] = None
     recurrence_type: Optional[str] = None  # 'weekly', 'monthly', 'yearly'
     recurrence_days: Optional[str] = None  # дни недели через запятую: "0,2,4"
@@ -27,6 +28,7 @@ class CalendarEventUpdate(BaseModel):
     all_day: Optional[bool] = None
     color: Optional[str] = None
     priority: Optional[str] = None
+    is_important: Optional[bool] = None
     tag_id: Optional[str] = None
     recurrence_type: Optional[str] = None
     recurrence_days: Optional[str] = None

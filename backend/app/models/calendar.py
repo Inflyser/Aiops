@@ -14,6 +14,7 @@ class CalendarEvent(Base):
     all_day = Column(Boolean, default=False)
     color = Column(String(7), default="#3B82F6")  # HEX цвет
     priority = Column(String(20), default="medium")  # low, medium, high
+    is_important = Column(Boolean, default=False)  # Важное событие
     tag_id = Column(String, ForeignKey("tags.id"), nullable=True)  # Связь с тегом
     
     # Поля для повторения

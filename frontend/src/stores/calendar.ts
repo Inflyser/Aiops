@@ -12,6 +12,7 @@ interface CalendarEvent {
   color: string
   location?: string
   priority?: string
+  is_important?: boolean
   tag_id?: string
   user_id: string
   created_at: string

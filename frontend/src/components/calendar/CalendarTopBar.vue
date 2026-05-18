@@ -38,6 +38,17 @@
         <span class="toggle-icon">📥</span>
         <span class="toggle-label">Inbox</span>
       </button>
+      <!-- Кнопка Важные -->
+      <button
+        v-if="currentView === 'week'"
+        class="important-toggle-btn header-toggle"
+        :class="{ active: showImportantPanel }"
+        @click="$emit('toggle-important')"
+        title="Важные события"
+      >
+        <span class="toggle-icon">★</span>
+        <span class="toggle-label">Важные</span>
+      </button>
       <!-- Кнопка настроек -->
       <button class="settings-btn" @click="$emit('open-settings')" title="Настройки">
         <img src="@/assets/icon-settings_alert.svg" alt="Настройки" />
@@ -59,12 +70,14 @@ defineProps<{
   currentView: string
   showTagsPanel: boolean
   showInboxPanel: boolean
+  showImportantPanel: boolean
 }>()
 
 defineEmits<{
   (e: 'toggle-compact', value: boolean): void
   (e: 'toggle-tags'): void
   (e: 'toggle-inbox'): void
+  (e: 'toggle-important'): void
   (e: 'open-settings'): void
 }>()
 
@@ -211,6 +224,30 @@ onUnmounted(() => {
   background: #4A90E2;
   border-color: #4A90E2;
   color: #fff;
+}
+
+.important-toggle-btn {
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.important-toggle-btn:hover {
+  background: #444;
+}
+
+.important-toggle-btn.active {
+  background: #FFD700;
+  color: #000;
 }
 
 .toggle-icon {

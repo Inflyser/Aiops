@@ -124,10 +124,14 @@ export const useKanbanStore = defineStore('kanban', () => {
     }
   }
 
-  const setCurrentBoard = (boardId: string) => {
+  const setCurrentBoard = async (boardId: string) => {
     currentBoardId.value = boardId
-    columns.value = [] // Clear columns when switching boards
-    fetchColumns()
+    columns.value = []
+    if (boardId === '' || boardId === null) {
+      await fetchInboxCategories()
+    } else {
+      await fetchColumns()
+    }
   }
 
   const currentBoard = computed(() => {

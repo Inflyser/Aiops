@@ -29,7 +29,7 @@
         </div>
 
 
-        <!-- Описание -->
+<!-- Описание -->
         <div class="form-group">
           <textarea
             id="eventDescription"
@@ -40,7 +40,19 @@
           ></textarea>
         </div>
 
-   
+        <!-- Важное -->
+        <div class="form-group important-checkbox">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              v-model="formData.is_important"
+              :disabled="viewMode === 'view'"
+              class="checkbox-input"
+            />
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Важное событие</span>
+          </label>
+        </div>
 
         <!-- Теги -->
         <div class="form-group">
@@ -236,6 +248,7 @@ interface EventFormData {
   startTime: string
   endTime: string
   priority: string
+  is_important?: boolean
   color: string
   tagId?: string
   recurrenceType?: string
@@ -250,6 +263,7 @@ interface CalendarEvent {
   start: string
   end: string
   priority?: string
+  is_important?: boolean
   color?: string
   tagId?: string
   recurrence_type?: string
@@ -933,6 +947,50 @@ const selectTag = (tag: Tag) => {
 .tag-name {
   font-size: 13px;
   color: #ddd;
+}
+
+.important-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 10px;
+}
+
+.checkbox-input {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #555;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.checkbox-input:checked + .checkbox-custom {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.checkbox-input:checked + .checkbox-custom::after {
+  content: '★';
+  color: #000;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.checkbox-text {
+  font-size: 14px;
+  color: #aaa;
 }
 
 .no-tags-message {
