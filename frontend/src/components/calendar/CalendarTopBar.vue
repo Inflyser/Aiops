@@ -1,6 +1,7 @@
 <template>
   <div class="top-bar">
 
+    <img src="@/assets/logo.svg" alt="Logo" class="logo" />
     <div class="time-display">{{ currentTime }}</div>
     <div class="menu-wrapper">
       <ThreeDotsMenu />
@@ -112,11 +113,19 @@ onUnmounted(() => {
   z-index: 100;
 }
 
+.logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .time-display {
   font-size: 22px;
   color: #ffffff;
   font-weight: 500;
   margin-left: 12px;
+  display: flex;
+  align-items: center;
 }
 
 .settings-btn {
