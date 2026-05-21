@@ -137,6 +137,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   transition: opacity 0.2s;
+  margin-left: 8px;
 }
 
 .settings-btn:hover {
@@ -144,8 +145,8 @@ onUnmounted(() => {
 }
 
 .settings-btn img {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .menu-wrapper {
