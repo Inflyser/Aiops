@@ -91,7 +91,7 @@ const monthYear = computed(() => {
 
 .days-header {
   display: grid;
-  grid-template-columns: 90px repeat(7, 1fr);
+  grid-template-columns: 60px repeat(7, 1fr);
   box-sizing: border-box;
   padding-left: 0;
   margin-left: 0;
@@ -99,7 +99,7 @@ const monthYear = computed(() => {
 }
 
 .time-header {
-  width: 90px;
+  width: 60px;
   box-sizing: border-box;
 }
 

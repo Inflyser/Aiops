@@ -551,7 +551,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 }
 
 .time-column {
-  width: 90px;
+  width: 60px;
   border-right: 1px solid #33333357;
   flex-shrink: 0;
   display: flex;
