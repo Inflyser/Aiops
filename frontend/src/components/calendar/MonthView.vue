@@ -191,7 +191,7 @@ const getExtraEventsCount = (date: string) => {
 
 <style scoped>
 .month-calendar {
-  padding: 20px;
+  padding: 20px 0;
 }
 
 .month-header {
@@ -233,7 +233,6 @@ const getExtraEventsCount = (date: string) => {
   grid-template-columns: repeat(7, 1fr);
   gap: 0px;
   margin-bottom: 10px;
-  margin-left: 60px;
 }
 
 .day-header {
@@ -251,8 +250,6 @@ const getExtraEventsCount = (date: string) => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 1px;
-  margin-left: 60px;
-  margin-right: 20px;
 }
 
 .month-day {
@@ -297,6 +294,7 @@ const getExtraEventsCount = (date: string) => {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 5px;
+  text-align: center;
 }
 
 .month-day-events {
