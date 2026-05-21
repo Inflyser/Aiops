@@ -72,7 +72,7 @@ const monthYear = computed(() => {
 }
 
 .month-year {
-  font-size: 52px;
+  font-size: 42px;
   font-weight: 300;
   margin-bottom: 20px;
   text-transform: capitalize;
@@ -83,7 +83,7 @@ const monthYear = computed(() => {
   background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 38px;
+  font-size: 30px;
   cursor: pointer;
   font-weight: bold;
   padding: 0px 10px 15px 25px;
@@ -114,14 +114,14 @@ const monthYear = computed(() => {
 }
 
 .day-name {
-  font-size: 24px;
+  font-size: 19px;
   color: #888;
   margin-bottom: 5px;
   font-weight: 700;
 }
 
 .day-number {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
 }
 

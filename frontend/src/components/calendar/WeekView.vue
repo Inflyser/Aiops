@@ -569,7 +569,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   align-items: flex-start;
   justify-content: center;
   padding-top: 5px;
-  font-size: 20px;
+  font-size: 16px;
   color: #6b6b6b;
   font-weight: bold;
   border-bottom: 1px solid #33333357;
@@ -674,7 +674,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 }
 
 .event-time {
-  font-size: 20px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.8);
   margin-bottom: 2px;
   font-weight: 500;
@@ -689,7 +689,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 }
 
 .event-title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   margin-bottom: 2px;
   display: flex;
@@ -704,7 +704,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 }
 
 .event-description {
-  font-size: 18px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
   margin-top: 3px;
   line-height: 1.3;
@@ -729,18 +729,18 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 
 .tasks-icon {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1;
 }
 
 .tasks-count {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
 }
 
 .event-location {
-  font-size: 14px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 2px;
 }

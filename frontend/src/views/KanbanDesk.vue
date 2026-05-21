@@ -686,7 +686,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .time-display {
-  font-size: 22px;
+  font-size: 18px;
   color: #ffffff;
   font-weight: 500;
 }
@@ -741,7 +741,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .tab-drag-handle {
-  font-size: 12px;
+  font-size: 10px;
   color: #666;
   cursor: grab;
   opacity: 0;
@@ -753,7 +753,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .tab-title {
-  font-size: 14px;
+  font-size: 11px;
   color: #ccc;
   white-space: nowrap;
   overflow: hidden;
@@ -773,7 +773,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 11px;
   transition: all 0.2s;
 }
 
@@ -790,7 +790,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   height: 28px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -836,7 +836,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .board-title {
-  font-size: 52px;
+  font-size: 42px;
   font-weight: bold;
   margin: 0;
   line-height: 1;
@@ -849,7 +849,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .task-count {
-  font-size: 14px;
+  font-size: 11px;
   color: #555;
   font-weight: 400;
 }
@@ -927,14 +927,14 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .column-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #e0e0e0;
   letter-spacing: 0.02em;
 }
 
 .column-count {
-  font-size: 13px;
+  font-size: 10px;
   color: #444;
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
@@ -954,7 +954,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 10px;
   transition: all 0.2s;
 }
 
@@ -970,7 +970,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 11px;
   transition: all 0.2s;
 }
 
@@ -1023,7 +1023,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .title-collapsed {
-  font-size: 14px;
+  font-size: 11px;
 }
 
 /* ─── Task Card Wrapper ─────────────────────────────────── */
@@ -1047,7 +1047,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .empty-icon {
-  font-size: 32px;
+  font-size: 26px;
   opacity: 0.5;
 }
 
@@ -1064,7 +1064,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   border-radius: 8px;
   color: #666;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 11px;
   transition: all 0.2s;
 }
 
@@ -1085,7 +1085,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   border: 1px solid #2a2a2a;
   border-radius: 8px;
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -1116,7 +1116,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .add-col-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #444;
   margin-bottom: 12px;
   text-align: center;
@@ -1134,7 +1134,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   width: 40px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 16px;
   transition: all 0.2s;
 }
 
@@ -1166,7 +1166,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .modal-content h2 {
   margin: 0 0 24px;
-  font-size: 24px;
+  font-size: 19px;
   color: #fff;
 }
 
@@ -1186,7 +1186,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 .btn-confirm {
   padding: 12px 24px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;

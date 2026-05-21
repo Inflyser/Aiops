@@ -83,7 +83,7 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
   border-radius: 50%;
   background: transparent;
   color: #cccccc;
-  font-size: 12px;
+  font-size: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -130,7 +130,7 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .small-btn:hover {
@@ -155,12 +155,12 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 .card-desc {
   color: #aaa;
   margin-top: 8px;
-  font-size: 14px
+  font-size: 11px
 }
 
 .card-meta {
   margin-top: 10px;
-  font-size: 14px;
+  font-size: 11px;
   color: #999;
   display: flex;
   gap: 8px;
@@ -170,7 +170,7 @@ const formatDate = (d: string) => dayjs(d).format('DD.MM.YYYY')
 .priority {
   padding: 4px 9px;
   border-radius: 10px;
-  font-size: 12px
+  font-size: 10px
 }
 
 .p-low {

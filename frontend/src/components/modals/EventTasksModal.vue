@@ -246,7 +246,7 @@ watch(() => props.show, (isVisible) => {
   position: absolute;
   top: 18px;
   right: 40px;
-  font-size: 32px;
+  font-size: 26px;
   cursor: pointer;
   color: #888;
 }
@@ -256,7 +256,7 @@ watch(() => props.show, (isVisible) => {
 }
 
 .modal-content h2 {
-  font-size: 16px;
+  font-size: 13px;
   text-align: center;
   display: flex;
   color: #ffffffd8;
@@ -280,14 +280,14 @@ watch(() => props.show, (isVisible) => {
 }
 
 .event-title {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #fff;
   margin-bottom: 5px;
 }
 
 .event-datetime {
-  font-size: 14px;
+  font-size: 11px;
   color: #888;
 }
 
@@ -298,7 +298,7 @@ watch(() => props.show, (isVisible) => {
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-size: 11px;
+  font-size: 9px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -308,7 +308,7 @@ watch(() => props.show, (isVisible) => {
   text-align: center;
   padding: 30px;
   color: #666;
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .event-tasks-list {
@@ -345,7 +345,7 @@ watch(() => props.show, (isVisible) => {
 
 .task-checkbox .checked {
   color: #4ade80;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: bold;
 }
 
@@ -356,13 +356,13 @@ watch(() => props.show, (isVisible) => {
 
 .task-title {
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   margin-bottom: 4px;
 }
 
 .task-description {
   color: #888;
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -370,7 +370,7 @@ watch(() => props.show, (isVisible) => {
   background: none;
   border: none;
   color: #666;
-  font-size: 16px;
+  font-size: 13px;
   cursor: pointer;
   padding: 4px;
   width: 24px;
@@ -398,7 +398,7 @@ watch(() => props.show, (isVisible) => {
 .btn {
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;

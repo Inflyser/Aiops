@@ -120,7 +120,7 @@ onUnmounted(() => {
 }
 
 .time-display {
-  font-size: 22px;
+  font-size: 18px;
   color: #ffffff;
   font-weight: 500;
   margin-left: 12px;
@@ -174,7 +174,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   color: #aaa;
-  font-size: 14px;
+  font-size: 11px;
   transition: all 0.2s;
 }
 
@@ -197,7 +197,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   color: #aaa;
-  font-size: 14px;
+  font-size: 11px;
   transition: all 0.2s;
   margin-left: 8px;
 }
@@ -221,7 +221,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   color: #aaa;
-  font-size: 14px;
+  font-size: 11px;
   transition: all 0.2s;
   margin-left: 8px;
 }
@@ -246,7 +246,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   color: #aaa;
-  font-size: 14px;
+  font-size: 11px;
   transition: all 0.2s;
   margin-left: 8px;
 }
@@ -261,7 +261,7 @@ onUnmounted(() => {
 }
 
 .toggle-icon {
-  font-size: 16px;
+  font-size: 13px;
 }
 
 .toggle-label {

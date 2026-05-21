@@ -118,7 +118,7 @@ const months = computed(() => {
 }
 
 .year-title {
-  font-size: 52px;
+  font-size: 42px;
   font-weight: bold;
   margin: 0;
 }
@@ -132,7 +132,7 @@ const months = computed(() => {
   background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 38px;
+  font-size: 30px;
   cursor: pointer;
   font-weight: bold;
   padding: 0px 10px 15px 25px;
@@ -157,7 +157,7 @@ const months = computed(() => {
 }
 
 .month-name {
-  font-size: 24px;
+  font-size: 19px;
   margin: 0 0 15px 0;
   text-align: center;
   font-weight: 600;
@@ -179,7 +179,7 @@ const months = computed(() => {
 }
 
 .mini-day-names span {
-  font-size: 12px;
+  font-size: 10px;
   color: #888;
   font-weight: bold;
 }
@@ -195,7 +195,7 @@ const months = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 11px;
   cursor: pointer;
   border-radius: 50%;
   transition: background-color 0.2s;

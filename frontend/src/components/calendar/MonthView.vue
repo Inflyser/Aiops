@@ -206,7 +206,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .month-year-title {
-  font-size: 52px;
+  font-size: 42px;
   font-weight: bold;
   margin: 0;
   flex: 1;
@@ -222,7 +222,7 @@ const getExtraEventsCount = (date: string) => {
   background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 38px;
+  font-size: 30px;
   cursor: pointer;
   font-weight: bold;
   padding: 0px 10px 15px 25px;
@@ -241,7 +241,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .day-name {
-  font-size: 24px;
+  font-size: 19px;
   color: #888;
   margin-bottom: 5px;
   font-weight: 700;
@@ -294,7 +294,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .month-day-number {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 500;
   margin-bottom: 5px;
 }
@@ -313,7 +313,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .month-event {
-  font-size: 12px;
+  font-size: 10px;
   padding: 2px 6px;
   border-radius: 3px;
   overflow: hidden;
@@ -324,7 +324,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .more-events {
-  font-size: 11px;
+  font-size: 9px;
   color: #888;
   padding: 2px 6px;
   cursor: pointer;

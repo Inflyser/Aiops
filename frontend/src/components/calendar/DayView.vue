@@ -433,14 +433,14 @@ onUnmounted(() => {
 }
 
 .day-weekday {
-  font-size: 48px;
+  font-size: 38px;
   font-weight: bold;
   margin: 0;
   text-transform: capitalize;
 }
 
 .day-date {
-  font-size: 24px;
+  font-size: 19px;
   color: #888;
   margin: 5px 0 0;
   font-weight: 400;
@@ -456,7 +456,7 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 28px;
+  font-size: 22px;
   cursor: pointer;
   font-weight: bold;
   padding: 5px 15px;
@@ -466,7 +466,7 @@ onUnmounted(() => {
   background: #1a1a1a;
   border: 1px solid #333;
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   cursor: pointer;
   padding: 8px 16px;
   border-radius: 6px;
@@ -481,7 +481,7 @@ onUnmounted(() => {
   background: #1a1a1a;
   border: 1px solid #333;
   color: #fff;
-  font-size: 16px;
+  font-size: 13px;
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 6px;
@@ -512,7 +512,7 @@ onUnmounted(() => {
 .hour-label {
   width: 80px;
   padding: 10px;
-  font-size: 18px;
+  font-size: 14px;
   color: #666;
   flex-shrink: 0;
   border-right: 1px solid #1a1a1a;
@@ -572,7 +572,7 @@ onUnmounted(() => {
 }
 
 .event-time {
-  font-size: 16px;
+  font-size: 13px;
   opacity: 0.8;
   display: flex;
   align-items: center;
@@ -585,7 +585,7 @@ onUnmounted(() => {
 }
 
 .event-title {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -599,7 +599,7 @@ onUnmounted(() => {
 }
 
 .event-description {
-  font-size: 14px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.8);
   margin-top: 6px;
   line-height: 1.4;
@@ -624,13 +624,13 @@ onUnmounted(() => {
 
 .tasks-icon {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
+  font-size: 11px;
   line-height: 1;
 }
 
 .tasks-count {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
 }
 

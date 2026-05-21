@@ -180,7 +180,7 @@ const getIconPath = (iconName: string): string | undefined => {
 
 .tags-panel-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   color: #fff;
 }
@@ -189,7 +189,7 @@ const getIconPath = (iconName: string): string | undefined => {
   background: none;
   border: none;
   color: #888;
-  font-size: 24px;
+  font-size: 19px;
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -245,14 +245,14 @@ const getIconPath = (iconName: string): string | undefined => {
 .tag-name {
   flex: 1;
   color: #ddd;
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .delete-tag-btn {
   background: none;
   border: none;
   color: #666;
-  font-size: 18px;
+  font-size: 14px;
   cursor: pointer;
   padding: 0 4px;
 }
@@ -265,7 +265,7 @@ const getIconPath = (iconName: string): string | undefined => {
   text-align: center;
   color: #666;
   padding: 20px;
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .add-tag-form {
@@ -283,7 +283,7 @@ const getIconPath = (iconName: string): string | undefined => {
   border-radius: 6px;
   padding: 10px 12px;
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   box-sizing: border-box;
 }
 
@@ -304,7 +304,7 @@ const getIconPath = (iconName: string): string | undefined => {
 }
 
 .form-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -336,7 +336,7 @@ const getIconPath = (iconName: string): string | undefined => {
 }
 
 .color-hex {
-  font-size: 13px;
+  font-size: 10px;
   color: #888;
   font-family: monospace;
 }
@@ -405,7 +405,7 @@ const getIconPath = (iconName: string): string | undefined => {
   border: none;
   border-radius: 8px;
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;

@@ -1239,7 +1239,7 @@ onUnmounted(() => {
 }
 
 .day-view h2 {
-  font-size: 36px;
+  font-size: 29px;
   color: #888;
 }
 
@@ -1309,7 +1309,7 @@ onUnmounted(() => {
 
 .background-settings-modal .modal-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 14px;
   color: #fff;
 }
 
@@ -1317,7 +1317,7 @@ onUnmounted(() => {
   background: none;
   border: none;
   color: #888;
-  font-size: 28px;
+  font-size: 22px;
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -1339,7 +1339,7 @@ onUnmounted(() => {
 
 .background-settings-modal .current-background p {
   color: #888;
-  font-size: 14px;
+  font-size: 11px;
   margin: 0 0 10px 0;
 }
 
@@ -1360,7 +1360,7 @@ onUnmounted(() => {
   border-radius: 10px;
   cursor: pointer;
   color: #aaa;
-  font-size: 14px;
+  font-size: 11px;
   transition: all 0.2s;
 }
 
@@ -1382,7 +1382,7 @@ onUnmounted(() => {
 
 .background-settings-modal .opacity-section label {
   color: #888;
-  font-size: 13px;
+  font-size: 10px;
 }
 
 .background-settings-modal .opacity-slider {
@@ -1410,7 +1410,7 @@ onUnmounted(() => {
   border: none;
   border-radius: 8px;
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   cursor: pointer;
   transition: background 0.2s;
 }

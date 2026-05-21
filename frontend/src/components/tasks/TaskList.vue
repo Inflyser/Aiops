@@ -229,7 +229,7 @@ onMounted(() => {
 .back-link {
   color: #888;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 11px;
   transition: color 0.2s;
 }
 
@@ -238,7 +238,7 @@ onMounted(() => {
 }
 
 .task-header h2 {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 300;
 }
 
@@ -249,7 +249,7 @@ onMounted(() => {
   padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 11px;
   transition: background-color 0.2s;
 }
 
@@ -310,7 +310,7 @@ onMounted(() => {
 }
 
 .task-title {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 500;
   margin-bottom: 8px;
   color: #fff;
@@ -323,7 +323,7 @@ onMounted(() => {
 
 .task-description {
   color: #aaa;
-  font-size: 14px;
+  font-size: 11px;
   margin-bottom: 10px;
   line-height: 1.5;
 }
@@ -331,14 +331,14 @@ onMounted(() => {
 .task-meta {
   display: flex;
   gap: 15px;
-  font-size: 12px;
+  font-size: 10px;
   color: #888;
 }
 
 .task-priority {
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 9px;
 }
 
 .priority-low {
@@ -364,7 +364,7 @@ onMounted(() => {
 .btn-edit, .btn-delete {
   background: transparent;
   border: none;
-  font-size: 18px;
+  font-size: 14px;
   cursor: pointer;
   padding: 5px;
   opacity: 0.7;
@@ -379,7 +379,7 @@ onMounted(() => {
   text-align: center;
   padding: 60px 20px;
   color: #666;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 .modal {
@@ -408,7 +408,7 @@ onMounted(() => {
   position: absolute;
   top: 15px;
   right: 20px;
-  font-size: 28px;
+  font-size: 22px;
   cursor: pointer;
   color: #888;
 }
@@ -419,7 +419,7 @@ onMounted(() => {
 
 .modal-content h2 {
   margin-bottom: 20px;
-  font-size: 24px;
+  font-size: 19px;
 }
 
 .form-group {
@@ -429,7 +429,7 @@ onMounted(() => {
 .form-group label {
   display: block;
   margin-bottom: 5px;
-  font-size: 14px;
+  font-size: 11px;
   color: #ccc;
 }
 
@@ -442,7 +442,7 @@ onMounted(() => {
   border: 1px solid #444;
   border-radius: 4px;
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   font-family: inherit;
 }
 
@@ -467,7 +467,7 @@ onMounted(() => {
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 11px;
   transition: opacity 0.2s;
 }
 

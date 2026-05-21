@@ -106,7 +106,7 @@ const indicatorStyle = computed(() => {
   color: #888;
   padding: 10px 20px;
   cursor: pointer;
-  font-size: 22px;
+  font-size: 18px;
   transition: color 0.3s ease;
   font-weight: bold;
   min-width: 90px;

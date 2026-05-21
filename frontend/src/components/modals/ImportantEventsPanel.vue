@@ -83,7 +83,7 @@ const formatEventDate = (event: CalendarEvent) => {
 .important-panel-header h3 {
   margin: 0;
   color: #fff;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -91,7 +91,7 @@ const formatEventDate = (event: CalendarEvent) => {
   background: none;
   border: none;
   color: #888;
-  font-size: 24px;
+  font-size: 19px;
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -134,25 +134,25 @@ const formatEventDate = (event: CalendarEvent) => {
 
 .event-title {
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
   margin-bottom: 4px;
 }
 
 .event-date {
   color: #888;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .event-star {
   color: #FFD700;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .no-events {
   text-align: center;
   color: #666;
   padding: 40px 20px;
-  font-size: 14px;
+  font-size: 11px;
 }
 </style>

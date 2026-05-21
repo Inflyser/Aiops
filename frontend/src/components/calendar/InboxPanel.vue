@@ -227,7 +227,7 @@ const toggleTask = async (task: Task) => {
 .inbox-title {
   margin: 0;
   color: #fff;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -235,7 +235,7 @@ const toggleTask = async (task: Task) => {
   background: none;
   border: none;
   color: #888;
-  font-size: 24px;
+  font-size: 19px;
   cursor: pointer;
   padding: 0;
   width: 30px;
@@ -268,7 +268,7 @@ const toggleTask = async (task: Task) => {
 }
 
 .empty-icon {
-  font-size: 48px;
+  font-size: 38px;
   margin-bottom: 10px;
 }
 
@@ -302,14 +302,14 @@ const toggleTask = async (task: Task) => {
 
 .category-count {
   color: #888;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .delete-category-btn {
   background: none;
   border: none;
   color: #888;
-  font-size: 16px;
+  font-size: 13px;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
@@ -371,7 +371,7 @@ const toggleTask = async (task: Task) => {
 
 .task-description {
   color: #888;
-  font-size: 12px;
+  font-size: 10px;
   margin-top: 4px;
 }
 
@@ -408,7 +408,7 @@ const toggleTask = async (task: Task) => {
   color: #fff;
   border: 1px solid #33333357;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .category-input:focus {
@@ -429,7 +429,7 @@ const toggleTask = async (task: Task) => {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .add-category-submit:hover {

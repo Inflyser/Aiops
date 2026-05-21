@@ -572,7 +572,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .time-display {
-  font-size: 22px;
+  font-size: 18px;
   color: #ffffff;
   font-weight: 500;
 }
@@ -585,7 +585,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .stats-title {
-  font-size: 52px;
+  font-size: 42px;
   font-weight: bold;
   margin: 0;
 }
@@ -604,7 +604,7 @@ watch([currentPeriod, currentDate], async () => {
   color: #888;
   padding: 10px 20px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: 8px;
   transition: all 0.2s;
@@ -632,7 +632,7 @@ watch([currentPeriod, currentDate], async () => {
   background: transparent;
   border: 1px solid #333;
   color: #fff;
-  font-size: 24px;
+  font-size: 19px;
   width: 50px;
   height: 50px;
   border-radius: 8px;
@@ -646,7 +646,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .current-period {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 600;
   min-width: 300px;
   text-align: center;
@@ -661,7 +661,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .chart-title {
-  font-size: 24px;
+  font-size: 19px;
   margin: 0 0 24px;
   color: #ccc;
 }
@@ -696,14 +696,14 @@ watch([currentPeriod, currentDate], async () => {
 
 .percentage-value {
   display: block;
-  font-size: 48px;
+  font-size: 38px;
   font-weight: bold;
   color: #4a90e2;
 }
 
 .percentage-label {
   display: block;
-  font-size: 14px;
+  font-size: 11px;
   color: #888;
 }
 
@@ -725,7 +725,7 @@ watch([currentPeriod, currentDate], async () => {
 
 .detail-value {
   font-weight: 600;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 /* Week View */
@@ -746,7 +746,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .week-day-label {
-  font-size: 14px;
+  font-size: 11px;
   color: #888;
 }
 
@@ -768,12 +768,12 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .week-day-percentage {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .week-day-hours {
-  font-size: 12px;
+  font-size: 10px;
   color: #666;
 }
 
@@ -801,7 +801,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .month-day-number {
-  font-size: 10px;
+  font-size: 8px;
   font-weight: 600;
   color: #888;
 }
@@ -828,7 +828,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .year-month-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #888;
 }
 
@@ -850,7 +850,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .year-month-hours {
-  font-size: 11px;
+  font-size: 9px;
   color: #666;
 }
 
@@ -871,13 +871,13 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .summary-label {
-  font-size: 14px;
+  font-size: 11px;
   color: #888;
   margin-bottom: 8px;
 }
 
 .summary-value {
-  font-size: 32px;
+  font-size: 26px;
   font-weight: bold;
 }
 
@@ -896,7 +896,7 @@ watch([currentPeriod, currentDate], async () => {
 
 .bar-label {
   width: 120px;
-  font-size: 16px;
+  font-size: 13px;
   color: #aaa;
   text-align: right;
   flex-shrink: 0;
@@ -922,7 +922,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .bar-value {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   color: white;
   white-space: nowrap;
@@ -931,7 +931,7 @@ watch([currentPeriod, currentDate], async () => {
 .no-data {
   text-align: center;
   color: #666;
-  font-size: 18px;
+  font-size: 14px;
   padding: 40px;
 }
 </style>
