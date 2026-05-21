@@ -475,7 +475,7 @@ const selectTag = (tag: Tag) => {
   position: absolute;
   top: 18px;
   right: 40px;
-  font-size: 26px;
+  font-size: 32px;
   cursor: pointer;
   color: #888;
 }
@@ -485,7 +485,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .modal-content h2 {
-  font-size: 13px;
+  font-size: 16px;
   text-align: center;
   display: flex;
   color: #ffffffd8;
@@ -505,7 +505,7 @@ const selectTag = (tag: Tag) => {
 .form-group label {
   display: block;
   margin-bottom: 4px;
-  font-size: 9px;
+  font-size: 11px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -518,7 +518,7 @@ const selectTag = (tag: Tag) => {
   background-color: #0d0d0d;
   border: 1px solid #33333357;
   color: #fff;
-  font-size: 10px;
+  font-size: 13px;
   font-family: inherit;
   border-radius: 6px;
 }
@@ -601,7 +601,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .time-display {
-  font-size: 10px;
+  font-size: 12px;
   color: #aaa;
   background: #0d0d0d;
   padding: 4px 8px;
@@ -611,7 +611,7 @@ const selectTag = (tag: Tag) => {
 .slider-ticks {
   display: flex;
   justify-content: space-between;
-  font-size: 8px;
+  font-size: 10px;
   color: #666;
   margin-top: 4px;
 }
@@ -626,7 +626,7 @@ const selectTag = (tag: Tag) => {
   background-color: #0d0d0d;
   border: 1px solid #33333357;
   color: #fff;
-  font-size: 11px;
+  font-size: 14px;
   border-radius: 6px;
   cursor: pointer;
 }
@@ -644,7 +644,7 @@ const selectTag = (tag: Tag) => {
   border-radius: 4px;
   background: #0d0d0d;
   color: #888;
-  font-size: 9px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -667,7 +667,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .small-label {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
   text-transform: none;
   letter-spacing: normal;
@@ -678,14 +678,14 @@ const selectTag = (tag: Tag) => {
   background-color: #2a2a2a;
   border: 1px solid #444;
   color: #fff;
-  font-size: 10px;
+  font-size: 13px;
   border-radius: 6px;
 }
 
 .form-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 10px;
+  font-size: 13px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -731,7 +731,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .date-day-name {
-  font-size: 8px;
+  font-size: 10px;
   color: #666;
   text-transform: uppercase;
 }
@@ -741,14 +741,14 @@ const selectTag = (tag: Tag) => {
 }
 
 .date-day-num {
-  font-size: 14px;
+  font-size: 18px;
   color: #fff;
   font-weight: 600;
   margin: 2px 0;
 }
 
 .date-month {
-  font-size: 8px;
+  font-size: 10px;
   color: #666;
 }
 
@@ -767,7 +767,7 @@ const selectTag = (tag: Tag) => {
   background: none;
   border: none;
   color: #888;
-  font-size: 11px;
+  font-size: 14px;
   cursor: pointer;
   padding: 4px 8px;
 }
@@ -777,7 +777,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .month-year {
-  font-size: 11px;
+  font-size: 14px;
   color: #fff;
   text-transform: capitalize;
 }
@@ -796,7 +796,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .weekdays span {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
   text-transform: uppercase;
 }
@@ -815,7 +815,7 @@ const selectTag = (tag: Tag) => {
   background: none;
   border: none;
   color: #ddd;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s;
@@ -850,7 +850,7 @@ const selectTag = (tag: Tag) => {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 13px;
   transition: opacity 0.2s;
 }
 
@@ -945,7 +945,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .tag-name {
-  font-size: 10px;
+  font-size: 13px;
   color: #ddd;
 }
 
@@ -984,18 +984,18 @@ const selectTag = (tag: Tag) => {
 .checkbox-input:checked + .checkbox-custom::after {
   content: '★';
   color: #000;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: bold;
 }
 
 .checkbox-text {
-  font-size: 11px;
+  font-size: 14px;
   color: #aaa;
 }
 
 .no-tags-message {
   color: #666;
-  font-size: 10px;
+  font-size: 13px;
   padding: 10px;
   text-align: center;
   width: 100%;
@@ -1038,7 +1038,7 @@ const selectTag = (tag: Tag) => {
 
 .task-checkbox .checked {
   color: #4A90E2;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: bold;
 }
 
@@ -1049,13 +1049,13 @@ const selectTag = (tag: Tag) => {
 
 .task-title {
   color: #fff;
-  font-size: 11px;
+  font-size: 14px;
   word-break: break-word;
 }
 
 .task-description {
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 4px;
   word-break: break-word;
 }
@@ -1064,7 +1064,7 @@ const selectTag = (tag: Tag) => {
   background: none;
   border: none;
   color: #666;
-  font-size: 13px;
+  font-size: 16px;
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
