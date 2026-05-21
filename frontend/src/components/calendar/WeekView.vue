@@ -167,6 +167,7 @@ const emit = defineEmits<{
 // Drag and drop state
 const draggedEvent = ref<CalendarEvent | null>(null)
 const dragOverDay = ref<string | null>(null)
+const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const isAltPressed = ref(false)
 
@@ -191,6 +192,7 @@ const handleDragEnd = () => {
   draggedEvent.value = null
   dragOverDay.value = null
   isAltPressed.value = false
+  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
 }
 
 const handleDragOver = (event: DragEvent, day: WeekDay) => {
@@ -199,15 +201,21 @@ const handleDragOver = (event: DragEvent, day: WeekDay) => {
     event.dataTransfer.dropEffect = event.altKey ? 'copy' : 'move'
   }
   dragOverDay.value = day.date
+  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
+  dragOverTimeout.value = setTimeout(() => {
+    dragOverDay.value = null
+  }, 1000)
 }
 
 const handleDragLeave = () => {
   dragOverDay.value = null
+  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
 }
 
 const handleDrop = (event: DragEvent, day: WeekDay) => {
   event.preventDefault()
   dragOverDay.value = null
+  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
   
   try {
     const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
@@ -674,7 +682,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 
 /* Drag over state for day column */
 .day-column.drag-over {
-  background-color: rgba(74, 85, 104, 0.3);
+  background-color: rgba(200, 200, 200, 0.15);
 }
 
 .event-indicator {

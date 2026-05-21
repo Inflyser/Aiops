@@ -1234,7 +1234,7 @@ onUnmounted(() => {
 }
 
 .weekly-calendar.inbox-open {
-  padding-right: 400px;
+  padding-right: 320px;
 }
 
 /* Week View Container - with internal scrolling */

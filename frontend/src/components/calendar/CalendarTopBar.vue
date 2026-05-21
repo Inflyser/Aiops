@@ -47,8 +47,7 @@
         @click="$emit('toggle-important')"
         title="Важные события"
       >
-        <span class="toggle-icon">★</span>
-        <span class="toggle-label">Важные</span>
+        <span class="toggle-icon important-icon">★</span>
       </button>
       <!-- Кнопка настроек -->
       <button class="settings-btn" @click="$emit('open-settings')" title="Настройки">
@@ -262,6 +261,10 @@ onUnmounted(() => {
 
 .toggle-icon {
   font-size: 13px;
+}
+
+.important-icon {
+  font-size: 18px;
 }
 
 .toggle-label {

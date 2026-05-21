@@ -201,8 +201,8 @@ const toggleTask = async (task: Task) => {
 .inbox-panel {
   position: fixed;
   top: 0;
-  right: -400px;
-  width: 400px;
+  right: -320px;
+  width: 320px;
   height: 100vh;
   background: #0a0a0a;
   border-left: 1px solid #33333357;
