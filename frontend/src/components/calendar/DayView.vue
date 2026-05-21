@@ -510,7 +510,7 @@ onUnmounted(() => {
 }
 
 .hour-label {
-  width: 80px;
+  width: 60px;
   padding: 10px;
   font-size: 14px;
   color: #666;
@@ -530,7 +530,7 @@ onUnmounted(() => {
 .events-container {
   position: absolute;
   top: 0;
-  left: 80px;
+  left: 60px;
   right: 0;
   pointer-events: none;
 }

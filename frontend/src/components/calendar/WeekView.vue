@@ -561,6 +561,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   background-color: #050505;
   z-index: 5;
   box-sizing: border-box;
+  min-height: 100%;
 }
 
 .time-slot {
