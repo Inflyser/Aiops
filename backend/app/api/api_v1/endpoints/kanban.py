@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List
 from uuid import uuid4
 
@@ -264,9 +265,15 @@ def update_column(
     current_user: User = Depends(get_current_user),
 ):
     """Update column"""
-    column = db.query(KanbanColumnModel).join(KanbanBoardModel).filter(
+    column = db.query(KanbanColumnModel).outerjoin(
+        KanbanBoardModel,
+        KanbanColumnModel.board_id == KanbanBoardModel.id
+    ).filter(
         KanbanColumnModel.id == column_id,
-        KanbanBoardModel.user_id == current_user.id
+        or_(
+            KanbanBoardModel.user_id == current_user.id,
+            KanbanColumnModel.user_id == current_user.id
+        )
     ).first()
     
     if not column:
@@ -289,9 +296,15 @@ def delete_column(
     current_user: User = Depends(get_current_user),
 ):
     """Delete column"""
-    column = db.query(KanbanColumnModel).join(KanbanBoardModel).filter(
+    column = db.query(KanbanColumnModel).outerjoin(
+        KanbanBoardModel,
+        KanbanColumnModel.board_id == KanbanBoardModel.id
+    ).filter(
         KanbanColumnModel.id == column_id,
-        KanbanBoardModel.user_id == current_user.id
+        or_(
+            KanbanBoardModel.user_id == current_user.id,
+            KanbanColumnModel.user_id == current_user.id
+        )
     ).first()
     
     if not column:
