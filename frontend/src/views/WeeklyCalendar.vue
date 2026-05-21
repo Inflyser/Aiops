@@ -6,17 +6,15 @@
     <!-- Top Bar -->
     <CalendarTopBar
       :compact-mode="compactMode"
-      :event-accent-mode="eventAccentMode"
       :current-view="currentView"
       :show-tags-panel="showTagsPanel"
       :show-inbox-panel="showInboxPanel"
       :show-important-panel="showImportantPanel"
       @toggle-compact="compactMode = $event"
-      @toggle-event-accent="eventAccentMode = $event"
       @toggle-tags="showTagsPanel = !showTagsPanel"
       @toggle-inbox="showInboxPanel = !showInboxPanel"
       @toggle-important="showImportantPanel = !showImportantPanel"
-      @open-settings="showBackgroundSettings = true"
+      @open-settings="showSettings = true"
     />
 
     <!-- Tags Panel -->
@@ -143,52 +141,73 @@
       @category-dropped-to-event="handleCategoryDroppedToEvent"
     />
 
-    <!-- Background Settings Modal -->
-    <div v-if="showBackgroundSettings" class="modal-overlay" @click.self="showBackgroundSettings = false">
-      <div class="background-settings-modal">
+    <!-- Settings Modal -->
+    <div v-if="showSettings" class="modal-overlay" @click.self="showSettings = false">
+      <div class="settings-modal">
         <div class="modal-header">
-          <h3>Настройки фона</h3>
-          <button class="close-btn" @click="showBackgroundSettings = false">&times;</button>
+          <h3>Настройки</h3>
+          <button class="close-btn" @click="showSettings = false">&times;</button>
         </div>
         
         <div class="modal-body">
-          <div class="current-background" v-if="currentBackground">
-            <p>Текущий фон:</p>
-            <img :src="currentBackground" class="preview-img" />
+          <!-- Акцентный режим -->
+          <div class="settings-section">
+            <div class="settings-row">
+              <div class="settings-info">
+                <span class="settings-label">Акцент событий</span>
+                <span class="settings-hint">Нейтральный фон + цветная полоска и иконка</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" v-model="eventAccentMode" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
           </div>
-          
-          <div class="upload-section">
-            <label class="upload-label">
+
+          <div class="settings-divider"></div>
+
+          <!-- Фон -->
+          <div class="settings-section">
+            <div class="settings-section-title">Фон календаря</div>
+            
+            <div class="current-background" v-if="currentBackground">
+              <p>Текущий фон:</p>
+              <img :src="currentBackground" class="preview-img" />
+            </div>
+            
+            <div class="upload-section">
+              <label class="upload-label">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  @change="handleBackgroundUpload"
+                  class="file-input"
+                />
+                <span>Загрузить картинку</span>
+              </label>
+            </div>
+            
+            <div class="opacity-section" v-if="currentBackground">
+              <label>Прозрачность: {{ backgroundOpacity }}</label>
               <input 
-                type="file" 
-                accept="image/*" 
-                @change="handleBackgroundUpload"
-                class="file-input"
+                type="range" 
+                min="0.1" 
+                max="1" 
+                step="0.1"
+                v-model.number="backgroundOpacity"
+                @input="updateBackgroundOpacity"
+                class="opacity-slider"
               />
-              <span>Загрузить картинку</span>
-            </label>
+            </div>
+            
+            <button 
+              v-if="currentBackground" 
+              class="remove-bg-btn"
+              @click="removeBackground"
+            >
+              Убрать фон
+            </button>
           </div>
-          
-          <div class="opacity-section" v-if="currentBackground">
-            <label>Прозрачность: {{ backgroundOpacity }}</label>
-            <input 
-              type="range" 
-              min="0.1" 
-              max="1" 
-              step="0.1"
-              v-model.number="backgroundOpacity"
-              @input="updateBackgroundOpacity"
-              class="opacity-slider"
-            />
-          </div>
-          
-          <button 
-            v-if="currentBackground" 
-            class="remove-bg-btn"
-            @click="removeBackground"
-          >
-            Убрать фон
-          </button>
         </div>
       </div>
     </div>
@@ -270,7 +289,7 @@ const showImportantPanel = ref(false)
 const eventAccentMode = ref(false)
 
 // Background state
-const showBackgroundSettings = ref(false)
+const showSettings = ref(false)
 const currentBackground = ref<string | null>(null)
 const backgroundOpacity = ref(0.5)
 
@@ -1285,7 +1304,7 @@ onUnmounted(() => {
   to { opacity: 1; }
 }
 
-.background-settings-modal {
+.settings-modal {
   background-color: #121212;
   border: 1px solid #444;
   border-radius: 25px;
@@ -1306,20 +1325,20 @@ onUnmounted(() => {
   }
 }
 
-.background-settings-modal .modal-header {
+.settings-modal .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
 }
 
-.background-settings-modal .modal-header h3 {
+.settings-modal .modal-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   color: #fff;
 }
 
-.background-settings-modal .close-btn {
+.settings-modal .close-btn {
   background: none;
   border: none;
   color: #888;
@@ -1329,34 +1348,119 @@ onUnmounted(() => {
   line-height: 1;
 }
 
-.background-settings-modal .close-btn:hover {
+.settings-modal .close-btn:hover {
   color: #fff;
 }
 
-.background-settings-modal .modal-body {
+.settings-modal .modal-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.background-settings-modal .current-background {
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-section-title {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-label {
+  font-size: 13px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.settings-hint {
+  font-size: 10px;
+  color: #888;
+}
+
+.settings-divider {
+  height: 1px;
+  background: #333;
+  margin: 4px 0;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #333;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #888;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: #8b5cf6;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  background: #fff;
+  transform: translateX(18px);
+}
+
+.current-background {
   text-align: center;
 }
 
-.background-settings-modal .current-background p {
+.current-background p {
   color: #888;
   font-size: 11px;
   margin: 0 0 10px 0;
 }
 
-.background-settings-modal .preview-img {
+.preview-img {
   max-width: 100%;
   max-height: 150px;
   border-radius: 10px;
   border: 1px solid #444;
 }
 
-.background-settings-modal .upload-label {
+.upload-label {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1370,28 +1474,28 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.background-settings-modal .upload-label:hover {
+.upload-label:hover {
   background: #333;
   border-color: #666;
   color: #fff;
 }
 
-.background-settings-modal .file-input {
+.file-input {
   display: none;
 }
 
-.background-settings-modal .opacity-section {
+.opacity-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.background-settings-modal .opacity-section label {
+.opacity-section label {
   color: #888;
   font-size: 10px;
 }
 
-.background-settings-modal .opacity-slider {
+.opacity-slider {
   width: 100%;
   height: 6px;
   background: #333;
@@ -1401,7 +1505,7 @@ onUnmounted(() => {
   -webkit-appearance: none;
 }
 
-.background-settings-modal .opacity-slider::-webkit-slider-thumb {
+.opacity-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
@@ -1410,7 +1514,7 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-.background-settings-modal .remove-bg-btn {
+.remove-bg-btn {
   padding: 10px;
   background: #333;
   border: none;
@@ -1421,7 +1525,7 @@ onUnmounted(() => {
   transition: background 0.2s;
 }
 
-.background-settings-modal .remove-bg-btn:hover {
+.remove-bg-btn:hover {
   background: #444;
 }
 </style>
