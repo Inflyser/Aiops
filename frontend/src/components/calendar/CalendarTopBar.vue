@@ -50,6 +50,17 @@
         <span class="toggle-icon">★</span>
         <span class="toggle-label">Важные</span>
       </button>
+      <!-- Кнопка акцентного режима событий -->
+      <button
+        v-if="currentView === 'week'"
+        class="accent-toggle-btn header-toggle"
+        :class="{ active: eventAccentMode }"
+        @click="$emit('toggle-event-accent', !eventAccentMode)"
+        title="Акцентный режим событий"
+      >
+        <span class="toggle-icon">🎨</span>
+        <span class="toggle-label">Акцент</span>
+      </button>
       <!-- Кнопка настроек -->
       <button class="settings-btn" @click="$emit('open-settings')" title="Настройки">
         <img src="@/assets/icon-settings_alert.svg" alt="Настройки" />
@@ -68,6 +79,7 @@ dayjs.locale('ru')
 
 defineProps<{
   compactMode: boolean
+  eventAccentMode: boolean
   currentView: string
   showTagsPanel: boolean
   showInboxPanel: boolean
@@ -76,6 +88,7 @@ defineProps<{
 
 defineEmits<{
   (e: 'toggle-compact', value: boolean): void
+  (e: 'toggle-event-accent', value: boolean): void
   (e: 'toggle-tags'): void
   (e: 'toggle-inbox'): void
   (e: 'toggle-important'): void
@@ -258,6 +271,30 @@ onUnmounted(() => {
 .important-toggle-btn.active {
   background: #FFD700;
   color: #000;
+}
+
+.accent-toggle-btn {
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 11px;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.accent-toggle-btn:hover {
+  background: #444;
+}
+
+.accent-toggle-btn.active {
+  background: #8b5cf6;
+  color: #fff;
 }
 
 .toggle-icon {

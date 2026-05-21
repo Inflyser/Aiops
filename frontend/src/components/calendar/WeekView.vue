@@ -49,11 +49,25 @@
             <div class="event-indicator"></div>
             <div class="event-content">
               <div class="event-title">
-                <img
-                  v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
-                  :src="getTagIconPath(event.tagIcon)"
-                  class="event-tag-icon"
-                />
+                <template v-if="eventAccentMode">
+                  <div
+                    v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                    class="event-tag-icon-wrapper"
+                    :style="{ backgroundColor: event.color || '#4a5568' }"
+                  >
+                    <img
+                      :src="getTagIconPath(event.tagIcon)"
+                      class="event-tag-icon"
+                    />
+                  </div>
+                </template>
+                <template v-else>
+                  <img
+                    v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                    :src="getTagIconPath(event.tagIcon)"
+                    class="event-tag-icon"
+                  />
+                </template>
                 {{ event.title }}
               </div>
               <div class="event-time">
@@ -134,6 +148,7 @@ const props = defineProps<{
   weekDays: WeekDay[]
   events: CalendarEvent[]
   compactMode: boolean
+  eventAccentMode: boolean
   inboxPanelOpen: boolean
 }>()
 
@@ -439,6 +454,11 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
 
   // Используем цвет события или дефолтный серый цвет
   const eventColor = event.color || '#4a5568'
+  const eventBg = props.eventAccentMode ? '#1a1a1a' : eventColor
+  const eventStyleExtra: Record<string, string> = {}
+  if (props.eventAccentMode) {
+    eventStyleExtra['--event-color'] = eventColor
+  }
 
   // В компактном режиме (7-24): события раньше 7:00 показываем с 7:00
   // События позже 23:00 скрываем
@@ -468,11 +488,12 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
     return {
       top: `${clampedTop}px`,
       height: `${clampedHeight}px`,
-      backgroundColor: eventColor,
+      backgroundColor: eventBg,
       position: 'absolute' as const,
       left: '2px',
       right: '2px',
-      zIndex: 10
+      zIndex: 10,
+      ...eventStyleExtra
     }
   }
 
@@ -491,11 +512,12 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
   return {
     top: `${clampedTop}px`,
     height: `${clampedHeight}px`,
-    backgroundColor: eventColor,
+    backgroundColor: eventBg,
     position: 'absolute' as const,
     left: '2px',
     right: '2px',
-    zIndex: 10
+    zIndex: 10,
+    ...eventStyleExtra
   }
 }
 
@@ -658,10 +680,10 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 .event-indicator {
   width: 7px;
   border-radius: 6px;
-  background-color: #ffffff;
+  background-color: var(--event-color, #ffffff);
   margin-right: 8px;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.9;
 }
 
 .event-content {
@@ -696,6 +718,23 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.event-tag-icon-wrapper {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.event-tag-icon-wrapper .event-tag-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  filter: brightness(0) invert(1);
 }
 
 .event-tag-icon {

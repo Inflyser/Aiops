@@ -6,11 +6,13 @@
     <!-- Top Bar -->
     <CalendarTopBar
       :compact-mode="compactMode"
+      :event-accent-mode="eventAccentMode"
       :current-view="currentView"
       :show-tags-panel="showTagsPanel"
       :show-inbox-panel="showInboxPanel"
       :show-important-panel="showImportantPanel"
       @toggle-compact="compactMode = $event"
+      @toggle-event-accent="eventAccentMode = $event"
       @toggle-tags="showTagsPanel = !showTagsPanel"
       @toggle-inbox="showInboxPanel = !showInboxPanel"
       @toggle-important="showImportantPanel = !showImportantPanel"
@@ -57,6 +59,7 @@
           :week-days="weekDays"
           :events="events"
           :compact-mode="compactMode"
+          :event-accent-mode="eventAccentMode"
           :inbox-panel-open="showInboxPanel"
           @day-click="handleWeekDayClick"
           @open-event="openEventModal"
@@ -262,6 +265,9 @@ const showInboxPanel = ref(false)
 
 // Important panel state
 const showImportantPanel = ref(false)
+
+// Акцентный режим событий: true = нейтральный фон + цветная полоска/иконка
+const eventAccentMode = ref(false)
 
 // Background state
 const showBackgroundSettings = ref(false)
