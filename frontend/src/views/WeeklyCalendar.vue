@@ -5,12 +5,10 @@
   }" :style="currentBackground ? { backgroundColor: `rgba(5, 5, 5, ${1 - backgroundOpacity})` } : {}">
     <!-- Top Bar -->
     <CalendarTopBar
-      :compact-mode="compactMode"
       :current-view="currentView"
       :show-tags-panel="showTagsPanel"
       :show-inbox-panel="showInboxPanel"
       :show-important-panel="showImportantPanel"
-      @toggle-compact="compactMode = $event"
       @toggle-tags="showTagsPanel = !showTagsPanel"
       @toggle-inbox="showInboxPanel = !showInboxPanel"
       @toggle-important="showImportantPanel = !showImportantPanel"
@@ -47,8 +45,10 @@
         <div class="calendar-header-with-inbox">
           <CalendarHeader
             :current-week-start="currentWeekStart"
+            :compact-mode="compactMode"
             @prev-week="lastWeek"
             @next-week="nextWeek"
+            @toggle-compact="compactMode = $event"
           />
         </div>
 

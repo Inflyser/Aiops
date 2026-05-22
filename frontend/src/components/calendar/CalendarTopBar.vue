@@ -7,16 +7,7 @@
       <ThreeDotsMenu />
     </div>
     <div class="header-controls">
-      <!-- Кнопка переключения 0-24 / 7-24 для недельного и дневного вида -->
-      <button
-        v-if="currentView === 'week' || currentView === 'day'"
-        class="compact-toggle-btn header-toggle"
-        :class="{ active: compactMode }"
-        @click="$emit('toggle-compact', !compactMode)"
-        :title="compactMode ? 'Показать полный день (0:00–23:00)' : 'Рабочий день (7:00–23:00)'"
-      >
-        <span class="toggle-icon">{{ compactMode ? '☀' : '◑' }}</span>
-      </button>
+
       <!-- Кнопка Tags -->
       <button
         class="tags-toggle-btn header-toggle"
@@ -63,7 +54,6 @@ import ThreeDotsMenu from '../ui/ThreeDotsMenu.vue'
 dayjs.locale('ru')
 
 defineProps<{
-  compactMode: boolean
   currentView: string
   showTagsPanel: boolean
   showInboxPanel: boolean
@@ -71,7 +61,6 @@ defineProps<{
 }>()
 
 defineEmits<{
-  (e: 'toggle-compact', value: boolean): void
   (e: 'toggle-tags'): void
   (e: 'toggle-inbox'): void
   (e: 'toggle-important'): void
@@ -176,23 +165,6 @@ onUnmounted(() => {
   -webkit-backdrop-filter: blur(8px);
 }
 
-.compact-toggle-btn {
-  background: rgba(200, 200, 200, 0.12);
-  color: #ccc;
-  font-size: 11px;
-}
-
-.compact-toggle-btn:hover {
-  background: rgba(200, 200, 200, 0.22);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.compact-toggle-btn.active {
-  background: rgba(200, 200, 200, 0.25);
-  border-color: rgba(200, 200, 200, 0.4);
-  color: #eee;
-}
-
 .tags-toggle-btn {
   background: rgba(200, 200, 200, 0.12);
   color: #ccc;
@@ -252,7 +224,4 @@ onUnmounted(() => {
   font-size: 18px;
 }
 
-.toggle-label {
-  font-weight: 500;
-}
 </style>

@@ -6,8 +6,17 @@
       <button class="nav-btn1" @click="$emit('next-week')">></button>
     </div>
     <div class="days-header">
-      <!-- Empty column for time labels -->
-      <div class="time-header"></div>
+      <!-- Empty column for time labels + compact toggle -->
+      <div class="time-header">
+        <div
+          class="compact-toggle"
+          @click="$emit('toggle-compact', !compactMode)"
+          :title="compactMode ? 'Показать полный день (0:00–23:00)' : 'Рабочий день (7:00–23:00)'"
+        >
+          <img v-if="compactMode" src="@/assets/sun.svg" class="toggle-svg" />
+          <img v-else src="@/assets/moon.svg" class="toggle-svg" />
+        </div>
+      </div>
       <div
         v-for="day in weekDays"
         :key="day.date"
@@ -30,11 +39,13 @@ dayjs.locale('ru')
 
 const props = defineProps<{
   currentWeekStart: dayjs.Dayjs
+  compactMode: boolean
 }>()
 
 defineEmits<{
   (e: 'prev-week'): void
   (e: 'next-week'): void
+  (e: 'toggle-compact', value: boolean): void
 }>()
 
 const weekDays = computed(() => {
@@ -69,6 +80,7 @@ const monthYear = computed(() => {
 
 .calendar-header2 {
   display: flex;
+  padding-left: 12px;
 }
 
 .month-year {
@@ -101,6 +113,27 @@ const monthYear = computed(() => {
 .time-header {
   width: 60px;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compact-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  opacity: 0.6;
+}
+
+.compact-toggle:hover {
+  opacity: 1;
+}
+
+.toggle-svg {
+  width: 24px;
+  height: 24px;
 }
 
 .day-header {
