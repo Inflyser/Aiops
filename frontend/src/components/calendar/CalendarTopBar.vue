@@ -16,7 +16,6 @@
         :title="compactMode ? 'Показать полный день (0:00–23:00)' : 'Рабочий день (7:00–23:00)'"
       >
         <span class="toggle-icon">{{ compactMode ? '☀' : '◑' }}</span>
-        <span class="toggle-label">{{ compactMode ? '7–24' : '0–24' }}</span>
       </button>
       <!-- Кнопка Tags -->
       <button
@@ -26,7 +25,6 @@
         title="Теги"
       >
         <img src="@/assets/icon-tags.svg" style="width: 20px; height: 20px;"/>
-        <span class="toggle-label">Tags</span>
       </button>
       <!-- Кнопка Inbox -->
       <button
@@ -36,8 +34,7 @@
         @click="$emit('toggle-inbox')"
         title="Открыть Inbox"
       >
-        <span class="toggle-icon">📥</span>
-        <span class="toggle-label">Inbox</span>
+        <img src="@/assets/inbox.svg" style="width: 20px; height: 20px;"/>
       </button>
       <!-- Кнопка Важные -->
       <button
@@ -163,100 +160,88 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
-.compact-toggle-btn {
-  background: #333;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
+.header-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #aaa;
+  justify-content: center;
+  transition: all 0.25s;
+  margin-left: 8px;
+  flex-shrink: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.compact-toggle-btn {
+  background: rgba(200, 200, 200, 0.12);
+  color: #ccc;
   font-size: 11px;
-  transition: all 0.2s;
 }
 
 .compact-toggle-btn:hover {
-  background: #444;
+  background: rgba(200, 200, 200, 0.22);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .compact-toggle-btn.active {
-  background: #4a5568;
-  color: #fff;
+  background: rgba(200, 200, 200, 0.25);
+  border-color: rgba(200, 200, 200, 0.4);
+  color: #eee;
 }
 
 .tags-toggle-btn {
-  background: #333;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #aaa;
+  background: rgba(200, 200, 200, 0.12);
+  color: #ccc;
   font-size: 11px;
-  transition: all 0.2s;
-  margin-left: 8px;
 }
 
 .tags-toggle-btn:hover {
-  background: #444;
+  background: rgba(200, 200, 200, 0.22);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .tags-toggle-btn.active {
-  background: #4a5568;
-  color: #fff;
+  background: rgba(200, 200, 200, 0.25);
+  border-color: rgba(200, 200, 200, 0.4);
+  color: #eee;
 }
 
 .inbox-toggle-btn {
-  background: #333;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #aaa;
+  background: rgba(200, 200, 200, 0.12);
+  color: #ccc;
   font-size: 11px;
-  transition: all 0.2s;
-  margin-left: 8px;
 }
 
 .inbox-toggle-btn:hover {
-  background: #444;
+  background: rgba(200, 200, 200, 0.22);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .inbox-toggle-btn.active {
-  background: #4A90E2;
-  border-color: #4A90E2;
-  color: #fff;
+  background: rgba(200, 200, 200, 0.25);
+  border-color: rgba(200, 200, 200, 0.4);
+  color: #eee;
 }
 
 .important-toggle-btn {
-  background: #333;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #aaa;
+  background: rgba(200, 200, 200, 0.12);
+  color: #ccc;
   font-size: 11px;
-  transition: all 0.2s;
-  margin-left: 8px;
 }
 
 .important-toggle-btn:hover {
-  background: #444;
+  background: rgba(200, 200, 200, 0.22);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .important-toggle-btn.active {
-  background: #FFD700;
-  color: #000;
+  background: rgba(200, 200, 200, 0.25);
+  border-color: rgba(200, 200, 200, 0.4);
+  color: #eee;
 }
 
 .toggle-icon {

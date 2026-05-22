@@ -371,16 +371,16 @@ const updateStartTime = (event: Event) => {
   const mins = Math.round(parseInt((event.target as HTMLInputElement).value) / 10) * 10
   const fData = props.formData as any
   fData.startTime = minutesToTime(mins)
-  if (timeToMinutes(fData.endTime) <= mins) {
-    fData.endTime = minutesToTime(Math.min(mins + 30, 1430))
+  if (timeToMinutes(fData.endTime) - mins < 60) {
+    fData.endTime = minutesToTime(Math.min(mins + 60, 1430))
   }
 }
 
 const updateEndTime = (event: Event) => {
   const mins = Math.round(parseInt((event.target as HTMLInputElement).value) / 10) * 10
   const fData = props.formData as any
-  if (mins <= timeToMinutes(fData.startTime)) {
-    fData.endTime = minutesToTime(Math.max(mins, timeToMinutes(fData.startTime) + 30))
+  if (mins - timeToMinutes(fData.startTime) < 60) {
+    fData.endTime = minutesToTime(Math.min(timeToMinutes(fData.startTime) + 60, 1430))
   } else {
     fData.endTime = minutesToTime(mins)
   }
@@ -473,9 +473,10 @@ const selectTag = (tag: Tag) => {
 
 .close {
   position: absolute;
-  top: 18px;
-  right: 40px;
-  font-size: 32px;
+  top: 20px;
+  right: 20px;
+  font-size: 28px;
+  line-height: 1;
   cursor: pointer;
   color: #888;
 }
@@ -567,19 +568,33 @@ const selectTag = (tag: Tag) => {
   pointer-events: auto;
   top: 0;
   margin: 0;
+  z-index: 1;
+}
+
+.range-min {
+  z-index: 3;
+}
+
+.range-max {
   z-index: 2;
+}
+
+.range-input:hover,
+.range-input:active,
+.range-input:focus {
+  z-index: 5;
 }
 
 .range-input::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.08), 0 2px 4px rgba(0,0,0,0.4);
-  z-index: 3;
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  z-index: 1;
 }
 
 .range-min::-webkit-slider-thumb {

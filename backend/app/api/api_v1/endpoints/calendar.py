@@ -79,46 +79,62 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
             event_end = event.end
             duration = event_end - event_start
             
-            # Начальная дата - первое вхождение события
-            current_date = event_start
+            event_start_cmp = event_start.replace(tzinfo=None) if event_start.tzinfo else event_start
             
             # Если указана end_date для повторения, используем её
             recurrence_end = event.recurrence_end_date
-            # Делаем даты сравниваемыми (убираем tzinfo если есть)
             if recurrence_end:
-                if recurrence_end.tzinfo:
-                    recurrence_end = recurrence_end.replace(tzinfo=None)
-                search_start = start.replace(tzinfo=None) if start.tzinfo else start
-                search_end = end.replace(tzinfo=None) if end.tzinfo else end
-                current_date_cmp = current_date.replace(tzinfo=None) if current_date.tzinfo else current_date
-                
-                if recurrence_end < search_start:
-                    continue
-            else:
-                search_start = start.replace(tzinfo=None) if start.tzinfo else start
-                search_end = end.replace(tzinfo=None) if end.tzinfo else end
-                current_date_cmp = current_date.replace(tzinfo=None) if current_date.tzinfo else current_date
+                recurrence_end = recurrence_end.replace(tzinfo=None) if recurrence_end.tzinfo else recurrence_end
+            
+            search_start = start.replace(tzinfo=None) if start.tzinfo else start
+            search_end = end.replace(tzinfo=None) if end.tzinfo else end
+            
+            if recurrence_end and recurrence_end < search_start:
+                continue
             
             # Если есть ограничение по количеству повторений
             max_occurrences = event.recurrence_count
             
             occurrence_count = 0
             
-            while current_date_cmp <= search_end:
-                # Проверяем, попадает ли это вхождение в запрошенный период
-                if current_date_cmp >= search_start and current_date_cmp <= search_end:
-                    # Проверяем день недели (0=понедельник, 6=воскресенье)
-                    weekday = current_date_cmp.weekday()
-                    if weekday in recurrence_days:
-                        # Создаём словарь с данными события
+            # Начинаем с понедельника недели, в которую попадает событие
+            start_of_week = event_start_cmp - timedelta(days=event_start_cmp.weekday())
+            current_week_start = start_of_week
+            
+            while True:
+                for day_idx in recurrence_days:
+                    # Дата конкретного дня в текущей неделе
+                    occurrence_date = current_week_start + timedelta(days=day_idx)
+                    
+                    # Не раньше даты начала события
+                    if occurrence_date < event_start_cmp:
+                        continue
+                    
+                    # Не позже даты окончания повторения
+                    if recurrence_end and occurrence_date > recurrence_end:
+                        continue
+                    
+                    # Не позже запрошенного периода
+                    if occurrence_date > search_end:
+                        continue
+                    
+                    # Проверяем, попадает ли в запрошенный период
+                    if occurrence_date >= search_start:
+                        # Создаём вхождение в указанную дату со временем из события
+                        occurrence_datetime = event_start.replace(
+                            year=occurrence_date.year,
+                            month=occurrence_date.month,
+                            day=occurrence_date.day
+                        )
+                        
                         tasks_info = get_event_tasks_info(db, event.id)
                         expanded.append({
                             'id': f"{event.id}_{occurrence_count}",
-                            'original_id': event.id,  # Оригинальный ID для edit/delete
+                            'original_id': event.id,
                             'title': event.title,
                             'description': event.description,
-                            'start': current_date,
-                            'end': current_date + duration,
+                            'start': occurrence_datetime,
+                            'end': occurrence_datetime + duration,
                             'all_day': event.all_day,
                             'color': event.color,
                             'priority': event.priority,
@@ -135,22 +151,55 @@ def expand_recurring_events(events: List[CalendarEvent], start: datetime, end: d
                             'created_at': event.created_at,
                             'updated_at': event.updated_at,
                         })
+                        occurrence_count += 1
                         
-                        if max_occurrences and occurrence_count >= max_occurrences - 1:
+                        if max_occurrences and occurrence_count >= max_occurrences:
                             break
                 
+                if max_occurrences and occurrence_count >= max_occurrences:
+                    break
+                
                 # Переходим к следующей неделе
-                current_date += timedelta(days=7)
-                current_date_cmp = current_date.replace(tzinfo=None) if current_date.tzinfo else current_date
-                occurrence_count += 1
+                current_week_start += timedelta(days=7)
                 
                 # Защита от бесконечного цикла
-                if occurrence_count > 365:  # Максимум год повторений
+                if occurrence_count > 365:
                     break
                 
                 # Проверяем выход за пределы end_date повторения
-                if recurrence_end and current_date_cmp > recurrence_end:
+                if recurrence_end and current_week_start > recurrence_end:
                     break
+                
+                # Выходим, если ушли слишком далеко за search_end
+                if current_week_start > search_end + timedelta(days=7):
+                    break
+            
+            # Добавляем оригинальное событие, если его день не входит в выбранные дни повторения
+            # (иначе оно уже есть среди расширенных экземпляров)
+            if event_start_cmp.weekday() not in recurrence_days:
+                tasks_info = get_event_tasks_info(db, event.id)
+                expanded.append({
+                    'id': event.id,
+                    'title': event.title,
+                    'description': event.description,
+                    'start': event.start,
+                    'end': event.end,
+                    'all_day': event.all_day,
+                    'color': event.color,
+                    'priority': event.priority,
+                    'is_important': event.is_important,
+                    'tag_id': event.tag_id,
+                    'user_id': event.user_id,
+                    'recurrence_type': event.recurrence_type,
+                    'recurrence_days': event.recurrence_days,
+                    'recurrence_end_date': event.recurrence_end_date,
+                    'recurrence_count': event.recurrence_count,
+                    'created_at': event.created_at,
+                    'updated_at': event.updated_at,
+                    'task_ids': tasks_info['task_ids'],
+                    'task_count': tasks_info['task_count'],
+                    'completed_task_count': tasks_info['completed_task_count'],
+                })
         else:
             # Обычное событие без повторения
             tasks_info = get_event_tasks_info(db, event.id)

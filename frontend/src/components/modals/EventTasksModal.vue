@@ -244,9 +244,10 @@ watch(() => props.show, (isVisible) => {
 
 .close {
   position: absolute;
-  top: 18px;
-  right: 40px;
+  top: 20px;
+  right: 20px;
   font-size: 26px;
+  line-height: 1;
   cursor: pointer;
   color: #888;
 }
