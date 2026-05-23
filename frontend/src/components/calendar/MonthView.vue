@@ -25,9 +25,8 @@
           'other-month': !day.isCurrentMonth,
           'weekend': day.isWeekend
         }"
-        @click="$emit('day-click', day)"
       >
-        <div class="month-day-number">{{ day.number }}</div>
+        <div class="month-day-number" @click.stop="$emit('day-click', day)">{{ day.number }}</div>
         <div class="month-day-events">
           <div
             v-for="event in getVisibleEvents(day.date)"
@@ -57,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -97,11 +96,6 @@ interface MonthDay {
   fullDate: dayjs.Dayjs
 }
 
-// Double click detection
-const lastClickEvent = ref<{ event: CalendarEvent; time: number } | null>(null)
-const clickTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
-const DOUBLE_CLICK_DELAY = 300 // ms
-
 const props = defineProps<{
   currentMonth: dayjs.Dayjs
   events: CalendarEvent[]
@@ -112,40 +106,10 @@ const emit = defineEmits<{
   (e: 'next-month'): void
   (e: 'day-click', day: MonthDay): void
   (e: 'open-event', event: CalendarEvent): void
-  (e: 'open-event-tasks', event: CalendarEvent): void
 }>()
 
-// Handle event click with double click detection
 const handleEventClick = (event: CalendarEvent) => {
-  const now = Date.now()
-  
-  // Clear previous timeout if exists
-  if (clickTimeout.value) {
-    clearTimeout(clickTimeout.value)
-    clickTimeout.value = null
-  }
-  
-  // Check if this is a double click
-  if (lastClickEvent.value &&
-      lastClickEvent.value.event.id === event.id &&
-      now - lastClickEvent.value.time < DOUBLE_CLICK_DELAY) {
-    // Double click detected - open event modal for editing
-    emit('open-event', event)
-    lastClickEvent.value = null
-  } else {
-    // Store click info and wait to see if it's a single or double click
-    lastClickEvent.value = { event, time: now }
-    
-    // Set timeout to handle single click
-    clickTimeout.value = setTimeout(() => {
-      // Single click - check if event has tasks
-      if (event.task_count && event.task_count > 0) {
-        emit('open-event-tasks', event)
-      }
-      lastClickEvent.value = null
-      clickTimeout.value = null
-    }, DOUBLE_CLICK_DELAY)
-  }
+  emit('open-event', event)
 }
 
 const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
@@ -170,8 +134,6 @@ const monthDays = computed(() => {
   return days
 })
 
-const MAX_VISIBLE_EVENTS = 3
-
 const getAllEventsForDay = (date: string) => {
   return props.events.filter(event => {
     const eventDate = dayjs(event.start).format('YYYY-MM-DD')
@@ -180,12 +142,15 @@ const getAllEventsForDay = (date: string) => {
 }
 
 const getVisibleEvents = (date: string) => {
-  return getAllEventsForDay(date).slice(0, MAX_VISIBLE_EVENTS)
+  const all = getAllEventsForDay(date)
+  const max = all.length > 4 ? 3 : 4
+  return all.slice(0, max)
 }
 
 const getExtraEventsCount = (date: string) => {
   const allEvents = getAllEventsForDay(date)
-  return Math.max(0, allEvents.length - MAX_VISIBLE_EVENTS)
+  const visible = getVisibleEvents(date).length
+  return Math.max(0, allEvents.length - visible)
 }
 </script>
 
@@ -195,7 +160,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .month-header {
-  padding: 20px 0;
+  padding: 0 0 20px;
 }
 
 .month-header2 {

@@ -90,7 +90,6 @@
           @next-month="nextMonth"
           @day-click="handleMonthDayClick"
           @open-event="openEventModal"
-          @open-event-tasks="openEventTasksModal"
         />
       </div>
 
@@ -432,15 +431,9 @@ const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
 }
 
 const handleMonthDayClick = (day: any) => {
-  eventForm.value = {
-    ...defaultEventForm(),
-    date: day.date,
-    startTime: '09:00',
-    endTime: '10:00',
-  }
-  
-  editingEvent.value = null
-  showModal.value = true
+  currentView.value = 'week'
+  currentWeekStart.value = dayjs(day.fullDate).startOf('week')
+  loadEvents()
 }
 
 const handleMiniDayClick = (day: any) => {
