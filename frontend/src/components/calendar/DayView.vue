@@ -126,6 +126,7 @@ const props = defineProps<{
   currentDay: dayjs.Dayjs
   events: CalendarEvent[]
   compactMode: boolean
+  eventAccentMode: boolean
 }>()
 
 const emit = defineEmits<{
@@ -298,6 +299,11 @@ const getEventStyle = (event: CalendarEvent) => {
   const duration = end.diff(start, 'minute')
   
   const eventColor = event.color || '#4a5568'
+  const eventBg = props.eventAccentMode ? '#1a1a1a' : eventColor
+  const eventStyleExtra: Record<string, string> = {}
+  if (props.eventAccentMode) {
+    eventStyleExtra['--event-color'] = eventColor
+  }
   
   if (props.compactMode) {
     if (startMinutes < 7 * 60) {
@@ -323,23 +329,25 @@ const getEventStyle = (event: CalendarEvent) => {
       return {
         top: `${clampedTop}px`,
         height: `${clampedHeight}px`,
-        backgroundColor: eventColor,
+        backgroundColor: eventBg,
         position: 'absolute' as const,
         left: '37.5%', // (100% - 25%) / 2
         width: '25%',
         right: 'auto',
-        zIndex: 10
+        zIndex: 10,
+        ...eventStyleExtra
       }
     }
     
     return {
       top: `${clampedTop}px`,
       height: `${clampedHeight}px`,
-      backgroundColor: eventColor,
+      backgroundColor: eventBg,
       position: 'absolute' as const,
       left: '2px',
       right: '2px',
-      zIndex: 10
+      zIndex: 10,
+      ...eventStyleExtra
     }
   }
   
@@ -359,23 +367,25 @@ const getEventStyle = (event: CalendarEvent) => {
     return {
       top: `${clampedTop}px`,
       height: `${clampedHeight}px`,
-      backgroundColor: eventColor,
+      backgroundColor: eventBg,
       position: 'absolute' as const,
       left: '37.5%', // (100% - 25%) / 2
       width: '25%',
       right: 'auto',
-      zIndex: 10
+      zIndex: 10,
+      ...eventStyleExtra
     }
   }
   
   return {
     top: `${clampedTop}px`,
     height: `${clampedHeight}px`,
-    backgroundColor: eventColor,
+    backgroundColor: eventBg,
     position: 'absolute' as const,
     left: '2px',
     right: '2px',
-    zIndex: 10
+    zIndex: 10,
+    ...eventStyleExtra
   }
 }
 
@@ -555,10 +565,10 @@ onUnmounted(() => {
 .event-indicator {
   width: 7px;
   border-radius: 6px;
-  background-color: #ffffff;
+  background-color: var(--event-color, #ffffff);
   margin-right: 8px;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.9;
 }
 
 .event-content {

@@ -100,6 +100,7 @@
           :current-day="currentDay"
           :events="dayEvents"
           :compact-mode="compactMode"
+          :event-accent-mode="eventAccentMode"
           @prev-day="prevDay"
           @next-day="nextDay"
           @go-today="goToToday"
@@ -307,7 +308,7 @@ const dayEvents = computed(() => {
   })
 })
 
-const eventForm = ref({
+const defaultEventForm = () => ({
   title: '',
   description: '',
   date: '',
@@ -322,6 +323,8 @@ const eventForm = ref({
   recurrenceEndDate: undefined as string | undefined,
   is_important: false
 })
+
+const eventForm = ref(defaultEventForm())
 
 // Computed week days
 const weekDays = computed(() => {
@@ -402,19 +405,10 @@ const handleDayHourClick = (data: { hour: number; date: dayjs.Dayjs }) => {
   const endTime = startTime.add(1, 'hour')
   
   eventForm.value = {
-    title: '',
-    description: '',
+    ...defaultEventForm(),
     date: date.format('YYYY-MM-DD'),
     startTime: startTime.format('HH:mm'),
     endTime: endTime.format('HH:mm'),
-    location: '',
-    priority: 'medium',
-    color: '#4a5568',
-    tagId: undefined,
-    recurrenceType: undefined,
-    recurrenceDays: undefined,
-    recurrenceEndDate: undefined,
-    is_important: false
   }
   
   editingEvent.value = null
@@ -427,19 +421,10 @@ const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
   const endTime = dateTime.add(1, 'hour')
   
   eventForm.value = {
-    title: '',
-    description: '',
+    ...defaultEventForm(),
     date: day.date,
     startTime: dateTime.format('HH:mm'),
     endTime: endTime.format('HH:mm'),
-    location: '',
-    priority: 'medium',
-    color: '#4a5568',
-    tagId: undefined,
-    recurrenceType: undefined,
-    recurrenceDays: undefined,
-    recurrenceEndDate: undefined,
-    is_important: false
   }
   
   editingEvent.value = null
@@ -448,19 +433,10 @@ const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
 
 const handleMonthDayClick = (day: any) => {
   eventForm.value = {
-    title: '',
-    description: '',
+    ...defaultEventForm(),
     date: day.date,
     startTime: '09:00',
     endTime: '10:00',
-    location: '',
-    priority: 'medium',
-    color: '#4a5568',
-    tagId: undefined,
-    recurrenceType: undefined,
-    recurrenceDays: undefined,
-    recurrenceEndDate: undefined,
-    is_important: false
   }
   
   editingEvent.value = null
@@ -470,19 +446,10 @@ const handleMonthDayClick = (day: any) => {
 const handleMiniDayClick = (day: any) => {
   if (day.isCurrentMonth) {
     eventForm.value = {
-      title: '',
-      description: '',
+      ...defaultEventForm(),
       date: day.date,
       startTime: '09:00',
       endTime: '10:00',
-      location: '',
-      priority: 'medium',
-      color: '#4a5568',
-      tagId: undefined,
-      recurrenceType: undefined,
-      recurrenceDays: undefined,
-      recurrenceEndDate: undefined,
-      is_important: false
     }
     
     editingEvent.value = null
@@ -501,6 +468,7 @@ const openEventModal = (event: any) => {
   const end = dayjs(event.end)
   
   eventForm.value = {
+    ...defaultEventForm(),
     title: event.title,
     description: event.description || '',
     date: start.format('YYYY-MM-DD'),
@@ -523,21 +491,7 @@ const closeModal = () => {
   showModal.value = false
   editingEvent.value = null
   viewMode.value = null
-  eventForm.value = {
-    title: '',
-    description: '',
-    date: '',
-    startTime: '',
-    endTime: '',
-    location: '',
-    priority: 'medium',
-    color: '#4a5568',
-    tagId: undefined,
-    recurrenceType: undefined,
-    recurrenceDays: undefined,
-    recurrenceEndDate: undefined,
-    is_important: false
-  }
+  eventForm.value = defaultEventForm()
 }
 
 const openEventTasksModal = (event: any) => {
@@ -797,8 +751,8 @@ const handleEventCopyForDay = async (data: { event: any; newDate: string; newSta
   console.log('Event copied:', event.title, 'to', newStart)
 }
 
-// Handle task drop to event for day view
-const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
+// Shared task-to-event logic
+const handleTaskDropToEventShared = async (data: { task: any; event: any }, onSuccess: () => Promise<void>) => {
   const { task, event } = data
   
   try {
@@ -825,7 +779,7 @@ const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
         })
       }
       
-      await loadEventsForDay()
+      await onSuccess()
       
       console.log('Category tasks added to event:', task.categoryTitle, '->', event.title)
     } else {
@@ -840,13 +794,18 @@ const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
         order: Number(0)
       })
     
-      await loadEventsForDay()
+      await onSuccess()
       
       console.log('Task added to event:', task.title, '->', event.title)
     }
   } catch (error) {
     console.error('Failed to add task to event:', error)
   }
+}
+
+// Handle task drop to event for day view
+const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
+  await handleTaskDropToEventShared(data, loadEventsForDay)
 }
 
 // Handle move event to next week for day view
@@ -903,62 +862,7 @@ const handleMoveToNextWeek = async (event: any) => {
 
 // Handle task drop to event
 const handleTaskDropToEvent = async (data: { task: any; event: any }) => {
-  const { task, event } = data
-  
-  try {
-    // Проверяем, это категория или задача
-    if (task.type === 'category') {
-      // Получаем задачи категории
-      const categoryTasks = tasksStore.tasks.filter((t: any) => t.column_id === task.categoryId)
-      
-      if (categoryTasks.length === 0) {
-        console.log('No tasks in category:', task.categoryTitle)
-        return
-      }
-      
-      // Добавляем все задачи категории к событию
-      for (let i = 0; i < categoryTasks.length; i++) {
-        const taskData = categoryTasks[i]
-        
-        // Проверяем, что taskData.id существует
-        if (!taskData.id) {
-          console.error(`Task ${i} has no id:`, taskData)
-          continue
-        }
-        
-        await eventTasksApi.post('/', {
-          event_id: String(event.id),
-          task_id: String(taskData.id),
-          order: Number(i)
-        })
-      }
-      
-      // Обновляем события
-      await loadEvents()
-      
-      console.log('Category tasks added to event:', task.categoryTitle, '->', event.title)
-    } else {
-      // Проверяем, что task.id существует
-      if (!task.id) {
-        console.error('Task.id is undefined or null')
-        return
-      }
-      
-      // Добавляем задачу к событию через API
-      await eventTasksApi.post('/', {
-        event_id: String(event.id),
-        task_id: String(task.id),
-        order: Number(0)
-      })
-    
-      // Обновляем события, чтобы отобразить количество задач
-      await loadEvents()
-      
-      console.log('Task added to event:', task.title, '->', event.title)
-    }
-  } catch (error) {
-    console.error('Failed to add task to event:', error)
-  }
+  await handleTaskDropToEventShared(data, loadEvents)
 }
 
 // Handle task drop to day

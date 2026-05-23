@@ -57,8 +57,8 @@ const views = ['day', 'week', 'month', 'year']
 
 const indicatorStyle = computed(() => {
   const index = views.indexOf(currentView.value)
-  const buttonWidth = 92
-  const gap = 23
+  const buttonWidth = 90
+  const gap = 20
   const left = index * (buttonWidth + gap)
   
   return {
