@@ -307,8 +307,8 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .event-tag-icon {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
 }
 
@@ -323,7 +323,7 @@ const getExtraEventsCount = (date: string) => {
   color: white;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .more-events {
