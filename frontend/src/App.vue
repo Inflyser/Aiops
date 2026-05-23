@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, provide } from 'vue'
 
 const backgroundImage = ref<string | null>(null)
 const backgroundOpacity = ref(0.5)
@@ -41,7 +41,10 @@ onMounted(() => {
   }
 })
 
-defineExpose({ setBackground, clearBackground })
+provide('backgroundUrl', backgroundImage)
+provide('backgroundOpacity', backgroundOpacity)
+provide('setBackground', setBackground)
+provide('clearBackground', clearBackground)
 </script>
 
 <style>
