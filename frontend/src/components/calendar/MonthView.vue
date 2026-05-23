@@ -310,11 +310,10 @@ const getExtraEventsCount = (date: string) => {
   width: 12px;
   height: 12px;
   flex-shrink: 0;
-  margin-right: 3px;
 }
 
 .month-event {
-  font-size: 11px;
+  font-size: 12px;
   padding: 3px 6px;
   border-radius: 3px;
   overflow: hidden;
@@ -322,6 +321,9 @@ const getExtraEventsCount = (date: string) => {
   white-space: nowrap;
   cursor: pointer;
   color: white;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .more-events {
