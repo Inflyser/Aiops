@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 from typing import List, Optional
 from datetime import datetime, timedelta
 from uuid import uuid4
@@ -239,8 +240,20 @@ def get_calendar_events(
     query = db.query(CalendarEvent).filter(CalendarEvent.user_id == current_user.id)
     
     # Показываем события которые пересекаются с запрошенным периодом
+    # Для повторяющихся событий также учитываем их рекуррентный диапазон
     if start:
-        query = query.filter(CalendarEvent.end > start)
+        query = query.filter(
+            or_(
+                CalendarEvent.end > start,
+                and_(
+                    CalendarEvent.recurrence_type.isnot(None),
+                    or_(
+                        CalendarEvent.recurrence_end_date.is_(None),
+                        CalendarEvent.recurrence_end_date > start
+                    )
+                )
+            )
+        )
     if end:
         from datetime import timedelta
         end_inclusive = end + timedelta(days=1)

@@ -750,7 +750,8 @@ const saveEvent = async () => {
 
 const deleteEvent = async () => {
   if (editingEvent.value) {
-    // Сохраняем событие для отмены
+    if (!confirm(`Удалить событие "${editingEvent.value.title}"?`)) return
+    // Сохраняем старое событие для отмены
     const deletedEvent = { ...editingEvent.value }
     // Используем original_id если есть (для повторяющихся событий)
     const eventIdToDelete = editingEvent.value.original_id || editingEvent.value.id
@@ -1178,6 +1179,7 @@ const handleKeydown = (event: KeyboardEvent) => {
     case 'Backspace':
       // Удалить выбранное событие
       if (selectedEventId.value) {
+        if (!confirm('Удалить выбранное событие?')) return
         calendarStore.deleteEvent(selectedEventId.value)
         selectedEventId.value = null
         loadEvents()
@@ -1193,8 +1195,8 @@ const handleKeydown = (event: KeyboardEvent) => {
 // Watch for view changes to reload events for the current view
 watch(currentView, async (newView) => {
   if (newView === 'day') {
-    // For day view, also load a wider range (week) to have data available
-    loadEvents()
+    // For day view, load the week containing the current day
+    loadEventsForDay()
   } else if (newView === 'month') {
     // Load events for current month
     loadEventsForMonth()

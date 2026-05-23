@@ -457,6 +457,9 @@ const removeColumn = async (colKey: string) => {
   // Не позволяем удалять последнюю колонку на доске
   if (!isInboxActive.value && kanbanStore.columns.length <= 1) return
   
+  const column = kanbanStore.columns.find(c => c.id === colKey)
+  if (!confirm(`Удалить колонку "${column?.title || colKey}"? Все задачи будут перемещены.`)) return
+  
   const tasksToRemove = tasksByColumn(colKey)
   
   try {
@@ -988,7 +991,11 @@ const handleKeydown = (event: KeyboardEvent) => {
   min-height: 100px;
   max-height: calc(100vh - 300px);
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 8px 4px 8px 0;
+}
+
+.kanban-card-wrapper {
+  padding: 0 4px;
 }
 
 .column-body::-webkit-scrollbar {

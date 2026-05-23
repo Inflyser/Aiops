@@ -2,8 +2,10 @@
   <div class="calendar-header">
     <div class="calendar-header2">
       <h1 class="month-year">{{ monthYear }}</h1>
-      <button class="nav-btn1" @click="$emit('prev-week')"><</button>
-      <button class="nav-btn1" @click="$emit('next-week')">></button>
+      <div class="week-nav">
+        <button class="nav-btn1" @click="$emit('prev-week')"><</button>
+        <button class="nav-btn1" @click="$emit('next-week')">></button>
+      </div>
     </div>
     <div class="days-header">
       <!-- Empty column for time labels + compact toggle -->
@@ -80,15 +82,21 @@ const monthYear = computed(() => {
 
 .calendar-header2 {
   display: flex;
+  align-items: center;
   padding-left: 12px;
 }
 
 .month-year {
   font-size: 42px;
-  font-weight: 300;
   margin-bottom: 20px;
   text-transform: capitalize;
   font-weight: bold;
+  flex: 1;
+}
+
+.week-nav {
+  display: flex;
+  gap: 10px;
 }
 
 .nav-btn1 {

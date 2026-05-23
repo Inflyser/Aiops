@@ -195,7 +195,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .month-header {
-  padding: 20px;
+  padding: 20px 0;
   border-bottom: 1px solid #80808021;
 }
 
@@ -203,6 +203,7 @@ const getExtraEventsCount = (date: string) => {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
+  padding: 0 20px;
 }
 
 .month-year-title {
@@ -231,7 +232,7 @@ const getExtraEventsCount = (date: string) => {
 .days-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0px;
+  gap: 1px;
   margin-bottom: 10px;
 }
 
@@ -252,6 +253,14 @@ const getExtraEventsCount = (date: string) => {
   gap: 1px;
 }
 
+.month-day:first-child {
+  border-top-left-radius: 12px;
+}
+
+.month-day:nth-child(7) {
+  border-top-right-radius: 12px;
+}
+
 .month-day {
   min-height: 120px;
   border: 1px solid #333;
@@ -265,12 +274,12 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .month-day.today {
-  border: 2px solid #4a90e2;
-  background-color: rgba(74, 144, 226, 0.1);
+  border: 2px solid #555;
+  background-color: rgba(85, 85, 85, 0.1);
 }
 
 .month-day.today .month-day-number {
-  background-color: #4a90e2;
+  background-color: #555;
   color: white;
   width: 30px;
   height: 30px;
@@ -278,7 +287,7 @@ const getExtraEventsCount = (date: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
+  margin: 0 auto 8px;
 }
 
 .month-day.other-month {
