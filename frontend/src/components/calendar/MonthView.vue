@@ -23,8 +23,12 @@
         :class="{
           'today': day.isToday,
           'other-month': !day.isCurrentMonth,
-          'weekend': day.isWeekend
+          'weekend': day.isWeekend,
+          'drag-over': dragOverDay === day.date
         }"
+        @dragover="handleDragOver($event, day)"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop($event, day)"
       >
         <div class="month-day-number" @click.stop="$emit('day-click', day)">{{ day.number }}</div>
         <div class="month-day-events">
@@ -32,8 +36,15 @@
             v-for="event in getVisibleEvents(day.date)"
             :key="event.id"
             class="month-event"
+            :class="{ 'dragging': draggedEvent?.id === event.id }"
             :style="{ backgroundColor: event.color || '#4a5568' }"
+            :data-event-id="event.id"
+            draggable="true"
             @click.stop="handleEventClick(event)"
+            @dragstart="handleDragStart($event, event)"
+            @dragend="handleDragEnd"
+            @dragover="handleTaskDragOver($event)"
+            @drop="handleTaskDrop($event, day)"
           >
             <img
               v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
@@ -56,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -85,6 +96,7 @@ interface CalendarEvent {
   tagIcon?: string
   task_count?: number
   completed_task_count?: number
+  bouncing?: boolean
 }
 
 interface MonthDay {
@@ -106,10 +118,155 @@ const emit = defineEmits<{
   (e: 'next-month'): void
   (e: 'day-click', day: MonthDay): void
   (e: 'open-event', event: CalendarEvent): void
+  (e: 'event-drop', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
+  (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
+  (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
+  (e: 'task-drop-to-day', data: { task: any; time: dayjs.Dayjs }): void
+  (e: 'category-drop-to-day', data: { categoryId: string; categoryTitle: string; time: dayjs.Dayjs }): void
 }>()
 
 const handleEventClick = (event: CalendarEvent) => {
   emit('open-event', event)
+}
+
+// Drag and drop state
+const draggedEvent = ref<CalendarEvent | null>(null)
+const dragOverDay = ref<string | null>(null)
+const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const isAltPressed = ref(false)
+
+const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
+  draggedEvent.value = calendarEvent
+  isAltPressed.value = event.altKey
+
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = event.altKey ? 'copy' : 'move'
+    event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent))
+    event.dataTransfer.setData('application/x-alt-drag', String(event.altKey))
+  }
+}
+
+const handleDragEnd = () => {
+  draggedEvent.value = null
+  dragOverDay.value = null
+  isAltPressed.value = false
+  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
+}
+
+const handleDragOver = (event: DragEvent, day: MonthDay) => {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = event.altKey ? 'copy' : 'move'
+  }
+  dragOverDay.value = day.date
+  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
+  dragOverTimeout.value = setTimeout(() => {
+    dragOverDay.value = null
+  }, 1000)
+}
+
+const handleDragLeave = () => {
+  dragOverDay.value = null
+  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
+}
+
+const handleDrop = (event: DragEvent, day: MonthDay) => {
+  event.preventDefault()
+  dragOverDay.value = null
+  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
+
+  try {
+    const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
+
+    if (draggedEvent.value) {
+      const eventData = draggedEvent.value
+      const isCopy = event.altKey || isAltPressed.value
+
+      const originalStart = dayjs(eventData.start)
+      const originalEnd = dayjs(eventData.end)
+      const duration = originalEnd.diff(originalStart, 'minute')
+
+      const newStart = day.fullDate
+        .hour(originalStart.hour())
+        .minute(originalStart.minute())
+        .second(0)
+      const newEnd = newStart.add(duration, 'minute')
+
+      if (isCopy) {
+        emit('event-copy', {
+          event: eventData,
+          newDate: day.date,
+          newStart: newStart.toISOString(),
+          newEnd: newEnd.toISOString()
+        })
+      } else {
+        emit('event-drop', {
+          event: eventData,
+          newDate: day.date,
+          newStart: newStart.toISOString(),
+          newEnd: newEnd.toISOString()
+        })
+      }
+    } else if (droppedData.type === 'category') {
+      const dropTime = day.fullDate.hour(9).minute(0).second(0)
+
+      emit('category-drop-to-day', {
+        categoryId: droppedData.categoryId,
+        categoryTitle: droppedData.categoryTitle,
+        time: dropTime
+      })
+    } else if (droppedData.id && droppedData.title) {
+      const dropTime = day.fullDate.hour(9).minute(0).second(0)
+
+      emit('task-drop-to-day', {
+        task: droppedData,
+        time: dropTime
+      })
+    }
+  } catch (error) {
+    console.error('Error parsing drop data:', error)
+  }
+
+  draggedEvent.value = null
+  isAltPressed.value = false
+}
+
+const handleTaskDragOver = (event: DragEvent) => {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const handleTaskDrop = (event: DragEvent, _day: MonthDay) => {
+  event.preventDefault()
+
+  // Если перетаскивается событие календаря — не останавливаем всплытие,
+  // чтобы дроп ушёл в handleDrop на .month-day
+  if (draggedEvent.value) return
+
+  event.stopPropagation()
+
+  try {
+    const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
+
+    if (droppedData.type === 'category' || (droppedData.id && droppedData.title)) {
+      const targetElement = event.target as HTMLElement
+      const eventBlock = targetElement.closest('.month-event')
+
+      if (eventBlock) {
+        const eventId = eventBlock.getAttribute('data-event-id')
+        const targetEvent = props.events.find(e => String(e.id) === eventId)
+
+        if (targetEvent) {
+          emit('task-drop-to-event', { task: droppedData, event: targetEvent })
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing task data:', error)
+  }
 }
 
 const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
@@ -300,5 +457,13 @@ const getExtraEventsCount = (date: string) => {
 
 .more-events:hover {
   color: #aaa;
+}
+
+.month-day.drag-over {
+  background-color: rgba(200, 200, 200, 0.15);
+}
+
+.month-event.dragging {
+  opacity: 0.5;
 }
 </style>

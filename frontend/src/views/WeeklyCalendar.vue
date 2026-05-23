@@ -90,6 +90,11 @@
           @next-month="nextMonth"
           @day-click="handleMonthDayClick"
           @open-event="openEventModal"
+          @event-drop="handleEventDrop"
+          @event-copy="handleEventCopy"
+          @task-drop-to-event="handleTaskDropToEvent"
+          @task-drop-to-day="handleTaskDropToDay"
+          @category-drop-to-day="handleCategoryDropToDay"
         />
       </div>
 
