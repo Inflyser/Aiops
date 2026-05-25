@@ -56,9 +56,44 @@
           <div
             v-if="getExtraEventsCount(day.date) > 0"
             class="more-events"
-            @click.stop="$emit('day-click', day)"
+            @click.stop="showAllDayEvents(day)"
           >
             +{{ getExtraEventsCount(day.date) }} ещё
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Day Events Modal -->
+    <div v-if="selectedDay" class="day-events-overlay" @click.self="closeAllDayEvents">
+      <div class="day-events-modal">
+        <div class="day-events-modal-header">
+          <h2 class="day-events-modal-title">{{ dayjs(selectedDay.date).format('D MMMM') }}</h2>
+          <button class="day-events-modal-close" @click="closeAllDayEvents">×</button>
+        </div>
+        <div class="day-events-modal-list">
+          <div
+            v-for="event in selectedDay.events"
+            :key="event.id"
+            class="day-events-modal-item"
+            @click="handleAllEventClick(event)"
+          >
+            <div class="day-events-modal-item-color" :style="{ backgroundColor: event.color || '#4a5568' }"></div>
+            <div class="day-events-modal-item-info">
+              <div class="day-events-modal-item-title">
+                <img
+                  v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                  :src="getTagIconPath(event.tagIcon)"
+                  class="event-tag-icon"
+                />
+                <span class="day-events-modal-item-star" v-if="event.is_important">★</span>
+                {{ event.title }}
+              </div>
+              <div class="day-events-modal-item-time">{{ formatEventTime(event) }}</div>
+            </div>
+          </div>
+          <div v-if="selectedDay.events.length === 0" class="day-events-modal-empty">
+            Нет событий на этот день
           </div>
         </div>
       </div>
@@ -97,6 +132,7 @@ interface CalendarEvent {
   task_count?: number
   completed_task_count?: number
   bouncing?: boolean
+  is_important?: boolean
 }
 
 interface MonthDay {
@@ -127,6 +163,28 @@ const emit = defineEmits<{
 
 const handleEventClick = (event: CalendarEvent) => {
   emit('open-event', event)
+}
+
+const selectedDay = ref<{ date: string; events: CalendarEvent[] } | null>(null)
+
+const showAllDayEvents = (day: MonthDay) => {
+  const allEvents = getAllEventsForDay(day.date)
+  selectedDay.value = { date: day.date, events: allEvents }
+}
+
+const closeAllDayEvents = () => {
+  selectedDay.value = null
+}
+
+const handleAllEventClick = (event: CalendarEvent) => {
+  closeAllDayEvents()
+  emit('open-event', event)
+}
+
+const formatEventTime = (event: CalendarEvent) => {
+  const start = dayjs(event.start)
+  const end = dayjs(event.end)
+  return `${start.format('HH:mm')} - ${end.format('HH:mm')}`
 }
 
 // Drag and drop state
@@ -465,5 +523,120 @@ const getExtraEventsCount = (date: string) => {
 
 .month-event.dragging {
   opacity: 0.5;
+}
+
+/* All Day Events Modal */
+.day-events-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.day-events-modal {
+  background: #1a1a1a;
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.day-events-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #333;
+}
+
+.day-events-modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.day-events-modal-close {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.day-events-modal-close:hover {
+  color: #fff;
+}
+
+.day-events-modal-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.day-events-modal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.day-events-modal-item:hover {
+  background-color: #2a2a2a;
+}
+
+.day-events-modal-item-color {
+  width: 6px;
+  height: 36px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.day-events-modal-item-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.day-events-modal-item-title {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.day-events-modal-item-time {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.day-events-modal-item-star {
+  color: #f59e0b;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.day-events-modal-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
 }
 </style>
