@@ -81,6 +81,14 @@
               </div>
             </div>
             <button 
+              class="event-star-btn"
+              :class="{ 'is-important': event.is_important }"
+              @click.stop="$emit('event-toggle-important', event)"
+              :title="event.is_important ? 'Убрать важность' : 'Отметить как важное'"
+            >
+              {{ event.is_important ? '★' : '☆' }}
+            </button>
+            <button 
               class="event-menu-btn"
               @click.stop="$emit('event-move-to-next-week', event)"
               title="Перенести на следующую неделю"
@@ -142,6 +150,7 @@ interface CalendarEvent {
   task_ids?: string[]
   task_count?: number
   completed_task_count?: number
+  is_important?: boolean
 }
 
 const props = defineProps<{
@@ -162,6 +171,7 @@ const emit = defineEmits<{
   (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
   (e: 'task-drop-to-day', data: { task: any; time: dayjs.Dayjs }): void
   (e: 'category-drop-to-day', data: { categoryId: string; categoryTitle: string; time: dayjs.Dayjs }): void
+  (e: 'event-toggle-important', event: CalendarEvent): void
 }>()
 
 // Drag and drop state
@@ -791,6 +801,47 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 2px;
+}
+
+/* Event Star Button */
+.event-star-btn {
+  position: absolute;
+  top: 15px;
+  right: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 20px;
+  color: #888;
+  z-index: 14;
+  opacity: 0;
+  transition: opacity 0.2s, top 0.2s, transform 0.2s;
+  pointer-events: auto;
+  line-height: 1;
+}
+
+.event-star-btn.is-important {
+  opacity: 1;
+  color: #f59e0b;
+}
+
+.event-block:hover .event-star-btn {
+  opacity: 1;
+}
+
+.event-block:hover .event-star-btn.is-important {
+  top: 15px;
+  opacity: 1;
+}
+
+.event-block:not(:hover) .event-star-btn.is-important {
+  top: 4px;
+}
+
+.event-star-btn:hover {
+  opacity: 0.8 !important;
+  transform: scale(1.2);
 }
 
 /* Event Menu Button */

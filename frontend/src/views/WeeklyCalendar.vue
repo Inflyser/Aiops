@@ -65,6 +65,7 @@
           @event-drop="handleEventDrop"
           @event-copy="handleEventCopy"
           @event-move-to-next-week="handleMoveToNextWeek"
+          @event-toggle-important="handleToggleImportant"
           @task-drop-to-event="handleTaskDropToEvent"
           @task-drop-to-day="handleTaskDropToDay"
           @category-drop-to-day="handleCategoryDropToDay"
@@ -112,6 +113,7 @@
           @open-event="openEventModal"
           @open-event-tasks="openEventTasksModal"
           @event-move-to-next-week="handleMoveToNextWeekForDay"
+          @event-toggle-important="handleToggleImportant"
           @event-drop="handleEventDropForDay"
           @event-copy="handleEventCopyForDay"
           @task-drop-to-event="handleTaskDropToEventForDay"
@@ -807,6 +809,17 @@ const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
 }
 
 // Handle move event to next week for day view
+const handleToggleImportant = async (event: any) => {
+  await calendarStore.updateEvent(event.id, { is_important: !event.is_important })
+  console.log('Event importance toggled:', event.title, '->', !event.is_important)
+
+  if (currentView.value === 'day') {
+    await loadEventsForDay()
+  } else {
+    await loadEvents()
+  }
+}
+
 const handleMoveToNextWeekForDay = async (event: any) => {
   const originalStart = dayjs(event.start)
   const originalEnd = dayjs(event.end)

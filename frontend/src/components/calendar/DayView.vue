@@ -68,6 +68,14 @@
               </div>
             </div>
             <button 
+              class="event-star-btn"
+              :class="{ 'is-important': event.is_important }"
+              @click.stop="$emit('event-toggle-important', event)"
+              :title="event.is_important ? 'Убрать важность' : 'Отметить как важное'"
+            >
+              {{ event.is_important ? '★' : '☆' }}
+            </button>
+            <button 
               class="event-menu-btn"
               @click.stop="$emit('event-move-to-next-week', event)"
               title="Перенести на следующую неделю"
@@ -120,6 +128,7 @@ interface CalendarEvent {
   tagIcon?: string
   task_count?: number
   completed_task_count?: number
+  is_important?: boolean
 }
 
 const props = defineProps<{
@@ -140,6 +149,7 @@ const emit = defineEmits<{
   (e: 'event-drop', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
+  (e: 'event-toggle-important', event: CalendarEvent): void
 }>()
 
 // Double click detection
@@ -642,6 +652,47 @@ onUnmounted(() => {
   color: rgba(255, 255, 255, 0.8);
   font-size: 11px;
   font-weight: 600;
+}
+
+/* Event Star Button */
+.event-star-btn {
+  position: absolute;
+  top: 15px;
+  right: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 20px;
+  color: #888;
+  z-index: 14;
+  opacity: 0;
+  transition: opacity 0.2s, top 0.2s, transform 0.2s;
+  pointer-events: auto;
+  line-height: 1;
+}
+
+.event-star-btn.is-important {
+  opacity: 1;
+  color: #f59e0b;
+}
+
+.day-event:hover .event-star-btn {
+  opacity: 1;
+}
+
+.day-event:hover .event-star-btn.is-important {
+  top: 15px;
+  opacity: 1;
+}
+
+.day-event:not(:hover) .event-star-btn.is-important {
+  top: 4px;
+}
+
+.event-star-btn:hover {
+  opacity: 0.8 !important;
+  transform: scale(1.2);
 }
 
 .event-menu-btn {
