@@ -21,6 +21,27 @@ body {
   height: 100vh;
 }
 
+/* Custom drag ghost - 1:1 copy of original, only animation */
+.drag-ghost {
+  animation: ghost-wiggle 0.7s ease-in-out infinite;
+  cursor: grabbing;
+}
+
+.drag-ghost .event-star-btn,
+.drag-ghost .event-menu-btn {
+  display: none !important;
+}
+
+@keyframes ghost-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(1.5deg); }
+  30% { transform: rotate(-1.2deg); }
+  45% { transform: rotate(1.8deg); }
+  60% { transform: rotate(-0.8deg); }
+  75% { transform: rotate(1.2deg); }
+  90% { transform: rotate(-0.5deg); }
+}
+
 
 
 

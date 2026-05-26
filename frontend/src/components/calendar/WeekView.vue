@@ -42,6 +42,7 @@
             draggable="true"
             @click.stop="handleEventClick(event)"
             @dragstart="handleDragStart($event, event)"
+            @drag="handleDrag($event)"
             @dragend="handleDragEnd"
             @dragover="handleTaskDragOver($event)"
             @drop="handleTaskDrop($event, day)"
@@ -176,6 +177,7 @@ const emit = defineEmits<{
 
 // Drag and drop state
 const draggedEvent = ref<CalendarEvent | null>(null)
+const dragGhost = ref<HTMLElement | null>(null)
 const dragOverDay = ref<string | null>(null)
 const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
@@ -188,13 +190,47 @@ const DOUBLE_CLICK_DELAY = 300 // ms
 
 const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
   draggedEvent.value = calendarEvent
-  isAltPressed.value = event.altKey // Проверяем Alt при начале перетаскивания
-  
+  isAltPressed.value = event.altKey
+
+  // Подавляем нативный ghost и создаём кастомный с анимацией
   if (event.dataTransfer) {
-    // Если зажат Alt - это копирование, иначе - перемещение
     event.dataTransfer.effectAllowed = event.altKey ? 'copy' : 'move'
     event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent))
     event.dataTransfer.setData('application/x-alt-drag', String(event.altKey))
+
+    // Прозрачное изображение 1x1 для скрытия нативного ghost
+    const transparentImg = new Image()
+    transparentImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    event.dataTransfer.setDragImage(transparentImg, 0, 0)
+  }
+
+  // Создаём кастомный ghost с анимацией
+  const target = event.target as HTMLElement
+  const eventBlock = target.closest('.event-block') as HTMLElement
+  if (eventBlock) {
+    const ghost = eventBlock.cloneNode(true) as HTMLElement
+    ghost.classList.add('drag-ghost')
+    ghost.style.position = 'fixed'
+    ghost.style.pointerEvents = 'none'
+    ghost.style.zIndex = '9999'
+    ghost.style.width = eventBlock.offsetWidth + 'px'
+    ghost.style.opacity = '0.85'
+    // Центрируем ghost на курсоре
+    const halfW = eventBlock.offsetWidth / 2
+    const halfH = eventBlock.offsetHeight / 2
+    ghost.style.left = (event.clientX - halfW) + 'px'
+    ghost.style.top = (event.clientY - halfH) + 'px'
+    document.body.appendChild(ghost)
+    dragGhost.value = ghost
+  }
+}
+
+const handleDrag = (event: DragEvent) => {
+  if (dragGhost.value) {
+    const halfW = dragGhost.value.offsetWidth / 2
+    const halfH = dragGhost.value.offsetHeight / 2
+    dragGhost.value.style.left = (event.clientX - halfW) + 'px'
+    dragGhost.value.style.top = (event.clientY - halfH) + 'px'
   }
 }
 
@@ -203,6 +239,12 @@ const handleDragEnd = () => {
   dragOverDay.value = null
   isAltPressed.value = false
   if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
+
+  // Удаляем кастомный ghost
+  if (dragGhost.value) {
+    dragGhost.value.remove()
+    dragGhost.value = null
+  }
 }
 
 const handleDragOver = (event: DragEvent, day: WeekDay) => {
@@ -661,8 +703,8 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 }
 
 .event-block.dragging {
-  opacity: 0.5;
   cursor: grabbing;
+  z-index: 100;
 }
 
 /* Bounce animation for dropped events */
