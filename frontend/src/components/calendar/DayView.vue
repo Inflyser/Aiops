@@ -38,11 +38,13 @@
             v-for="event in events"
             :key="event.id"
             class="day-event"
+            :class="{ 'dragging': draggedEvent?.id === event.id }"
             :style="getEventStyle(event)"
             :data-event-id="event.id"
             draggable="true"
             @click.stop="handleEventClick(event)"
             @dragstart="handleDragStart($event, event)"
+            @drag="handleDrag($event)"
             @dragend="handleDragEnd"
             @dragover="handleTaskDragOver($event)"
             @drop="handleTaskDrop($event)"
@@ -166,6 +168,8 @@ const toggleFocusMode = () => {
 
 // Drag and drop state
 const draggedEvent = ref<CalendarEvent | null>(null)
+const dragGhost = ref<HTMLElement | null>(null)
+const dragOffsetY = ref(0)
 const isAltPressed = ref(false)
 
 // Current time for red line
@@ -191,17 +195,55 @@ const handleRowClick = (hour: number) => {
 const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
   draggedEvent.value = calendarEvent
   isAltPressed.value = event.altKey
-  
+
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = event.altKey ? 'copy' : 'move'
     event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent))
     event.dataTransfer.setData('application/x-alt-drag', String(event.altKey))
+
+    const transparentImg = new Image()
+    transparentImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    event.dataTransfer.setDragImage(transparentImg, 0, 0)
+  }
+
+  const target = event.target as HTMLElement
+  const eventBlock = target.closest('.day-event') as HTMLElement
+  if (eventBlock) {
+    const ghost = eventBlock.cloneNode(true) as HTMLElement
+    ghost.classList.add('drag-ghost')
+    ghost.style.position = 'fixed'
+    ghost.style.pointerEvents = 'none'
+    ghost.style.zIndex = '9999'
+    ghost.style.width = eventBlock.offsetWidth + 'px'
+    ghost.style.opacity = '0.85'
+    const halfW = eventBlock.offsetWidth / 2
+    const halfH = eventBlock.offsetHeight / 2
+    ghost.style.left = (event.clientX - halfW) + 'px'
+    ghost.style.top = (event.clientY - halfH) + 'px'
+    dragOffsetY.value = halfH
+    document.body.appendChild(ghost)
+    dragGhost.value = ghost
+  }
+}
+
+const handleDrag = (event: DragEvent) => {
+  if (dragGhost.value) {
+    const halfW = dragGhost.value.offsetWidth / 2
+    const halfH = dragGhost.value.offsetHeight / 2
+    dragGhost.value.style.left = (event.clientX - halfW) + 'px'
+    dragGhost.value.style.top = (event.clientY - halfH) + 'px'
   }
 }
 
 const handleDragEnd = () => {
   draggedEvent.value = null
   isAltPressed.value = false
+  dragOffsetY.value = 0
+
+  if (dragGhost.value) {
+    dragGhost.value.remove()
+    dragGhost.value = null
+  }
 }
 
 const handleTaskDragOver = (event: DragEvent) => {
@@ -565,11 +607,17 @@ onUnmounted(() => {
   color: white;
   overflow: hidden;
   pointer-events: auto;
+  display: flex;
   transition: transform 0.1s;
 }
 
 .day-event:hover {
   transform: scale(1.02);
+}
+
+.day-event.dragging {
+  cursor: grabbing;
+  z-index: 100;
 }
 
 .event-indicator {
