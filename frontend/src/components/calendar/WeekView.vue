@@ -178,6 +178,7 @@ const emit = defineEmits<{
 // Drag and drop state
 const draggedEvent = ref<CalendarEvent | null>(null)
 const dragGhost = ref<HTMLElement | null>(null)
+const dragOffsetY = ref(0)
 const dragOverDay = ref<string | null>(null)
 const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
@@ -215,11 +216,13 @@ const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
     ghost.style.zIndex = '9999'
     ghost.style.width = eventBlock.offsetWidth + 'px'
     ghost.style.opacity = '0.85'
-    // Центрируем ghost на курсоре
+    // Визуально: курсор по центру ghost
     const halfW = eventBlock.offsetWidth / 2
     const halfH = eventBlock.offsetHeight / 2
     ghost.style.left = (event.clientX - halfW) + 'px'
     ghost.style.top = (event.clientY - halfH) + 'px'
+    // Запоминаем смещение для коррекции drop (чтоб размещалось от верхнего края)
+    dragOffsetY.value = halfH
     document.body.appendChild(ghost)
     dragGhost.value = ghost
   }
@@ -238,6 +241,7 @@ const handleDragEnd = () => {
   draggedEvent.value = null
   dragOverDay.value = null
   isAltPressed.value = false
+  dragOffsetY.value = 0
   if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
 
   // Удаляем кастомный ghost
@@ -283,9 +287,9 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
       const originalEnd = dayjs(eventData.end)
       const duration = originalEnd.diff(originalStart, 'minute')
       
-      // Get the time from the drop position
+      // Get the time from the drop position (корректируем на половину высоты, т.к. курсор по центру ghost)
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-      const dropY = event.clientY - rect.top
+      const dropY = event.clientY - rect.top - dragOffsetY.value
       const slotIndex = Math.floor(dropY / 120)
       const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
       const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10

@@ -191,6 +191,7 @@ const formatEventTime = (event: CalendarEvent) => {
 // Drag and drop state
 const draggedEvent = ref<CalendarEvent | null>(null)
 const dragGhost = ref<HTMLElement | null>(null)
+const dragOffsetY = ref(0)
 const dragOverDay = ref<string | null>(null)
 const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
@@ -224,6 +225,7 @@ const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
     const halfH = eventBlock.offsetHeight / 2
     ghost.style.left = (event.clientX - halfW) + 'px'
     ghost.style.top = (event.clientY - halfH) + 'px'
+    dragOffsetY.value = halfH
     document.body.appendChild(ghost)
     dragGhost.value = ghost
   }
@@ -242,6 +244,7 @@ const handleDragEnd = () => {
   draggedEvent.value = null
   dragOverDay.value = null
   isAltPressed.value = false
+  dragOffsetY.value = 0
   if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
 
   if (dragGhost.value) {
