@@ -99,8 +99,8 @@ onUnmounted(() => {
 }
 
 .logo {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
 }
 

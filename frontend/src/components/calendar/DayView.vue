@@ -518,7 +518,7 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 22px;
+  font-size: 32px;
   cursor: pointer;
   font-weight: bold;
   padding: 5px 15px;
@@ -528,7 +528,7 @@ onUnmounted(() => {
   background: #1a1a1a;
   border: 1px solid #333;
   color: #fff;
-  font-size: 11px;
+  font-size: 16px;
   cursor: pointer;
   padding: 8px 16px;
   border-radius: 6px;
@@ -574,7 +574,8 @@ onUnmounted(() => {
 .hour-label {
   width: 60px;
   padding: 10px;
-  font-size: 14px;
+  font-size: 18px;
+  font-weight: bold;
   color: #666;
   flex-shrink: 0;
   border-right: 1px solid #1a1a1a;
@@ -595,6 +596,7 @@ onUnmounted(() => {
   left: 60px;
   right: 0;
   pointer-events: none;
+  z-index: 1;
 }
 
 .day-event {
@@ -640,7 +642,8 @@ onUnmounted(() => {
 }
 
 .event-time {
-  font-size: 13px;
+  font-size: 18px;
+  font-weight: 500;
   opacity: 0.8;
   display: flex;
   align-items: center;
@@ -653,7 +656,7 @@ onUnmounted(() => {
 }
 
 .event-title {
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -667,7 +670,7 @@ onUnmounted(() => {
 }
 
 .event-description {
-  font-size: 11px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.8);
   margin-top: 6px;
   line-height: 1.4;
