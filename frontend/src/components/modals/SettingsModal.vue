@@ -165,7 +165,7 @@ const removeBackground = () => {
   border-radius: 25px;
   padding: 20px;
   width: 90%;
-  max-width: 400px;
+  max-width: 520px;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

@@ -1,17 +1,26 @@
 <template>
   <div v-if="show" class="modal" @click.self="$emit('close')">
     <div class="modal-content" @click.stop>
-      <span class="close" @click="$emit('close')">&times;</span>
-      
-      <!-- Заголовок с датой и временем -->
-      <h2 v-if="editingEvent">
-        <img src="@/assets/icon-clock.svg" alt="clock" class="header-icon" />
-        Редактировать задачу
-      </h2>
-      <h2 v-else>
-        <img src="@/assets/icon-clock.svg" alt="clock" class="header-icon" />
-        {{ headerDateTime }}
-      </h2>
+      <div class="modal-header">
+        <h2 v-if="editingEvent">
+          <img src="@/assets/icon-clock.svg" alt="clock" class="header-icon" />
+          Редактировать задачу
+        </h2>
+        <h2 v-else>
+          <img src="@/assets/icon-clock.svg" alt="clock" class="header-icon" />
+          {{ headerDateTime }}
+        </h2>
+        <button
+          type="button"
+          class="star-btn"
+          :class="{ 'is-important': formData.is_important }"
+          @click="toggleImportant"
+          :title="formData.is_important ? 'Убрать важность' : 'Отметить как важное'"
+        >
+          {{ formData.is_important ? '★' : '☆' }}
+        </button>
+        <span class="close" @click="$emit('close')">&times;</span>
+      </div>
 
       <div class="divider"></div>
       
@@ -38,20 +47,6 @@
             placeholder="Добавьте описание задачи"
             rows="2"
           ></textarea>
-        </div>
-
-        <!-- Важное -->
-        <div class="form-group important-checkbox">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              v-model="formData.is_important"
-              :disabled="viewMode === 'view'"
-              class="checkbox-input"
-            />
-            <span class="checkbox-custom"></span>
-            <span class="checkbox-text">Важное событие</span>
-          </label>
         </div>
 
         <!-- Теги -->
@@ -290,15 +285,16 @@ const weekDaysFull = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 const upcomingDays = computed(() => {
   const days = []
-  const today = dayjs()
-  for (let i = 0; i < 5; i++) {
-    const d = today.add(i, 'day')
+  const targetDate = props.formData.date ? dayjs(props.formData.date) : dayjs()
+  const weekStart = targetDate.startOf('week')
+  for (let i = 0; i < 7; i++) {
+    const d = weekStart.add(i, 'day')
     days.push({
       date: d.format('YYYY-MM-DD'),
-      dayName: weekDaysFull[d.day() - 1],
+      dayName: d.format('ddd'),
       dayNum: d.format('D'),
       month: d.format('MMMM'),
-      isToday: i === 0
+      isToday: d.isSame(dayjs(), 'day')
     })
   }
   return days
@@ -394,6 +390,11 @@ const rangeStyle = computed(() => {
   return { left: `${left}%`, width: `${width}%` }
 })
 
+const toggleImportant = () => {
+  const fData = props.formData as any
+  fData.is_important = !fData.is_important
+}
+
 const selectTag = (tag: Tag) => {
   const fData = props.formData as any
   
@@ -471,26 +472,52 @@ const selectTag = (tag: Tag) => {
   }
 }
 
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-header h2 {
+  flex: 1;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  color: #ffffffd8;
+  gap: 10px;
+  margin: 0;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #555;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.star-btn:hover {
+  color: #f59e0b;
+  transform: scale(1.15);
+}
+
+.star-btn.is-important {
+  color: #f59e0b;
+}
+
 .close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
   font-size: 28px;
   line-height: 1;
   cursor: pointer;
   color: #888;
+  padding: 0 0 0 4px;
 }
 
 .close:hover {
   color: #fff;
-}
-
-.modal-content h2 {
-  font-size: 16px;
-  text-align: center;
-  display: flex;
-  color: #ffffffd8;
-  gap: 10px;
 }
 
 .header-icon {
@@ -531,7 +558,7 @@ const selectTag = (tag: Tag) => {
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #3B82F6;
+  border-color: #666;
 }
 
 .dual-slider {
@@ -555,7 +582,7 @@ const selectTag = (tag: Tag) => {
 .track-fill {
   position: absolute;
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  background: #555;
   border-radius: 999px;
 }
 
@@ -597,12 +624,9 @@ const selectTag = (tag: Tag) => {
   z-index: 1;
 }
 
-.range-min::-webkit-slider-thumb {
-  background: #3B82F6;
-}
-
+.range-min::-webkit-slider-thumb,
 .range-max::-webkit-slider-thumb {
-  background: #22c55e;
+  background: #888;
 }
 
 .range-input::-webkit-slider-runnable-track {
@@ -670,8 +694,8 @@ const selectTag = (tag: Tag) => {
 }
 
 .day-btn.selected {
-  background: #3B82F6;
-  border-color: #3B82F6;
+  background: #444;
+  border-color: #666;
   color: #fff;
 }
 
@@ -714,7 +738,7 @@ const selectTag = (tag: Tag) => {
 
 .date-selector {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
 }
 
@@ -722,53 +746,59 @@ const selectTag = (tag: Tag) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 14px;
-  background: #2a2a2a;
-  border: 1px solid #444;
+  padding: 8px 10px;
+  background: #111;
+  border: 1px solid #2a2a2a;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  min-width: 60px;
+  min-width: 52px;
+  flex: 1;
 }
 
 .date-btn:hover {
-  background: #333;
-  border-color: #666;
+  background: #1a1a1a;
+  border-color: #555;
 }
 
 .date-btn.selected {
-  background: #1c3496;
-  border-color: #1c3496;
+  background: #2a2a2a;
+  border-color: #666;
 }
 
 .date-btn.is-today {
-  border-color: #1c3496;
+  border-color: #444;
+}
+
+.date-btn.selected.is-today {
+  border-color: #888;
 }
 
 .date-day-name {
   font-size: 10px;
   color: #666;
   text-transform: uppercase;
+  font-weight: 500;
 }
 
 .date-btn.selected .date-day-name {
-  color: #aaa;
+  color: #ccc;
 }
 
 .date-day-num {
-  font-size: 18px;
+  font-size: 16px;
   color: #fff;
   font-weight: 600;
   margin: 2px 0;
 }
 
 .date-month {
-  font-size: 10px;
-  color: #666;
+  font-size: 9px;
+  color: #555;
 }
 
 .date-btn.selected .date-month {
-  color: #aaa;
+  color: #999;
 }
 
 .month-navigator {
@@ -846,11 +876,11 @@ const selectTag = (tag: Tag) => {
 }
 
 .calendar-day.today {
-  border: 1px solid #1c3496;
+  border: 1px solid #555;
 }
 
 .calendar-day.selected {
-  background-color: #1c3496;
+  background-color: #2a2a2a;
   color: #fff;
 }
 
@@ -874,7 +904,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .btn-primary {
-  background-color: #3B82F6;
+  background-color: #444;
   color: #fff;
 }
 
@@ -930,19 +960,19 @@ const selectTag = (tag: Tag) => {
   gap: 6px;
   padding: 6px 12px;
   border-radius: 16px;
-  background-color: #333;
+  background-color: #1a1a1a;
   cursor: pointer;
   transition: all 0.2s;
   border: 2px solid transparent;
 }
 
 .tag-option:hover {
-  background-color: #444;
+  background-color: #2a2a2a;
 }
 
 .tag-option.selected {
-  border-color: #fff;
-  background-color: #4a5568;
+  border-color: #888;
+  background-color: #2a2a2a;
 }
 
 .tag-color {
@@ -964,49 +994,7 @@ const selectTag = (tag: Tag) => {
   color: #ddd;
 }
 
-.important-checkbox {
-  display: flex;
-  align-items: center;
-}
 
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  gap: 10px;
-}
-
-.checkbox-input {
-  display: none;
-}
-
-.checkbox-custom {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #555;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.checkbox-input:checked + .checkbox-custom {
-  background: #f59e0b;
-  border-color: #f59e0b;
-}
-
-.checkbox-input:checked + .checkbox-custom::after {
-  content: '★';
-  color: #000;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.checkbox-text {
-  font-size: 14px;
-  color: #aaa;
-}
 
 .no-tags-message {
   color: #666;

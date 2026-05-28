@@ -742,10 +742,10 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 }
 
 .event-indicator {
-  width: 7px;
+  width: 6px;
   border-radius: 10px;
   background-color: var(--event-color, #ffffff);
-  margin-right: 8px;
+  margin: 1px 8px 1px 0;
   flex-shrink: 0;
   opacity: 0.9;
 }
