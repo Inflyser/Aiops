@@ -692,7 +692,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   position: absolute;
   left: 2px;
   right: 2px;
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 5px 8px;
   cursor: pointer;
   overflow: hidden;
@@ -743,7 +743,7 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
 
 .event-indicator {
   width: 7px;
-  border-radius: 6px;
+  border-radius: 10px;
   background-color: var(--event-color, #ffffff);
   margin-right: 8px;
   flex-shrink: 0;

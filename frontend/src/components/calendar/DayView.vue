@@ -604,7 +604,7 @@ onUnmounted(() => {
   left: 2px;
   right: 2px;
   padding: 8px 12px;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   color: white;
   overflow: hidden;
@@ -624,7 +624,7 @@ onUnmounted(() => {
 
 .event-indicator {
   width: 7px;
-  border-radius: 6px;
+  border-radius: 10px;
   background-color: var(--event-color, #ffffff);
   margin-right: 8px;
   flex-shrink: 0;

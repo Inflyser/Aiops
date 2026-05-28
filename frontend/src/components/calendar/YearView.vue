@@ -14,7 +14,7 @@
         :key="month.number"
         class="month-in-year"
       >
-        <h3 class="month-name">{{ month.name }}</h3>
+        <h3 class="month-name" @click="$emit('month-click', month)">{{ month.name }}</h3>
         <div class="mini-calendar">
           <div class="mini-day-names">
             <span v-for="dayName in miniDayNames" :key="dayName">{{ dayName }}</span>
@@ -69,6 +69,7 @@ defineEmits<{
   (e: 'prev-year'): void
   (e: 'next-year'): void
   (e: 'day-click', day: MiniDay): void
+  (e: 'month-click', month: MonthData): void
 }>()
 
 const miniDayNames = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В']
@@ -162,6 +163,11 @@ const months = computed(() => {
   text-align: center;
   font-weight: 600;
   text-transform: capitalize;
+  cursor: pointer;
+}
+
+.month-name:hover {
+  color: #aaa;
 }
 
 .mini-calendar {

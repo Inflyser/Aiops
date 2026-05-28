@@ -334,30 +334,36 @@ const collapsedColumns = reactive<Record<string, boolean>>({})
 
 const columnTasks = ref<Record<string, any[]>>({})
 
-watch(() => tasksStore.tasks, () => {
+const distributeTasksToColumns = () => {
   columns.value.forEach(col => {
     if (isInboxActive.value && col.key === 'inbox') {
-      // Для Inbox показываем задачи без колонки И со статусом 'todo'
       columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) =>
         !t.column_id && t.status === 'todo'
       )
     } else {
-      // Для обычных колонок фильтруем по column_id
       columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.column_id === col.key)
     }
   })
-}, { deep: true })
+}
+
+watch(() => tasksStore.tasks, () => {
+  distributeTasksToColumns()
+}, { immediate: true, deep: true })
 
 // Ref for column order (drag and drop) - синхронизирован с store
 const columnOrder = ref<{ key: string; label: string; color?: string }[]>([])
 
-// Инициализация и синхронизация columnOrder с columns
 watch(columns, (newColumns) => {
-  // Обновляем columnOrder если его длина не совпадает или ключи разные
+  distributeTasksToColumns()
   if (columnOrder.value.length !== newColumns.length || 
       newColumns.some((c, i) => c.key !== columnOrder.value[i]?.key)) {
     columnOrder.value = [...newColumns]
   }
+  newColumns.forEach(col => {
+    if (!newTaskTitles[col.key]) {
+      newTaskTitles[col.key] = ''
+    }
+  })
 }, { immediate: true })
 
 // Toggle column collapse
@@ -403,21 +409,10 @@ const updateTaskTitle = (colKey: string, value: string) => {
 
 const initializeTasks = async () => {
   await tasksStore.fetchTasks()
-  
-  // Инициализируем status для задач без него (миграция уже выполнена)
+
   tasksStore.tasks.forEach((t: any) => {
     if (!t.status) {
       t.status = t.completed ? 'done' : 'todo'
-    }
-  })
-
-  columns.value.forEach(col => {
-    if (isInboxActive.value) {
-      // Для Inbox категорий фильтруем по column_id
-      columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.column_id === col.key)
-    } else {
-      // Для обычных колонок фильтруем по column_id
-      columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.column_id === col.key)
     }
   })
 

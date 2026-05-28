@@ -79,6 +79,7 @@
           @prev-year="prevYear"
           @next-year="nextYear"
           @day-click="handleMiniDayClick"
+          @month-click="handleMonthClick"
         />
       </div>
 
@@ -438,23 +439,21 @@ const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
 }
 
 const handleMonthDayClick = (day: any) => {
-  currentView.value = 'week'
   currentWeekStart.value = dayjs(day.fullDate).startOf('week')
-  loadEvents()
+  currentView.value = 'week'
 }
 
 const handleMiniDayClick = (day: any) => {
   if (day.isCurrentMonth) {
-    eventForm.value = {
-      ...defaultEventForm(),
-      date: day.date,
-      startTime: '09:00',
-      endTime: '10:00',
-    }
-    
-    editingEvent.value = null
-    showModal.value = true
+    currentWeekStart.value = dayjs(day.fullDate).startOf('week')
+    currentView.value = 'week'
   }
+}
+
+const handleMonthClick = (month: any) => {
+  const monthDate = dayjs().year(currentYear.value).month(month.number).startOf('month')
+  currentMonth.value = monthDate
+  currentView.value = 'month'
 }
 
 const openImportantEvent = (event: any) => {
@@ -1023,11 +1022,11 @@ const handleKeydown = (event: KeyboardEvent) => {
 // Watch for view changes to reload events for the current view
 watch(currentView, async (newView) => {
   if (newView === 'day') {
-    // For day view, load the week containing the current day
-    loadEventsForDay()
+    await loadEventsForDay()
+  } else if (newView === 'week') {
+    await loadEvents()
   } else if (newView === 'month') {
-    // Load events for current month
-    loadEventsForMonth()
+    await loadEventsForMonth()
   }
 })
 

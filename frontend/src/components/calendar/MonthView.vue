@@ -536,7 +536,7 @@ const getExtraEventsCount = (date: string) => {
 .month-event {
   font-size: 12px;
   padding: 3px 6px;
-  border-radius: 3px;
+  border-radius: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -645,7 +645,7 @@ const getExtraEventsCount = (date: string) => {
 .day-events-modal-item-color {
   width: 6px;
   height: 36px;
-  border-radius: 3px;
+  border-radius: 6px;
   flex-shrink: 0;
 }
 
