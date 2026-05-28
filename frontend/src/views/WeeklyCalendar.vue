@@ -69,6 +69,7 @@
           @task-drop-to-event="handleTaskDropToEvent"
           @task-drop-to-day="handleTaskDropToDay"
           @category-drop-to-day="handleCategoryDropToDay"
+          @create-event="handleCreateEvent"
         />
       </div>
 
@@ -454,6 +455,22 @@ const handleMonthClick = (month: any) => {
   const monthDate = dayjs().year(currentYear.value).month(month.number).startOf('month')
   currentMonth.value = monthDate
   currentView.value = 'month'
+}
+
+const handleCreateEvent = async (data: { date: string; startTime: string; endTime: string; title: string }) => {
+  const start = dayjs(`${data.date} ${data.startTime}`)
+  const end = dayjs(`${data.date} ${data.endTime}`)
+  
+  const eventData = {
+    title: data.title,
+    start: start.toISOString(),
+    end: end.toISOString(),
+    color: '#4a5568',
+    all_day: false
+  }
+  
+  await calendarStore.createEvent(eventData)
+  await loadEvents()
 }
 
 const openImportantEvent = (event: any) => {

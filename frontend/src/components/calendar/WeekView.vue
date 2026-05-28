@@ -21,8 +21,9 @@
             'current-day': isCurrentDay(day),
             'drag-over': dragOverDay === day.date
           }"
+          :data-day-date="day.date"
           :style="{ minHeight: calendarHeight + 'px' }"
-          @click="handleDayClick($event, day)"
+          @mousedown="startSelection($event, day)"
           @dragover="handleDragOver($event, day)"
           @dragleave="handleDragLeave"
           @drop="handleDrop($event, day)"
@@ -32,6 +33,26 @@
             :key="hour"
             class="hour-slot"
           ></div>
+          
+          <!-- Selection overlay for drag-to-create -->
+          <div
+            v-if="selDay === day.date && selHeight > 0"
+            class="selection-overlay"
+            :style="{ top: selTop + 'px', height: selHeight + 'px' }"
+            @mousedown.stop
+          >
+            <input
+              v-if="showCreateInput"
+              ref="createTitleInput"
+              v-model="createTitle"
+              class="create-event-input"
+              placeholder="Название события"
+              @keydown.enter="createEvent"
+              @keydown.escape="cancelSelection"
+              @blur="submitCreate"
+              @click.stop
+            />
+          </div>
           <div
             v-for="event in getEventsForDay(day.date)"
             :key="event.id"
@@ -113,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -173,6 +194,7 @@ const emit = defineEmits<{
   (e: 'task-drop-to-day', data: { task: any; time: dayjs.Dayjs }): void
   (e: 'category-drop-to-day', data: { categoryId: string; categoryTitle: string; time: dayjs.Dayjs }): void
   (e: 'event-toggle-important', event: CalendarEvent): void
+  (e: 'create-event', data: { date: string; startTime: string; endTime: string; title: string }): void
 }>()
 
 // Drag and drop state
@@ -465,6 +487,7 @@ onUnmounted(() => {
   if (timeInterval) {
     clearInterval(timeInterval)
   }
+  removeListeners()
 })
 
 // Calculate the position of the current time line
@@ -595,23 +618,161 @@ const formatEventTime = (event: CalendarEvent) => {
   return `${start.format('HH:mm')} - ${end.format('HH:mm')}`
 }
 
-const handleDayClick = (event: MouseEvent, day: WeekDay) => {
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  const clickY = event.clientY - rect.top
-  const slotIndex = Math.floor(clickY / 120)
-  const rawMinutes = Math.floor((clickY % 120) / 120 * 60)
-  const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
-  
-  // В компактном режиме слот 0 соответствует 7:00, а не 0:00
+// ========== Drag-to-create selection ==========
+const selDay = ref<string>('')
+const selTop = ref(0)
+const selHeight = ref(0)
+const isDragging = ref(false)
+const hasMoved = ref(false)
+const showCreateInput = ref(false)
+const createTitle = ref('')
+let selStartY = 0
+let selStartDay = ''
+const createTitleInput = ref<HTMLInputElement | null>(null)
+
+let removeMouseListeners: (() => void) | null = null
+
+const addMouseListeners = () => {
+  const onMove = (e: MouseEvent) => {
+    if (!isDragging.value) return
+    hasMoved.value = true
+
+    const dayEl = (e.target as HTMLElement).closest('.day-column') as HTMLElement
+    if (!dayEl) return
+
+    const rect = dayEl.getBoundingClientRect()
+    const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height - 1))
+    const dayDate = dayEl.dataset.dayDate || selStartDay
+
+    selDay.value = dayDate
+    selTop.value = Math.min(selStartY, currentY)
+    selHeight.value = Math.abs(currentY - selStartY)
+  }
+
+  const onUp = (e: MouseEvent) => {
+    if (!isDragging.value) return
+    isDragging.value = false
+    removeListeners()
+
+    if (!hasMoved.value) {
+      // Just a click — emit day-click as before
+      selDay.value = ''
+      selTop.value = 0
+      selHeight.value = 0
+
+      const dayEl = (e.target as HTMLElement).closest('.day-column') as HTMLElement
+      if (dayEl) {
+        const rect = dayEl.getBoundingClientRect()
+        const clickY = e.clientY - rect.top
+        const slotIndex = Math.floor(clickY / 120)
+        const rawMinutes = Math.floor((clickY % 120) / 120 * 60)
+        const minutes = Math.round(rawMinutes / 10) * 10
+        const hour = props.compactMode ? slotIndex + 7 : slotIndex
+        const dayData = props.weekDays.find(d => d.date === selStartDay)
+        if (dayData) {
+          const clickedDateTime = dayData.fullDate.hour(hour).minute(minutes)
+          emit('day-click', { day: dayData, dateTime: clickedDateTime })
+        }
+      }
+      return
+    }
+
+    // Selection complete — show input
+    showCreateInput.value = true
+    createTitle.value = ''
+    nextTick(() => {
+      const input = document.querySelector('.create-event-input') as HTMLInputElement
+      if (input) input.focus()
+    })
+  }
+
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+  removeMouseListeners = () => {
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+  }
+}
+
+const removeListeners = () => {
+  if (removeMouseListeners) {
+    removeMouseListeners()
+    removeMouseListeners = null
+  }
+}
+
+const startSelection = (event: MouseEvent, day: WeekDay) => {
+  // Ignore clicks on event blocks
+  if ((event.target as HTMLElement).closest('.event-block')) return
+
+  const dayEl = (event.currentTarget as HTMLElement)
+  const rect = dayEl.getBoundingClientRect()
+  selStartY = Math.max(0, Math.min(event.clientY - rect.top, rect.height - 1))
+  selStartDay = day.date
+
+  isDragging.value = true
+  hasMoved.value = false
+  showCreateInput.value = false
+  createTitle.value = ''
+  selDay.value = day.date
+  selTop.value = selStartY
+  selHeight.value = 0
+
+  addMouseListeners()
+}
+
+const getTimeFromPixel = (pixelY: number): { hour: number; minute: number } => {
+  const slotIndex = Math.floor(pixelY / 120)
+  const offsetMin = Math.round(((pixelY % 120) / 120) * 60 / 10) * 10
   const hour = props.compactMode ? slotIndex + 7 : slotIndex
-  
-  // Передаём вычисленное время вместе с днём
-  const clickedDateTime = day.fullDate.hour(hour).minute(minutes)
-  
-  emit('day-click', { 
-    day, 
-    dateTime: clickedDateTime 
+  return { hour, minute: offsetMin }
+}
+
+const createEvent = () => {
+  if (!createTitle.value.trim()) {
+    cancelSelection()
+    return
+  }
+
+  const startTime = getTimeFromPixel(selTop.value)
+  const endTime = getTimeFromPixel(selTop.value + selHeight.value)
+
+  // Ensure minimum 30 min duration, and end after start
+  let endHour = endTime.hour
+  let endMin = endTime.minute
+  if (endHour < startTime.hour || (endHour === startTime.hour && endMin <= startTime.minute)) {
+    endHour = startTime.hour
+    endMin = startTime.minute + 30
+    if (endMin >= 60) { endHour += 1; endMin -= 60 }
+  }
+
+  const fmt = (h: number, m: number) =>
+    `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+
+  emit('create-event', {
+    date: selDay.value,
+    startTime: fmt(startTime.hour, startTime.minute),
+    endTime: fmt(endHour, endMin),
+    title: createTitle.value.trim()
   })
+
+  cancelSelection()
+}
+
+const cancelSelection = () => {
+  selDay.value = ''
+  selTop.value = 0
+  selHeight.value = 0
+  showCreateInput.value = false
+  createTitle.value = ''
+}
+
+const submitCreate = () => {
+  if (createTitle.value.trim()) {
+    createEvent()
+  } else {
+    cancelSelection()
+  }
 }
 </script>
 
@@ -939,5 +1100,40 @@ const handleDayClick = (event: MouseEvent, day: WeekDay) => {
   height: 10px;
   background-color: #ff4444;
   border-radius: 50%;
+}
+
+/* Selection overlay for drag-to-create */
+.selection-overlay {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 25;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px dashed #888;
+  border-radius: 8px;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  padding: 4px;
+}
+
+.create-event-input {
+  width: 100%;
+  background: #111;
+  border: 1px solid #555;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 8px;
+  outline: none;
+  font-family: inherit;
+}
+
+.create-event-input::placeholder {
+  color: #666;
+}
+
+.create-event-input:focus {
+  border-color: #888;
 }
 </style>
