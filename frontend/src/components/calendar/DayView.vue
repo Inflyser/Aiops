@@ -28,6 +28,7 @@
           v-for="hour in hours" 
           :key="hour"
           class="day-hour-row"
+          :style="{ minHeight: hourHeight + 'px' }"
         >
           <div class="hour-label">{{ hour.toString().padStart(2, '0') }}:00</div>
           <div class="hour-events" @click="handleRowClick(hour)"></div>
@@ -138,6 +139,7 @@ const props = defineProps<{
   events: CalendarEvent[]
   compactMode: boolean
   eventAccentMode: boolean
+  hourHeight: number
 }>()
 
 const emit = defineEmits<{
@@ -185,7 +187,7 @@ const hours = computed(() => {
 
 const calendarHeight = computed(() => {
   const totalHours = props.compactMode ? 17 : 24
-  return totalHours * 120
+  return totalHours * props.hourHeight
 })
 
 const handleRowClick = (hour: number) => {
@@ -302,7 +304,7 @@ const currentTimeLineStyle = computed(() => {
   const startHour = props.compactMode ? 7 : 0
   const totalMinutes = (hours - startHour) * 60 + minutes
   
-  const top = (totalMinutes / 60) * 120
+  const top = (totalMinutes / 60) * props.hourHeight
   
   return {
     top: `${top}px`
@@ -365,10 +367,10 @@ const getEventStyle = (event: CalendarEvent) => {
     }
     
     const offsetMinutes = 7 * 60
-    const top = ((startMinutes - offsetMinutes) / 60) * 120
-    const height = Math.max((duration / 60) * 120, 30)
+    const top = ((startMinutes - offsetMinutes) / 60) * props.hourHeight
+    const height = Math.max((duration / 60) * props.hourHeight, 30)
     
-    const maxTop = 17 * 120
+    const maxTop = 17 * props.hourHeight
     const clampedTop = Math.max(0, Math.min(top, maxTop))
     const clampedHeight = Math.min(height, maxTop - clampedTop)
     
@@ -403,10 +405,10 @@ const getEventStyle = (event: CalendarEvent) => {
     }
   }
   
-  const top = (startMinutes / 60) * 120
-  const height = Math.max((duration / 60) * 120, 30)
+  const top = (startMinutes / 60) * props.hourHeight
+  const height = Math.max((duration / 60) * props.hourHeight, 30)
   
-  const maxTop = 24 * 120
+  const maxTop = 24 * props.hourHeight
   const clampedTop = Math.max(0, Math.min(top, maxTop))
   const clampedHeight = Math.min(height, maxTop - clampedTop)
   
@@ -567,7 +569,6 @@ onUnmounted(() => {
 
 .day-hour-row {
   display: flex;
-  min-height: 120px;
   border-bottom: 1px solid #1a1a1a;
 }
 

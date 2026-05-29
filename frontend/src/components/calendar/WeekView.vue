@@ -7,6 +7,7 @@
           v-for="hour in hours"
           :key="hour"
           class="time-slot"
+          :style="{ height: hourHeight + 'px' }"
         >
           {{ formatTime(hour) }}
         </div>
@@ -32,6 +33,7 @@
             v-for="hour in hours"
             :key="hour"
             class="hour-slot"
+            :style="{ height: hourHeight + 'px' }"
           ></div>
           
           <!-- Selection overlay for drag-to-create -->
@@ -181,6 +183,7 @@ const props = defineProps<{
   compactMode: boolean
   eventAccentMode: boolean
   inboxPanelOpen: boolean
+  hourHeight: number
 }>()
 
 const emit = defineEmits<{
@@ -369,17 +372,15 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
       // Get the time from the drop position (корректируем на половину высоты, т.к. курсор по центру ghost)
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
       const dropY = event.clientY - rect.top - dragOffsetY.value
-      const slotIndex = Math.floor(dropY / 120)
-      const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
-      const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
+      const slotIndex = Math.floor(dropY / props.hourHeight)
+      const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
+      const minutes = Math.round(rawMinutes / 10) * 10
       
       const hour = props.compactMode ? slotIndex + 7 : slotIndex
       
-      // Calculate new start and end times
       const newStart = day.fullDate.hour(hour).minute(minutes)
       const newEnd = newStart.add(duration, 'minute')
       
-      // Если Alt зажат - это копирование, иначе - перемещение
       if (isCopy) {
         emit('event-copy', {
           event: eventData,
@@ -396,12 +397,11 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
         })
       }
     } else if (droppedData.type === 'category') {
-      // Перетаскивание категории из Inbox
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
       const dropY = event.clientY - rect.top
-      const slotIndex = Math.floor(dropY / 120)
-      const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
-      const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
+      const slotIndex = Math.floor(dropY / props.hourHeight)
+      const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
+      const minutes = Math.round(rawMinutes / 10) * 10
       
       const hour = props.compactMode ? slotIndex + 7 : slotIndex
       const dropTime = day.fullDate.hour(hour).minute(minutes)
@@ -412,12 +412,11 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
         time: dropTime
       })
     } else if (droppedData.id && droppedData.title) {
-      // Перетаскивание задачи из Inbox (проверяем по наличию id и title)
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
       const dropY = event.clientY - rect.top
-      const slotIndex = Math.floor(dropY / 120)
-      const rawMinutes = Math.floor((dropY % 120) / 120 * 60)
-      const minutes = Math.round(rawMinutes / 10) * 10 // Кратно 10
+      const slotIndex = Math.floor(dropY / props.hourHeight)
+      const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
+      const minutes = Math.round(rawMinutes / 10) * 10
       
       const hour = props.compactMode ? slotIndex + 7 : slotIndex
       const dropTime = day.fullDate.hour(hour).minute(minutes)
@@ -558,9 +557,8 @@ const currentTimeLineStyle = computed(() => {
   const startHour = props.compactMode ? 7 : 0
   const totalMinutes = (hours - startHour) * 60 + minutes
   
-  // Convert to pixels (120px per hour)
-  const top = (totalMinutes / 60) * 120
-  
+  const top = (totalMinutes / 60) * props.hourHeight
+
   return {
     top: `${top}px`
   }
@@ -580,7 +578,7 @@ const hours = computed(() => {
 
 const calendarHeight = computed(() => {
   const totalHours = props.compactMode ? 17 : 24
-  return totalHours * 120
+  return totalHours * props.hourHeight
 })
 
 const getEventsForDay = (date: string) => {
@@ -617,13 +615,11 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
       return { display: 'none' }
     }
     
-    // В компактном режиме сетка начинается с 7:00, поэтому нужно вычесть 7 часов
-    // чтобы событие в 10:00 было на правильной позиции (3-й слот, а не 10-й)
     const offsetMinutes = 7 * 60
-    const top = ((startMinutes - offsetMinutes) / 60) * 120
-    const height = Math.max((duration / 60) * 120, 30)
+    const top = ((startMinutes - offsetMinutes) / 60) * props.hourHeight
+    const height = Math.max((duration / 60) * props.hourHeight, 30)
 
-    const maxTop = 17 * 120 // 17 часов в компактном режиме
+    const maxTop = 17 * props.hourHeight
     const clampedTop = Math.max(0, Math.min(top, maxTop))
     const clampedHeight = Math.min(height, maxTop - clampedTop)
 
@@ -644,10 +640,10 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
   }
 
   // Не компактный режим (0-24)
-  const top = (startMinutes / 60) * 120
-  const height = Math.max((duration / 60) * 120, 30)
+  const top = (startMinutes / 60) * props.hourHeight
+  const height = Math.max((duration / 60) * props.hourHeight, 30)
 
-  const maxTop = 24 * 120
+  const maxTop = 24 * props.hourHeight
   const clampedTop = Math.max(0, Math.min(top, maxTop))
   const clampedHeight = Math.min(height, maxTop - clampedTop)
 
@@ -723,8 +719,8 @@ const addMouseListeners = () => {
       if (dayEl) {
         const rect = dayEl.getBoundingClientRect()
         const clickY = e.clientY - rect.top
-        const slotIndex = Math.floor(clickY / 120)
-        const rawMinutes = Math.floor((clickY % 120) / 120 * 60)
+        const slotIndex = Math.floor(clickY / props.hourHeight)
+        const rawMinutes = Math.floor((clickY % props.hourHeight) / props.hourHeight * 60)
         const minutes = Math.round(rawMinutes / 10) * 10
         const hour = props.compactMode ? slotIndex + 7 : slotIndex
         const dayData = props.weekDays.find(d => d.date === selStartDay)
@@ -781,8 +777,8 @@ const startSelection = (event: MouseEvent, day: WeekDay) => {
 }
 
 const getTimeFromPixel = (pixelY: number): { hour: number; minute: number } => {
-  const slotIndex = Math.floor(pixelY / 120)
-  const offsetMin = Math.round(((pixelY % 120) / 120) * 60 / 10) * 10
+  const slotIndex = Math.floor(pixelY / props.hourHeight)
+  const offsetMin = Math.round(((pixelY % props.hourHeight) / props.hourHeight) * 60 / 10) * 10
   const hour = props.compactMode ? slotIndex + 7 : slotIndex
   return { hour, minute: offsetMin }
 }
@@ -871,7 +867,6 @@ const submitCreate = () => {
 }
 
 .time-slot {
-  height: 120px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -903,9 +898,8 @@ const submitCreate = () => {
 }
 
 .hour-slot {
-  height: 120px;
   border-bottom: 1px solid #33333357;
-  min-height: 120px;
+  flex-shrink: 0;
 }
 
 .event-block {

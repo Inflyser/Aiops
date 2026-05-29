@@ -59,6 +59,7 @@
           :compact-mode="compactMode"
           :event-accent-mode="eventAccentMode"
           :inbox-panel-open="showInboxPanel"
+          :hour-height="hourHeight"
           @day-click="handleWeekDayClick"
           @open-event="openEventModal"
           @open-event-tasks="openEventTasksModal"
@@ -108,6 +109,7 @@
           :events="dayEvents"
           :compact-mode="compactMode"
           :event-accent-mode="eventAccentMode"
+          :hour-height="hourHeight"
           @prev-day="prevDay"
           @next-day="nextDay"
           @go-today="goToToday"
@@ -149,6 +151,19 @@
       @close="showInboxPanel = false"
       @category-dropped-to-event="handleCategoryDroppedToEvent"
     />
+
+    <!-- Zoom Handle -->
+    <div
+      v-if="currentView === 'week' || currentView === 'day'"
+      class="zoom-handle"
+      @mousedown="startZoom"
+      title="Изменить масштаб (перетащите вверх/вниз)"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M16 0v6l-2-2-6 6-3-3-5 5 1 1 5-5 3 3 6-6 2 2V0z" fill="currentColor"/>
+      </svg>
+      <span class="zoom-label">{{ Math.round(hourHeight / 120 * 100) }}%</span>
+    </div>
 
     <!-- Settings Modal -->
     <SettingsModal
@@ -218,6 +233,42 @@ const editingEvent = ref<any>(null)
 const viewMode = ref<'view' | 'edit' | null>(null)
 const showEventTasksModal = ref(false)
 const selectedEventForTasks = ref<any>(null)
+
+// Zoom state
+const MIN_HOUR_HEIGHT = 60
+const MAX_HOUR_HEIGHT = 300
+const savedZoom = localStorage.getItem('calendarHourHeight')
+const hourHeight = ref(savedZoom ? parseInt(savedZoom) : 120)
+let isZooming = false
+let zoomStartY = 0
+let zoomStartHeight = 0
+
+const startZoom = (e: MouseEvent) => {
+  e.preventDefault()
+  isZooming = true
+  zoomStartY = e.clientY
+  zoomStartHeight = hourHeight.value
+
+  const onMove = (me: MouseEvent) => {
+    if (!isZooming) return
+    const deltaY = me.clientY - zoomStartY
+    hourHeight.value = Math.max(MIN_HOUR_HEIGHT, Math.min(MAX_HOUR_HEIGHT, zoomStartHeight + deltaY))
+  }
+
+  const onUp = () => {
+    isZooming = false
+    localStorage.setItem('calendarHourHeight', String(hourHeight.value))
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+
+  document.body.style.cursor = 'nwse-resize'
+  document.body.style.userSelect = 'none'
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+}
 
 // Локальное состояние для bounce анимации
 const bouncingEvents = ref<Set<string>>(new Set())
@@ -1071,6 +1122,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
   transition: padding-right 0.3s ease, background-color 0.3s;
   padding-right: 0;
 }
@@ -1112,6 +1164,50 @@ onUnmounted(() => {
 .day-view h2 {
   font-size: 29px;
   color: #888;
+}
+
+/* Zoom Handle */
+.zoom-handle {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(30, 30, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #888;
+  cursor: nwse-resize;
+  z-index: 50;
+  transition: background 0.2s, color 0.2s;
+  user-select: none;
+}
+
+.zoom-handle:hover {
+  background: rgba(60, 60, 60, 0.9);
+  color: #fff;
+}
+
+.zoom-label {
+  display: none;
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #ccc;
+  background: rgba(30, 30, 30, 0.85);
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.zoom-handle:hover .zoom-label {
+  display: block;
 }
 
 /* View Transition Animations - Slide effect */
