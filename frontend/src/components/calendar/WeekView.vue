@@ -206,6 +206,36 @@ const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const isAltPressed = ref(false)
 
+// Auto-scroll during drag
+const SCROLL_THRESHOLD = 60
+const SCROLL_SPEED = 15
+let autoScrollInterval: ReturnType<typeof setInterval> | null = null
+let currentScrollDir: 'up' | 'down' | null = null
+
+const getCalendarGrid = (): HTMLElement | null => {
+  return document.querySelector('.calendar-grid') as HTMLElement
+}
+
+const startAutoScroll = (dir: 'up' | 'down') => {
+  if (autoScrollInterval) return
+  autoScrollInterval = setInterval(() => {
+    const grid = getCalendarGrid()
+    if (!grid) return
+    if (dir === 'up') {
+      grid.scrollTop = Math.max(0, grid.scrollTop - SCROLL_SPEED)
+    } else {
+      grid.scrollTop += SCROLL_SPEED
+    }
+  }, 16)
+}
+
+const stopAutoScroll = () => {
+  if (autoScrollInterval) {
+    clearInterval(autoScrollInterval)
+    autoScrollInterval = null
+  }
+}
+
 // Double click detection
 const lastClickEvent = ref<{ event: CalendarEvent; time: number } | null>(null)
 const clickTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
@@ -257,6 +287,30 @@ const handleDrag = (event: DragEvent) => {
     dragGhost.value.style.left = (event.clientX - halfW) + 'px'
     dragGhost.value.style.top = (event.clientY - halfH) + 'px'
   }
+
+  const grid = getCalendarGrid()
+  if (!grid) return
+  const rect = grid.getBoundingClientRect()
+  const relativeY = event.clientY - rect.top
+
+  if (relativeY < SCROLL_THRESHOLD) {
+    if (currentScrollDir !== 'up') {
+      stopAutoScroll()
+      startAutoScroll('up')
+      currentScrollDir = 'up'
+    }
+  } else if (relativeY > rect.height - SCROLL_THRESHOLD) {
+    if (currentScrollDir !== 'down') {
+      stopAutoScroll()
+      startAutoScroll('down')
+      currentScrollDir = 'down'
+    }
+  } else {
+    if (currentScrollDir !== null) {
+      stopAutoScroll()
+      currentScrollDir = null
+    }
+  }
 }
 
 const handleDragEnd = () => {
@@ -265,6 +319,9 @@ const handleDragEnd = () => {
   isAltPressed.value = false
   dragOffsetY.value = 0
   if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
+
+  stopAutoScroll()
+  currentScrollDir = null
 
   // Удаляем кастомный ghost
   if (dragGhost.value) {
@@ -487,6 +544,8 @@ onUnmounted(() => {
   if (timeInterval) {
     clearInterval(timeInterval)
   }
+  stopAutoScroll()
+  currentScrollDir = null
   removeListeners()
 })
 
