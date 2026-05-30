@@ -3,7 +3,7 @@
     <div class="inbox-header">
       <h3 class="inbox-title">Inbox</h3>
       <button class="close-btn" @click="$emit('close')">
-        ✕
+        ←
       </button>
     </div>
     
@@ -26,15 +26,14 @@
           <span class="category-title">{{ category.title }}</span>
           <span class="category-count">{{ getCategoryTasks(category).length }}</span>
           <button
-            v-if="!category.is_static"
-            class="delete-category-btn"
-            @click.stop="deleteCategory(category)"
-            title="Удалить категорию"
-          >✕</button>
+            class="collapse-btn"
+            @click.stop="toggleCollapse(category.id)"
+            title="Свернуть/развернуть"
+          ><span :class="{ rotated: !isCollapsed(category.id) }">›</span></button>
         </div>
         
         <!-- Tasks in category -->
-        <div class="category-tasks">
+        <div v-show="!isCollapsed(category.id)" class="category-tasks">
           <div
             v-for="task in getCategoryTasks(category)"
             :key="task.id"
@@ -54,34 +53,19 @@
         </div>
       </div>
       
-      <!-- Add Category Button -->
-      <div v-if="!isAddingCategory" class="add-category-container">
-        <button class="add-category-btn" @click="startAddCategory">
-          + Добавить категорию
+      <!-- Edit button -->
+      <div class="edit-container">
+        <button class="edit-btn" @click="editInbox">
+          Редактировать
         </button>
       </div>
-      
-      <!-- Add Category Form -->
-      <form 
-        v-else 
-        class="add-category-form" 
-        @submit.prevent="addCategory"
-        @mouseleave="cancelAddCategory"
-      >
-        <input
-          v-model="newCategoryTitle"
-          placeholder="Название категории..."
-          class="category-input"
-          @keydown.escape="cancelAddCategory"
-        />
-        <button type="submit" class="add-category-submit" title="Создать">+</button>
-      </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useTasksStore } from '@/stores/tasks'
 import { useKanbanStore } from '@/stores/kanban'
 import type { InboxCategory } from '@/stores/kanban'
@@ -104,67 +88,28 @@ defineEmits<{
   (e: 'category-dropped-to-event', data: { event: { id: string }; category: InboxCategory }): void
 }>()
 
+const router = useRouter()
 const tasksStore = useTasksStore()
 const kanbanStore = useKanbanStore()
 
 // Inbox categories
 const inboxCategories = computed(() => kanbanStore.columns.filter(col => col.is_inbox_category))
 
+// Collapse state (default: all expanded)
+const collapsed = ref<Record<string, boolean>>({})
+const isCollapsed = (id: string) => !!collapsed.value[id]
+const toggleCollapse = (id: string) => {
+  collapsed.value[id] = !collapsed.value[id]
+}
+
 // Получаем задачи категории
 const getCategoryTasks = (category: InboxCategory) => {
   return tasksStore.tasks.filter((t: Task) => t.column_id === category.id)
 }
 
-// Добавление категории
-const isAddingCategory = ref(false)
-const newCategoryTitle = ref('')
-
-const startAddCategory = () => {
-  isAddingCategory.value = true
-  newCategoryTitle.value = ''
-}
-
-const cancelAddCategory = () => {
-  isAddingCategory.value = false
-  newCategoryTitle.value = ''
-}
-
-const addCategory = async () => {
-  const title = newCategoryTitle.value.trim()
-  if (!title) return
-  
-  try {
-    await kanbanStore.createInboxCategory({
-      title,
-      color: getRandomColor()
-    })
-    newCategoryTitle.value = ''
-    isAddingCategory.value = false
-  } catch (err) {
-    console.error('Failed to create category:', err)
-  }
-}
-
-const deleteCategory = async (category: InboxCategory) => {
-  if (!confirm(`Удалить категорию "${category.title}"? Все задачи будут перемещены в Inbox.`)) return
-  
-  try {
-    // Переносим задачи в Inbox (column_id = undefined)
-    const tasksToMove = getCategoryTasks(category)
-    for (const task of tasksToMove) {
-      await tasksStore.updateTask(task.id, { column_id: undefined, status: 'todo' })
-    }
-    
-    // Удаляем категорию
-    await kanbanStore.deleteColumn(category.id)
-  } catch (err) {
-    console.error('Failed to delete category:', err)
-  }
-}
-
-const getRandomColor = () => {
-  const colors = ['#4A90E2', '#50C878', '#FF6B6B', '#F59E0B', '#6B7280', '#EC4899', '#8B5CF6', '#10B981', '#F59F0F']
-  return colors[Math.floor(Math.random() * colors.length)]
+// Переход в канбан
+const editInbox = () => {
+  router.push('/kanban')
 }
 
 // Drag and drop для задач
@@ -204,7 +149,7 @@ const toggleTask = async (task: Task) => {
   right: -320px;
   width: 320px;
   height: 100vh;
-  background: #0a0a0a;
+  background: #050505;
   border-left: 1px solid #33333357;
   transition: right 0.3s ease;
   z-index: 1000;
@@ -284,7 +229,7 @@ const toggleTask = async (task: Task) => {
   align-items: center;
   padding: 12px;
   gap: 10px;
-  background: #0d0d0d;
+  background: #050505;
   border-bottom: 1px solid #33333357;
 }
 
@@ -305,34 +250,49 @@ const toggleTask = async (task: Task) => {
   font-size: 10px;
 }
 
-.delete-category-btn {
+.collapse-btn {
   background: none;
   border: none;
   color: #888;
-  font-size: 13px;
+  font-size: 16px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 4px;
   transition: background 0.2s;
 }
 
-.delete-category-btn:hover {
+.collapse-btn:hover {
   background: #33333357;
   color: #fff;
+}
+
+.collapse-btn span {
+  display: block;
+  transition: transform 0.2s;
+  line-height: 1;
+}
+
+.collapse-btn span.rotated {
+  transform: rotate(90deg);
 }
 
 .category-tasks {
   padding: 10px;
   max-height: 300px;
   overflow-y: auto;
-  background: #0a0a0a;
+  background: #050505;
 }
 
 .inbox-task {
   display: flex;
   align-items: flex-start;
   padding: 8px;
-  background: #0d0d0d;
+  background: #050505;
   margin-bottom: 4px;
   border-radius: 4px;
   cursor: grab;
@@ -375,65 +335,27 @@ const toggleTask = async (task: Task) => {
   margin-top: 4px;
 }
 
-.add-category-container {
+.edit-container {
   padding: 10px;
   border-top: 1px solid #333;
 }
 
-.add-category-btn {
+.edit-btn {
   width: 100%;
   padding: 12px;
-  background: #4A90E2;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  border: 1px solid #333;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.2s;
+  font-size: 13px;
+  transition: all 0.2s;
 }
 
-.add-category-btn:hover {
-  background: #3a7bd5;
-}
-
-.add-category-form {
-  padding: 10px;
-  border-top: 1px solid #33333357;
-}
-
-.category-input {
-  width: 100%;
-  padding: 10px;
-  background: #0d0d0d;
+.edit-btn:hover {
+  background: #33333357;
   color: #fff;
-  border: 1px solid #33333357;
-  border-radius: 4px;
-  font-size: 11px;
-}
-
-.category-input:focus {
-  outline: none;
-  border-color: #4A90E2;
-  background: #101010;
-}
-
-.add-category-submit {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  width: 30px;
-  height: 30px;
-  background: #4A90E2;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.add-category-submit:hover {
-  background: #3a7bd5;
-  transform: scale(1.05);
+  border-color: #555;
 }
 </style>

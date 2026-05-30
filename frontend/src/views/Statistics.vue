@@ -86,14 +86,15 @@
           class="week-day"
         >
           <div class="week-day-label">{{ day.name }}</div>
-          <div class="week-day-bar">
-            <div 
-              class="week-day-fill"
-              :style="{ height: day.percentage + '%', backgroundColor: day.color }"
-            ></div>
-          </div>
-          <div class="week-day-percentage">{{ day.percentage }}%</div>
-          <div class="week-day-hours">{{ day.hours.toFixed(1) }}ч</div>
+    <div class="week-day-bar">
+        <div 
+          class="week-day-fill"
+          :style="{ height: day.percentage + '%', backgroundColor: day.color }"
+        >
+          <span class="week-day-percentage">{{ day.percentage }}%</span>
+          <span class="week-day-hours"> · {{ day.hours.toFixed(1) }}ч</span>
+        </div>
+      </div>
         </div>
       </div>
     </div>
@@ -357,7 +358,7 @@ const weekDays = computed(() => {
   const start = currentDate.value.startOf('week')
   const days = []
   const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-  const colors = ['#2d5016', '#3a403c', '#3a1d19', '#47381f', '#4a5568', '#5d4037', '#6d4c41']
+  const colors = ['#4a90e2', '#e2554a']
   
   for (let i = 0; i < 7; i++) {
     const day = start.add(i, 'day')
@@ -382,7 +383,7 @@ const weekDays = computed(() => {
       date: dayStr,
       hours,
       percentage,
-      color: colors[i]
+      color: colors[i % 2]
     })
   }
   
@@ -545,7 +546,7 @@ watch([currentPeriod, currentDate], async () => {
 
 <style scoped>
 .statistics-page {
-  padding: 20px;
+  padding: 0;
   min-height: 100vh;
   background-color: #050505;
   color: #ffffff;
@@ -593,9 +594,10 @@ watch([currentPeriod, currentDate], async () => {
 .period-selector {
   display: flex;
   gap: 10px;
-  background-color: #0f0f0f;
+  background: transparent;
   padding: 5px;
   border-radius: 10px;
+  border: 1px solid #333;
 }
 
 .period-btn {
@@ -654,15 +656,16 @@ watch([currentPeriod, currentDate], async () => {
 
 /* Chart Container */
 .chart-container {
-  background: #0f0f0f;
+  background: transparent;
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 30px;
+  border: 1px solid #333;
 }
 
 .chart-title {
   font-size: 19px;
-  margin: 0 0 24px;
+  margin: 0 0 8px;
   color: #ccc;
 }
 
@@ -732,7 +735,7 @@ watch([currentPeriod, currentDate], async () => {
 .week-chart {
   display: flex;
   gap: 16px;
-  height: 300px;
+  height: 400px;
   align-items: flex-end;
   padding: 20px;
 }
@@ -746,14 +749,22 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .week-day-label {
-  font-size: 11px;
-  color: #888;
+  font-size: 14px;
+  color: #ddd;
+  font-weight: 600;
 }
 
 .week-day-bar {
   width: 100%;
-  height: 200px;
-  background: #1a1a1a;
+  height: 300px;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0px,
+    transparent 4px,
+    rgba(255, 255, 255, 0.04) 4px,
+    rgba(255, 255, 255, 0.04) 8px
+  );
+  background-color: #1a1a1a;
   border-radius: 8px;
   display: flex;
   align-items: flex-end;
@@ -762,19 +773,28 @@ watch([currentPeriod, currentDate], async () => {
 
 .week-day-fill {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 20px;
   transition: height 0.3s ease;
   min-height: 4px;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  gap: 4px;
 }
 
 .week-day-percentage {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
 }
 
 .week-day-hours {
-  font-size: 10px;
-  color: #666;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Month View */
@@ -862,9 +882,10 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .summary-item {
-  background: #0f0f0f;
+  background: transparent;
   padding: 20px 40px;
   border-radius: 12px;
+  border: 1px solid #333;
   display: flex;
   flex-direction: column;
   align-items: center;
