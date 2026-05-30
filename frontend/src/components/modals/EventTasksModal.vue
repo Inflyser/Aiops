@@ -1,17 +1,12 @@
 <template>
   <div v-if="show" class="modal" @click.self="$emit('close')">
     <div class="modal-content" @click.stop>
-      <span class="close" @click="$emit('close')">&times;</span>
+      <button class="close-btn" @click="$emit('close')">←</button>
       
-      <!-- Заголовок -->
-      <h2>
-        <img src="@/assets/icon-clock.svg" alt="clock" class="header-icon" />
-        Задачи события
-      </h2>
-
-      <div class="divider"></div>
+      <div class="modal-header">
+        <h2>Задачи события</h2>
+      </div>
       
-      <!-- Информация о событии -->
       <div v-if="event" class="event-info">
         <div class="event-title">{{ event.title }}</div>
         <div class="event-datetime">
@@ -19,50 +14,40 @@
         </div>
       </div>
       
-      <div class="divider"></div>
-      
       <!-- Задачи события -->
-      <div class="form-group">
-        <label class="form-label">Задачи ({{ completedTasksCount }}/{{ eventTasks.length }})</label>
-        <div v-if="eventTasks.length === 0" class="empty-tasks">
-          Нет привязанных задач
-        </div>
-        <div v-else class="event-tasks-list">
-          <div
-            v-for="task in eventTasks"
-            :key="task.id"
-            class="event-task-item"
-          >
-            <div class="task-checkbox" @click="toggleTaskComplete(task)">
-              <span v-if="task.completed" class="checked">✓</span>
-            </div>
-            <div class="task-content">
-              <div class="task-title">{{ task.title }}</div>
-              <div v-if="task.description" class="task-description">{{ task.description }}</div>
-            </div>
-            <button
-              type="button"
-              class="remove-task-btn"
-              @click="removeTaskFromEvent(task)"
-              title="Удалить задачу из события"
-            >
-              ✕
-            </button>
+      <div v-if="eventTasks.length === 0" class="empty-tasks">
+        Нет привязанных задач
+      </div>
+      <div v-else class="event-tasks-list">
+        <div
+          v-for="task in eventTasks"
+          :key="task.id"
+          class="event-task-item"
+        >
+          <div class="task-checkbox" @click="toggleTaskComplete(task)">
+            <span v-if="task.completed" class="checked">✓</span>
           </div>
+          <div class="task-content">
+            <div class="task-title">{{ task.title }}</div>
+            <div v-if="task.description" class="task-description">{{ task.description }}</div>
+          </div>
+          <button
+            type="button"
+            class="remove-task-btn"
+            @click="removeTaskFromEvent(task)"
+            title="Удалить задачу из события"
+          >
+            ✕
+          </button>
         </div>
       </div>
       
-      <div class="divider"></div>
-      
-      <!-- Кнопки -->
-      <div class="form-actions">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          @click="$emit('close')"
-        >
-          Закрыть
-        </button>
+      <!-- Прогресс бар -->
+      <div v-if="eventTasks.length > 0" class="progress-section">
+        <div class="progress-bar-container">
+          <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
+        </div>
+        <div class="progress-label">{{ completedTasksCount }}/{{ eventTasks.length }} задач</div>
       </div>
     </div>
   </div>
@@ -110,6 +95,12 @@ const eventTasks = ref<Task[]>([])
 // Количество выполненных задач
 const completedTasksCount = computed(() => {
   return eventTasks.value.filter(task => task.completed).length
+})
+
+// Процент выполнения
+const progressPercentage = computed(() => {
+  if (eventTasks.value.length === 0) return 0
+  return Math.round((completedTasksCount.value / eventTasks.value.length) * 100)
 })
 
 // API для работы с задачами событий
@@ -197,24 +188,20 @@ watch(() => props.show, (isVisible) => {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-content {
-  background-color: #121212;
+  background-color: #050505;
   padding: 20px;
-  border-radius: 25px;
+  border-radius: 12px;
   width: 90%;
-  max-width: 500px;
+  max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  border: 1px solid #444;
+  border: 1px solid #333;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -222,12 +209,8 @@ watch(() => props.show, (isVisible) => {
   width: 6px;
 }
 
-.modal-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 .modal-content::-webkit-scrollbar-thumb {
-  background: #444;
+  background: #333;
   border-radius: 3px;
 }
 
@@ -242,49 +225,53 @@ watch(() => props.show, (isVisible) => {
   }
 }
 
-.close {
+.close-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  font-size: 26px;
-  line-height: 1;
-  cursor: pointer;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
   color: #888;
+  font-size: 20px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
 }
 
-.close:hover {
+.close-btn:hover {
+  background: #333;
   color: #fff;
 }
 
-.modal-content h2 {
-  font-size: 13px;
-  text-align: center;
-  display: flex;
-  color: #ffffffd8;
-  gap: 10px;
+.modal-header {
+  margin-bottom: 20px;
 }
 
-.header-icon {
-  width: 24px;
-  height: 24px;
-  padding: 0 0 4px 0;
-}
-
-.divider {
-  height: 1px;
-  background-color: #333;
-  margin: 15px 0;
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
 }
 
 .event-info {
-  padding: 10px 0;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #080808;
+  border-radius: 8px;
+  border: 1px solid #333;
 }
 
 .event-title {
   font-size: 14px;
   font-weight: 600;
   color: #fff;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .event-datetime {
@@ -292,45 +279,34 @@ watch(() => props.show, (isVisible) => {
   color: #888;
 }
 
-.form-group {
-  margin-bottom: 10px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 9px;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .empty-tasks {
   text-align: center;
   padding: 30px;
   color: #666;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .event-tasks-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
 .event-task-item {
   display: flex;
   align-items: flex-start;
-  padding: 12px;
-  background-color: #2a2a2a;
+  padding: 10px 12px;
+  background: #080808;
   border-radius: 8px;
-  gap: 12px;
+  gap: 10px;
+  border: 1px solid #333;
 }
 
 .task-checkbox {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #666;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #555;
   border-radius: 4px;
   flex-shrink: 0;
   cursor: pointer;
@@ -338,6 +314,7 @@ watch(() => props.show, (isVisible) => {
   align-items: center;
   justify-content: center;
   transition: border-color 0.2s, background 0.2s;
+  margin-top: 1px;
 }
 
 .task-checkbox:hover {
@@ -346,7 +323,7 @@ watch(() => props.show, (isVisible) => {
 
 .task-checkbox .checked {
   color: #4ade80;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: bold;
 }
 
@@ -357,25 +334,26 @@ watch(() => props.show, (isVisible) => {
 
 .task-title {
   color: #fff;
-  font-size: 11px;
-  margin-bottom: 4px;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .task-description {
-  color: #888;
+  color: #666;
   font-size: 10px;
   line-height: 1.4;
+  margin-top: 2px;
 }
 
 .remove-task-btn {
   background: none;
   border: none;
-  color: #666;
-  font-size: 13px;
+  color: #555;
+  font-size: 12px;
   cursor: pointer;
-  padding: 4px;
-  width: 24px;
-  height: 24px;
+  padding: 2px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -389,38 +367,34 @@ watch(() => props.show, (isVisible) => {
   color: #ff6b6b;
 }
 
-.form-actions {
+/* Progress bar */
+.progress-section {
+  border-top: 1px solid #333;
+  padding-top: 16px;
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 15px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
-.btn {
-  padding: 10px 20px;
-  border-radius: 8px;
+.progress-bar-container {
+  width: 100%;
+  height: 6px;
+  background: #1a1a1a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4a90e2, #4ade80);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-label {
   font-size: 11px;
+  color: #888;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-secondary {
-  background-color: #333;
-  color: #fff;
-}
-
-.btn-secondary:hover {
-  background-color: #444;
-}
-
-.btn-primary {
-  background-color: #1c3496;
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background-color: #2a4bb8;
 }
 </style>
