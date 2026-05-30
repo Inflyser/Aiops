@@ -86,15 +86,21 @@
           class="week-day"
         >
           <div class="week-day-label">{{ day.name }}</div>
-    <div class="week-day-bar">
+    <div class="week-day-bar-wrapper">
+        <div class="week-day-bar">
         <div 
           class="week-day-fill"
           :style="{ height: day.percentage + '%', backgroundColor: day.color }"
         >
-          <span class="week-day-percentage">{{ day.percentage }}%</span>
-          <span class="week-day-hours"> · {{ day.hours.toFixed(1) }}ч</span>
+          <span v-if="day.percentage >= 15" class="week-day-percentage">{{ day.percentage }}%</span>
+          <span v-if="day.percentage >= 15" class="week-day-hours"> · {{ day.hours.toFixed(1) }}ч</span>
         </div>
       </div>
+      <div v-if="day.percentage < 15" class="week-day-above" :style="{ bottom: (day.percentage * 3) + 'px' }">
+        <span class="week-day-percentage">{{ day.percentage }}%</span>
+        <span class="week-day-hours"> · {{ day.hours.toFixed(1) }}ч</span>
+      </div>
+    </div>
         </div>
       </div>
     </div>
@@ -546,7 +552,7 @@ watch([currentPeriod, currentDate], async () => {
 
 <style scoped>
 .statistics-page {
-  padding: 0;
+  padding: 0 20px;
   min-height: 100vh;
   background-color: #050505;
   color: #ffffff;
@@ -754,6 +760,15 @@ watch([currentPeriod, currentDate], async () => {
   font-weight: 600;
 }
 
+.week-day-bar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
 .week-day-bar {
   width: 100%;
   height: 300px;
@@ -783,6 +798,16 @@ watch([currentPeriod, currentDate], async () => {
   padding: 10px 12px;
   box-sizing: border-box;
   gap: 4px;
+}
+
+.week-day-above {
+  position: absolute;
+  bottom: 100%;
+  left: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .week-day-percentage {
