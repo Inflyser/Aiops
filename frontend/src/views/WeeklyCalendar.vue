@@ -74,17 +74,6 @@
         />
       </div>
 
-      <!-- Year View -->
-      <div v-else-if="currentView === 'year'" key="year">
-        <YearView 
-          :current-year="currentYear"
-          @prev-year="prevYear"
-          @next-year="nextYear"
-          @day-click="handleMiniDayClick"
-          @month-click="handleMonthClick"
-        />
-      </div>
-
       <!-- Month View -->
       <div v-else-if="currentView === 'month'" key="month">
         <MonthView
@@ -195,7 +184,6 @@ import ViewSelector from '../components/ui/ViewSelector.vue'
 import CalendarHeader from '../components/calendar/CalendarHeader.vue'
 import WeekView from '../components/calendar/WeekView.vue'
 import MonthView from '../components/calendar/MonthView.vue'
-import YearView from '../components/calendar/YearView.vue'
 import DayView from '../components/calendar/DayView.vue'
 import EventModal from '../components/modals/EventModal.vue'
 import EventTasksModal from '../components/modals/EventTasksModal.vue'
@@ -227,7 +215,6 @@ const currentView = ref('day')
 const currentDay = ref(dayjs())
 const currentWeekStart = ref(dayjs().startOf('week'))
 const currentMonth = ref(dayjs().startOf('month'))
-const currentYear = ref(dayjs().year())
 const showModal = ref(false)
 const editingEvent = ref<any>(null)
 const viewMode = ref<'view' | 'edit' | null>(null)
@@ -427,14 +414,6 @@ const loadEventsForMonth = async () => {
   await calendarStore.fetchEvents(startOfMonth, endOfMonth)
 }
 
-const nextYear = () => {
-  currentYear.value += 1
-}
-
-const prevYear = () => {
-  currentYear.value -= 1
-}
-
 // Day navigation
 const prevDay = () => {
   currentDay.value = currentDay.value.subtract(1, 'day')
@@ -493,19 +472,6 @@ const handleWeekDayClick = (data: { day: any; dateTime: dayjs.Dayjs }) => {
 const handleMonthDayClick = (day: any) => {
   currentWeekStart.value = dayjs(day.fullDate).startOf('week')
   currentView.value = 'week'
-}
-
-const handleMiniDayClick = (day: any) => {
-  if (day.isCurrentMonth) {
-    currentWeekStart.value = dayjs(day.fullDate).startOf('week')
-    currentView.value = 'week'
-  }
-}
-
-const handleMonthClick = (month: any) => {
-  const monthDate = dayjs().year(currentYear.value).month(month.number).startOf('month')
-  currentMonth.value = monthDate
-  currentView.value = 'month'
 }
 
 const handleCreateEvent = async (data: { date: string; startTime: string; endTime: string; title: string }) => {
@@ -1040,8 +1006,6 @@ const handleKeydown = (event: KeyboardEvent) => {
         lastWeek()
       } else if (currentView.value === 'month') {
         prevMonth()
-      } else if (currentView.value === 'year') {
-        prevYear()
       } else if (currentView.value === 'day') {
         prevDay()
       }
@@ -1052,8 +1016,6 @@ const handleKeydown = (event: KeyboardEvent) => {
         nextWeek()
       } else if (currentView.value === 'month') {
         nextMonth()
-      } else if (currentView.value === 'year') {
-        nextYear()
       } else if (currentView.value === 'day') {
         nextDay()
       }

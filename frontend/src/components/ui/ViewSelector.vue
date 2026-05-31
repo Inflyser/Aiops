@@ -28,13 +28,7 @@
       >
         month
       </button>
-      <button 
-        class="view-btn" 
-        :class="{ active: currentView === 'year' }"
-        @click="$emit('update:modelValue', 'year')"
-      >
-        year
-      </button>
+
     </div>
   </div>
 </template>
@@ -53,7 +47,7 @@ defineEmits<{
   (e: 'update:modelValue', value: string): void
 }>()
 
-const views = ['day', 'week', 'month', 'year']
+const views = ['day', 'week', 'month']
 
 const indicatorStyle = computed(() => {
   const index = views.indexOf(currentView.value)
