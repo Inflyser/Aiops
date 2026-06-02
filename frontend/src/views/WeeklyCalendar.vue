@@ -110,6 +110,7 @@
           @event-drop="handleEventDropForDay"
           @event-copy="handleEventCopyForDay"
           @task-drop-to-event="handleTaskDropToEventForDay"
+          @create-event="handleCreateEvent"
         />
       </div>
     </Transition>
@@ -487,7 +488,11 @@ const handleCreateEvent = async (data: { date: string; startTime: string; endTim
   }
   
   await calendarStore.createEvent(eventData)
-  await loadEvents()
+  if (currentView.value === 'day') {
+    await loadEventsForDay()
+  } else {
+    await loadEvents()
+  }
 }
 
 const openImportantEvent = (event: any) => {

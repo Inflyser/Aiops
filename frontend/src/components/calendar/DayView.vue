@@ -22,8 +22,8 @@
       </div>
     </div>
     
-    <div class="day-scroll-container">
-      <div class="day-grid">
+    <div class="day-scroll-container" ref="scrollContainerRef">
+      <div class="day-grid" @mousedown="startSelection" @dragover="handleGridDragOver" @drop="handleGridDrop">
         <div 
           v-for="hour in hours" 
           :key="hour"
@@ -87,6 +87,26 @@
             </button>
           </div>
           
+          <!-- Selection overlay for drag-to-create -->
+          <div
+            v-if="selHeight > 0"
+            class="selection-overlay"
+            :style="{ top: selTop + 'px', height: selHeight + 'px' }"
+            @mousedown.stop
+          >
+            <input
+              v-if="showCreateInput"
+              ref="createTitleInput"
+              v-model="createTitle"
+              class="create-event-input"
+              placeholder="Название события"
+              @keydown.enter="createEvent"
+              @keydown.escape="cancelSelection"
+              @blur="submitCreate"
+              @click.stop
+            />
+          </div>
+
           <!-- Current Time Line (only for today) -->
           <div 
             v-if="isCurrentDay()"
@@ -102,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -154,6 +174,7 @@ const emit = defineEmits<{
   (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
   (e: 'event-toggle-important', event: CalendarEvent): void
+  (e: 'create-event', data: { date: string; startTime: string; endTime: string; title: string }): void
 }>()
 
 // Double click detection
@@ -173,6 +194,25 @@ const draggedEvent = ref<CalendarEvent | null>(null)
 const dragGhost = ref<HTMLElement | null>(null)
 const dragOffsetY = ref(0)
 const isAltPressed = ref(false)
+const scrollContainerRef = ref<HTMLElement | null>(null)
+
+// Auto-scroll during drag
+const SCROLL_THRESHOLD = 60
+const SCROLL_SPEED = 15
+let autoScrollInterval: ReturnType<typeof setInterval> | null = null
+let currentScrollDir: 'up' | 'down' | null = null
+
+// ========== Drag-to-create selection ==========
+const selTop = ref(0)
+const selHeight = ref(0)
+const isDragging = ref(false)
+const hasMoved = ref(false)
+const showCreateInput = ref(false)
+const createTitle = ref('')
+let selStartY = 0
+const createTitleInput = ref<HTMLInputElement | null>(null)
+
+let removeMouseListeners: (() => void) | null = null
 
 // Current time for red line
 const currentTime = ref(dayjs())
@@ -277,6 +317,230 @@ const handleTaskDrop = (event: DragEvent) => {
     }
   } catch (error) {
     console.error('Error parsing task data:', error)
+  }
+}
+
+// ========== Grid-level drag over/drop for event movement ==========
+const getCalendarGrid = (): HTMLElement | null => {
+  return scrollContainerRef.value
+}
+
+const startAutoScroll = (dir: 'up' | 'down') => {
+  if (autoScrollInterval) return
+  autoScrollInterval = setInterval(() => {
+    const grid = getCalendarGrid()
+    if (!grid) return
+    if (dir === 'up') {
+      grid.scrollTop = Math.max(0, grid.scrollTop - SCROLL_SPEED)
+    } else {
+      grid.scrollTop += SCROLL_SPEED
+    }
+  }, 16)
+}
+
+const stopAutoScroll = () => {
+  if (autoScrollInterval) {
+    clearInterval(autoScrollInterval)
+    autoScrollInterval = null
+  }
+}
+
+const handleGridDragOver = (event: DragEvent) => {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = draggedEvent.value ? 'move' : 'copy'
+  }
+
+  const grid = getCalendarGrid()
+  if (!grid) return
+  const rect = grid.getBoundingClientRect()
+  const relativeY = event.clientY - rect.top
+
+  if (relativeY < SCROLL_THRESHOLD) {
+    if (currentScrollDir !== 'up') {
+      stopAutoScroll()
+      startAutoScroll('up')
+      currentScrollDir = 'up'
+    }
+  } else if (relativeY > rect.height - SCROLL_THRESHOLD) {
+    if (currentScrollDir !== 'down') {
+      stopAutoScroll()
+      startAutoScroll('down')
+      currentScrollDir = 'down'
+    }
+  } else {
+    if (currentScrollDir !== null) {
+      stopAutoScroll()
+      currentScrollDir = null
+    }
+  }
+}
+
+const handleGridDrop = (event: DragEvent) => {
+  event.preventDefault()
+  stopAutoScroll()
+  currentScrollDir = null
+
+  if (draggedEvent.value) {
+    const eventData = draggedEvent.value
+    const isCopy = event.altKey || isAltPressed.value
+
+    const originalStart = dayjs(eventData.start)
+    const originalEnd = dayjs(eventData.end)
+    const duration = originalEnd.diff(originalStart, 'minute')
+
+    const grid = getCalendarGrid()
+    if (!grid) return
+    const rect = grid.getBoundingClientRect()
+    const dropY = event.clientY - rect.top - dragOffsetY.value
+    const slotIndex = Math.floor(dropY / props.hourHeight)
+    const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
+    const minutes = Math.round(rawMinutes / 10) * 10
+
+    const hour = props.compactMode ? slotIndex + 7 : slotIndex
+
+    const newStart = props.currentDay.hour(hour).minute(minutes)
+    const newEnd = newStart.add(duration, 'minute')
+
+    if (isCopy) {
+      emit('event-copy', {
+        event: eventData,
+        newDate: props.currentDay.format('YYYY-MM-DD'),
+        newStart: newStart.toISOString(),
+        newEnd: newEnd.toISOString()
+      })
+    } else {
+      emit('event-drop', {
+        event: eventData,
+        newDate: props.currentDay.format('YYYY-MM-DD'),
+        newStart: newStart.toISOString(),
+        newEnd: newEnd.toISOString()
+      })
+    }
+  }
+
+  draggedEvent.value = null
+  isAltPressed.value = false
+}
+
+// ========== Drag-to-create selection ==========
+const addMouseListeners = () => {
+  const onMove = (e: MouseEvent) => {
+    if (!isDragging.value) return
+    hasMoved.value = true
+
+    const grid = getCalendarGrid()
+    if (!grid) return
+
+    const rect = grid.getBoundingClientRect()
+    const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height - 1))
+
+    selTop.value = Math.min(selStartY, currentY)
+    selHeight.value = Math.abs(currentY - selStartY)
+  }
+
+  const onUp = (_e: MouseEvent) => {
+    if (!isDragging.value) return
+    isDragging.value = false
+    removeListeners()
+
+    if (!hasMoved.value) {
+      cancelSelection()
+      return
+    }
+
+    showCreateInput.value = true
+    createTitle.value = ''
+    nextTick(() => {
+      const input = document.querySelector('.create-event-input') as HTMLInputElement
+      if (input) input.focus()
+    })
+  }
+
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+  removeMouseListeners = () => {
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+  }
+}
+
+const removeListeners = () => {
+  if (removeMouseListeners) {
+    removeMouseListeners()
+    removeMouseListeners = null
+  }
+}
+
+const startSelection = (event: MouseEvent) => {
+  if ((event.target as HTMLElement).closest('.day-event')) return
+  if ((event.target as HTMLElement).closest('.event-star-btn')) return
+  if ((event.target as HTMLElement).closest('.event-menu-btn')) return
+
+  const grid = getCalendarGrid()
+  if (!grid) return
+  const rect = grid.getBoundingClientRect()
+  selStartY = Math.max(0, Math.min(event.clientY - rect.top, rect.height - 1))
+
+  isDragging.value = true
+  hasMoved.value = false
+  showCreateInput.value = false
+  createTitle.value = ''
+  selTop.value = selStartY
+  selHeight.value = 0
+
+  addMouseListeners()
+}
+
+const getTimeFromPixel = (pixelY: number): { hour: number; minute: number } => {
+  const slotIndex = Math.floor(pixelY / props.hourHeight)
+  const offsetMin = Math.round(((pixelY % props.hourHeight) / props.hourHeight) * 60 / 10) * 10
+  const hour = props.compactMode ? slotIndex + 7 : slotIndex
+  return { hour, minute: offsetMin }
+}
+
+const createEvent = () => {
+  if (!createTitle.value.trim()) {
+    cancelSelection()
+    return
+  }
+
+  const startTime = getTimeFromPixel(selTop.value)
+  const endTime = getTimeFromPixel(selTop.value + selHeight.value)
+
+  let endHour = endTime.hour
+  let endMin = endTime.minute
+  if (endHour < startTime.hour || (endHour === startTime.hour && endMin <= startTime.minute)) {
+    endHour = startTime.hour
+    endMin = startTime.minute + 30
+    if (endMin >= 60) { endHour += 1; endMin -= 60 }
+  }
+
+  const fmt = (h: number, m: number) =>
+    `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+
+  emit('create-event', {
+    date: props.currentDay.format('YYYY-MM-DD'),
+    startTime: fmt(startTime.hour, startTime.minute),
+    endTime: fmt(endHour, endMin),
+    title: createTitle.value.trim()
+  })
+
+  cancelSelection()
+}
+
+const cancelSelection = () => {
+  selTop.value = 0
+  selHeight.value = 0
+  showCreateInput.value = false
+  createTitle.value = ''
+}
+
+const submitCreate = () => {
+  if (createTitle.value.trim()) {
+    createEvent()
+  } else {
+    cancelSelection()
   }
 }
 
@@ -460,6 +724,9 @@ onUnmounted(() => {
   if (timeInterval) {
     clearInterval(timeInterval)
   }
+  stopAutoScroll()
+  currentScrollDir = null
+  removeListeners()
 })
 </script>
 
@@ -795,5 +1062,40 @@ onUnmounted(() => {
   height: 10px;
   background-color: #ff4444;
   border-radius: 50%;
+}
+
+/* Selection overlay for drag-to-create */
+.selection-overlay {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 25;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px dashed #888;
+  border-radius: 8px;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  padding: 4px;
+}
+
+.create-event-input {
+  width: 100%;
+  background: #111;
+  border: 1px solid #555;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 8px;
+  outline: none;
+  font-family: inherit;
+}
+
+.create-event-input::placeholder {
+  color: #666;
+}
+
+.create-event-input:focus {
+  border-color: #888;
 }
 </style>
