@@ -19,7 +19,7 @@
       </button>
       <!-- Кнопка Inbox -->
       <button
-        v-if="currentView === 'week'"
+        v-if="currentView === 'week' || currentView === 'day'"
         class="inbox-toggle-btn header-toggle"
         :class="{ active: showInboxPanel }"
         @click="$emit('toggle-inbox')"
@@ -29,7 +29,7 @@
       </button>
       <!-- Кнопка Важные -->
       <button
-        v-if="currentView === 'week'"
+        v-if="currentView === 'week' || currentView === 'day'"
         class="important-toggle-btn header-toggle"
         :class="{ active: showImportantPanel }"
         @click="$emit('toggle-important')"
