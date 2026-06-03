@@ -19,7 +19,6 @@
         >
           {{ formData.is_important ? '★' : '☆' }}
         </button>
-        <span class="close" @click="$emit('close')">&times;</span>
       </div>
 
       <div class="divider"></div>
@@ -282,6 +281,7 @@ defineEmits<{
 
 const selectedTagId = ref<string | null>(null)
 const weekDaysFull = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const shortDayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 
 const upcomingDays = computed(() => {
   const days = []
@@ -291,7 +291,7 @@ const upcomingDays = computed(() => {
     const d = weekStart.add(i, 'day')
     days.push({
       date: d.format('YYYY-MM-DD'),
-      dayName: d.format('ddd'),
+      dayName: shortDayNames[d.day()],
       dayNum: d.format('D'),
       month: d.format('MMMM'),
       isToday: d.isSame(dayjs(), 'day')
@@ -496,6 +496,7 @@ const selectTag = (tag: Tag) => {
   color: #555;
   padding: 0 4px;
   line-height: 1;
+  margin-left: auto;
   transition: color 0.2s, transform 0.2s;
 }
 
@@ -506,18 +507,6 @@ const selectTag = (tag: Tag) => {
 
 .star-btn.is-important {
   color: #f59e0b;
-}
-
-.close {
-  font-size: 28px;
-  line-height: 1;
-  cursor: pointer;
-  color: #888;
-  padding: 0 0 0 4px;
-}
-
-.close:hover {
-  color: #fff;
 }
 
 .header-icon {
