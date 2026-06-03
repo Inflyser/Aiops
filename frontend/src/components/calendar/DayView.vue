@@ -65,9 +65,24 @@
                 {{ formatEventTime(event) }}
               </div>
               <div v-if="event.description" class="event-description">{{ event.description }}</div>
-              <div v-if="event.task_count && event.task_count > 0" class="event-tasks-indicator" @click.stop="handleEventClick(event)">
-                <span class="tasks-icon">•</span>
-                <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.task_count }} {{ getTaskWord(event.task_count) }}</span>
+              <div v-if="event.eventTasks && event.eventTasks.length > 0">
+                <div v-if="canShowTasksInline(event)" class="event-tasks-inline">
+                  <div
+                    v-for="t in event.eventTasks"
+                    :key="t.id"
+                    class="event-task-item"
+                    @click.stop="toggleTaskInline(t)"
+                  >
+                    <span class="event-task-checkbox" :class="{ checked: t.completed }">
+                      <span v-if="t.completed">✓</span>
+                    </span>
+                    <span class="event-task-title" :class="{ done: t.completed }">{{ t.title }}</span>
+                  </div>
+                </div>
+                <div v-else class="event-tasks-indicator" @click.stop="handleEventClick(event)">
+                  <span class="tasks-icon">•</span>
+                  <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.eventTasks.length }} {{ getTaskWord(event.eventTasks.length) }}</span>
+                </div>
               </div>
             </div>
             <button 
@@ -139,6 +154,13 @@ const getTagIconPath = (iconName: string): string => {
   return ''
 }
 
+interface EventTask {
+  id: string
+  title: string
+  description?: string
+  completed: boolean
+}
+
 interface CalendarEvent {
   id: string | number
   title: string
@@ -149,9 +171,11 @@ interface CalendarEvent {
   priority?: string
   color?: string
   tagIcon?: string
+  task_ids?: string[]
   task_count?: number
   completed_task_count?: number
   is_important?: boolean
+  eventTasks?: EventTask[]
 }
 
 const props = defineProps<{
@@ -553,6 +577,46 @@ const getTaskWord = (count: number): string => {
   if (lastOne === 1) return 'задача'
   if (lastOne >= 2 && lastOne <= 4) return 'задачи'
   return 'задач'
+}
+
+const EVENT_PADDING = 16
+const TITLE_H = 26
+const TIME_H = 24
+const DESC_H = 28
+const TASK_H = 26
+const TASK_GAP = 2
+
+const canShowTasksInline = (event: CalendarEvent): boolean => {
+  const tasks = event.eventTasks
+  if (!tasks || tasks.length === 0) return false
+
+  const start = dayjs(event.start)
+  const end = dayjs(event.end)
+  const duration = end.diff(start, 'minute')
+  const eventHeight = Math.max((duration / 60) * props.hourHeight, 30)
+
+  let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
+  if (event.description) usedHeight += DESC_H
+
+  const available = eventHeight - usedHeight
+  const needed = tasks.length * (TASK_H + TASK_GAP) - TASK_GAP
+
+  return needed <= available
+}
+
+const toggleTaskInline = async (task: EventTask) => {
+  try {
+    const res = await fetch(`/api/v1/tasks/${task.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: !task.completed })
+    })
+    if (res.ok) {
+      task.completed = !task.completed
+    }
+  } catch (e) {
+    console.error('Failed to toggle task:', e)
+  }
 }
 
 // Check if current day is today
@@ -971,6 +1035,57 @@ onUnmounted(() => {
   color: rgba(255, 255, 255, 0.8);
   font-size: 11px;
   font-weight: 600;
+}
+
+.event-tasks-inline {
+  margin-top: 4px;
+}
+
+.event-task-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  margin-top: 2px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.event-task-item:first-child {
+  margin-top: 0;
+}
+
+.event-task-checkbox {
+  width: 13px;
+  height: 13px;
+  border: 1px solid #888;
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #4ade80;
+}
+
+.event-task-checkbox.checked {
+  border-color: #4ade80;
+}
+
+.event-task-title {
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.event-task-title.done {
+  text-decoration: line-through;
+  opacity: 0.6;
 }
 
 /* Event Star Button */

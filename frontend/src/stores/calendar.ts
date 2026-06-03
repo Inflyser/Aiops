@@ -22,6 +22,9 @@ interface CalendarEvent {
   recurrence_end_date?: string
   recurrence_count?: number
   original_id?: string
+  task_ids?: string[]
+  task_count?: number
+  completed_task_count?: number
 }
 
 // Для Ctrl+Z (история действий)

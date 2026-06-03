@@ -333,17 +333,29 @@ const getTagIcon = (tagId: string | undefined): string | undefined => {
   return tag?.icon
 }
 
+interface EventTask {
+  id: string
+  title: string
+  description?: string
+  completed: boolean
+}
+
 // Events from calendar store (с уже установленными цветами от тегов)
 const events = computed(() => {
-  return calendarStore.events.map(event => ({
-    ...event,
-    // Используем цвет события или цвет тега, если он есть
-    color: event.color || getTagColor(event.tag_id),
-    // Иконка тега
-    tagIcon: getTagIcon(event.tag_id),
-    // Используем локальное состояние для bounce анимации
-    bouncing: bouncingEvents.value.has(String(event.id))
-  }))
+  return calendarStore.events.map(event => {
+    const taskIds = event.task_ids || []
+    const eventTaskList: EventTask[] = taskIds
+      .map((id: string) => tasksStore.tasks.find(t => t.id === id))
+      .filter((t): t is NonNullable<typeof t> => t != null)
+
+    return {
+      ...event,
+      color: event.color || getTagColor(event.tag_id),
+      tagIcon: getTagIcon(event.tag_id),
+      bouncing: bouncingEvents.value.has(String(event.id)),
+      eventTasks: eventTaskList,
+    }
+  })
 })
 
 // Фильтрованные события для дневного вида
