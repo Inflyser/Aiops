@@ -21,7 +21,7 @@ async def add_task_to_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Добавить задачу к событию"""
+    """Добавить задачу к событию (создаёт копию задачи из шаблона)"""
     # Проверяем существование события
     event = db.query(CalendarEvent).filter(
         CalendarEvent.id == event_task_data.event_id,
@@ -31,36 +31,39 @@ async def add_task_to_event(
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
     
-    # Проверяем существование задачи
-    task = db.query(Task).filter(
+    # Находим шаблон задачи в Inbox
+    template = db.query(Task).filter(
         Task.id == event_task_data.task_id,
         Task.user_id == current_user.id
     ).first()
     
-    if not task:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
+    if not template:
+        raise HTTPException(status_code=404, detail="Задача-шаблон не найдена")
     
-    # Проверяем, что связь еще не существует
-    existing = db.query(EventTask).filter(
-        EventTask.event_id == event_task_data.event_id,
-        EventTask.task_id == event_task_data.task_id
-    ).first()
+    # Создаём НОВУЮ независимую копию задачи с теми же данными
+    task_copy = Task(
+        id=str(uuid4()),
+        title=template.title,
+        description=template.description,
+        completed=False,
+        status='event',
+        priority=template.priority,
+        tags=template.tags,
+        order=0,
+        user_id=current_user.id,
+    )
+    db.add(task_copy)
+    db.flush()
     
-    if existing:
-        raise HTTPException(status_code=400, detail="Задача уже добавлена к событию")
-    
-    # Создаем связь
+    # Создаём связь между новой задачей и событием
     event_task = EventTask(
         id=str(uuid4()),
         event_id=event_task_data.event_id,
-        task_id=event_task_data.task_id,
+        task_id=task_copy.id,
         order=event_task_data.order
     )
     
     db.add(event_task)
-    
-    # Обновляем статус задачи на 'event', чтобы она не отображалась в Inbox
-    task.status = 'event'
     
     db.commit()
     db.refresh(event_task)
@@ -75,7 +78,7 @@ async def remove_task_from_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Удалить задачу из события"""
+    """Удалить задачу из события (удаляет копию задачи, шаблон в Inbox остаётся)"""
     # Проверяем существование события
     event = db.query(CalendarEvent).filter(
         CalendarEvent.id == event_id,
@@ -94,8 +97,14 @@ async def remove_task_from_event(
     if not event_task:
         raise HTTPException(status_code=404, detail="Связь не найдена")
     
-    # Возвращаем статус задачи на 'todo', чтобы она снова отображалась в Inbox
-    task.status = 'todo'
+    # Находим и удаляем копию задачи (она создавалась специально для события)
+    task_copy = db.query(Task).filter(
+        Task.id == task_id,
+        Task.user_id == current_user.id
+    ).first()
+    
+    if task_copy:
+        db.delete(task_copy)
     
     db.delete(event_task)
     db.commit()
@@ -174,7 +183,7 @@ async def add_category_to_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Добавить все задачи категории к событию"""
+    """Добавить все задачи категории к событию (создаёт копии задач-шаблонов)"""
     # Проверяем существование события
     event = db.query(CalendarEvent).filter(
         CalendarEvent.id == event_id,
@@ -184,37 +193,38 @@ async def add_category_to_event(
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
     
-    # Получаем задачи категории
+    # Получаем задачи категории (шаблоны)
     category_tasks = db.query(Task).filter(
         Task.column_id == category_id,
         Task.user_id == current_user.id
     ).all()
     
-    # Добавляем задачи к событию
-    for task in category_tasks:
-        # Проверяем, что связь уже существует
-        existing = db.query(EventTask).filter(
-            EventTask.event_id == event_id,
-            EventTask.task_id == task.id
-        ).first()
+    # Создаём копии задач и привязываем к событию
+    for i, template in enumerate(category_tasks):
+        task_copy = Task(
+            id=str(uuid4()),
+            title=template.title,
+            description=template.description,
+            completed=False,
+            status='event',
+            priority=template.priority,
+            tags=template.tags,
+            order=0,
+            user_id=current_user.id,
+        )
+        db.add(task_copy)
+        db.flush()
         
-        if not existing:
-            event_task = EventTask(
-                id=str(uuid4()),
-                event_id=event_id,
-                task_id=task.id,
-                order=0
-            )
-            db.add(event_task)
-    
-    db.commit()
-    
-    # Обновляем статус задач на 'event'
-    for task in category_tasks:
-        task.status = 'event'
+        event_task = EventTask(
+            id=str(uuid4()),
+            event_id=event_id,
+            task_id=task_copy.id,
+            order=i
+        )
+        db.add(event_task)
     
     db.commit()
     
     return {
-        "message": f"Добавлено {len(category_tasks)} задач к событию"
+        "message": f"Создано и добавлено {len(category_tasks)} задач к событию"
     }
