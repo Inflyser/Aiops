@@ -1,15 +1,17 @@
 <template>
-  <div class="tags-panel">
+  <div class="tags-panel" :class="{ 'open': isOpen }">
     <div class="tags-panel-header">
-      <h3>Теги</h3>
-      <button class="close-btn" @click="$emit('close')">×</button>
+      <h3 class="tags-title">Теги</h3>
+      <button class="close-btn" @click="$emit('close')">→</button>
     </div>
-    
+
     <div class="tags-list">
-      <div 
-        v-for="tag in tags" 
-        :key="tag.id" 
+      <div
+        v-for="tag in tags"
+        :key="tag.id"
         class="tag-item"
+        draggable="true"
+        @dragstart="handleDragStart($event, tag)"
       >
         <img
           v-if="tag.icon"
@@ -19,39 +21,39 @@
         <span v-else class="tag-icon-placeholder"></span>
         <span class="tag-color" :style="{ backgroundColor: tag.color }"></span>
         <span class="tag-name">{{ tag.name }}</span>
-        <button class="delete-tag-btn" @click="$emit('delete-tag', tag.id)">×</button>
+        <button class="delete-tag-btn" @click="$emit('delete-tag', tag.id)">✕</button>
       </div>
-      
+
       <div v-if="tags.length === 0" class="no-tags">
         Нет тегов. Добавьте новый тег.
       </div>
     </div>
-    
+
     <div class="add-tag-form">
-      <input 
-        v-model="newTagName" 
-        type="text" 
+      <input
+        v-model="newTagName"
+        type="text"
         placeholder="Название тега"
         class="tag-input"
       />
-      
+
       <div class="form-row">
         <label class="form-label">Цвет</label>
         <div class="color-picker-wrap">
-          <input 
-            v-model="newTagColor" 
-            type="color" 
+          <input
+            v-model="newTagColor"
+            type="color"
             class="color-input"
             title="Выберите цвет"
           />
           <span class="color-hex">{{ newTagColor }}</span>
         </div>
       </div>
-      
+
       <div class="form-row">
         <label class="form-label">Иконка</label>
         <div class="icon-selector">
-          <button 
+          <button
             type="button"
             class="icon-btn"
             :class="{ selected: !newTagIcon }"
@@ -72,9 +74,9 @@
           </button>
         </div>
       </div>
-      
-      <button 
-        class="add-tag-btn" 
+
+      <button
+        class="add-tag-btn"
         @click="handleAddTag"
         :disabled="!newTagName.trim()"
       >
@@ -95,6 +97,7 @@ interface Tag {
 }
 
 defineProps<{
+  isOpen: boolean
   tags: Tag[]
 }>()
 
@@ -138,51 +141,53 @@ const getIconPath = (iconName: string): string | undefined => {
   const icon = iconFiles.value.find(i => i.name === iconName)
   return icon?.path
 }
+
+const handleDragStart = (e: DragEvent, tag: Tag) => {
+  if (e.dataTransfer) {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      _tag: true,
+      id: tag.id,
+      name: tag.name,
+      color: tag.color,
+      icon: tag.icon
+    }))
+    e.dataTransfer.effectAllowed = 'copy'
+  }
+}
 </script>
 
 <style scoped>
 .tags-panel {
-  position: absolute;
-  top: 60px;
-  right: 20px;
+  position: fixed;
+  top: 0;
+  left: -320px;
   width: 320px;
-  background: #0a0a0a;
-  border: 1px solid #33333357;
-  border-radius: 12px;
-  padding: 16px;
-  z-index: 100;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  animation: slideIn 0.25s ease-out;
-  max-height: 80vh;
+  height: 100vh;
+  background: #050505;
+  border-right: 1px solid #33333357;
+  transition: left 0.3s ease;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.tags-panel.open {
+  left: 0;
 }
 
 .tags-panel-header {
+  padding: 20px;
+  border-bottom: 1px solid #33333357;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #33333357;
 }
 
-.tags-panel-header h3 {
+.tags-title {
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
   color: #fff;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .close-btn {
@@ -192,18 +197,24 @@ const getIconPath = (iconName: string): string | undefined => {
   font-size: 19px;
   cursor: pointer;
   padding: 0;
-  line-height: 1;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
 }
 
 .close-btn:hover {
+  background: #333;
   color: #fff;
 }
 
 .tags-list {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 16px;
-  max-height: 200px;
+  padding: 10px;
 }
 
 .tag-item {
@@ -218,6 +229,10 @@ const getIconPath = (iconName: string): string | undefined => {
 
 .tag-item:hover {
   background: #151515;
+}
+
+.tag-item:active {
+  cursor: grabbing;
 }
 
 .tag-color {
@@ -272,7 +287,7 @@ const getIconPath = (iconName: string): string | undefined => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-top: 12px;
+  padding: 16px 20px 20px;
   border-top: 1px solid #33333357;
 }
 
@@ -395,7 +410,6 @@ const getIconPath = (iconName: string): string | undefined => {
   width: 100%;
   height: 100%;
   object-fit: contain;
- 
 }
 
 .add-tag-btn {

@@ -159,6 +159,7 @@ const emit = defineEmits<{
   (e: 'event-drop', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
+  (e: 'tag-drop-to-event', data: { tag: any; event: CalendarEvent }): void
   (e: 'task-drop-to-day', data: { task: any; time: dayjs.Dayjs }): void
   (e: 'category-drop-to-day', data: { categoryId: string; categoryTitle: string; time: dayjs.Dayjs }): void
 }>()
@@ -357,7 +358,19 @@ const handleTaskDrop = (event: DragEvent, _day: MonthDay) => {
   try {
     const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
 
-    if (droppedData.type === 'category' || (droppedData.id && droppedData.title)) {
+    if (droppedData._tag) {
+      const targetElement = event.target as HTMLElement
+      const eventBlock = targetElement.closest('.month-event')
+
+      if (eventBlock) {
+        const eventId = eventBlock.getAttribute('data-event-id')
+        const targetEvent = props.events.find(e => String(e.id) === eventId)
+
+        if (targetEvent) {
+          emit('tag-drop-to-event', { tag: droppedData, event: targetEvent })
+        }
+      }
+    } else if (droppedData.type === 'category' || (droppedData.id && droppedData.title)) {
       const targetElement = event.target as HTMLElement
       const eventBlock = targetElement.closest('.month-event')
 

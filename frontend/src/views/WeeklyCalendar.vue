@@ -3,6 +3,7 @@
     'inbox-open': showInboxPanel,
     'filter-open': showFilterPanel,
     'snooze-open': showSnoozePanel,
+    'tags-open': showTagsPanel,
     'with-background': currentBackground
   }" :style="currentBackground ? { backgroundColor: `rgba(5, 5, 5, ${1 - backgroundOpacity})` } : {}">
     <!-- Top Bar -->
@@ -23,7 +24,7 @@
 
     <!-- Tags Panel -->
     <TagsPanel 
-      v-if="showTagsPanel"
+      :is-open="showTagsPanel"
       :tags="tags"
       @close="showTagsPanel = false"
       @add-tag="addTag"
@@ -74,6 +75,7 @@
           @event-move-to-next-week="handleMoveToNextWeek"
           @event-toggle-important="handleToggleImportant"
           @task-drop-to-event="handleTaskDropToEvent"
+          @tag-drop-to-event="handleTagDropToEvent"
           @task-drop-to-day="handleTaskDropToDay"
           @category-drop-to-day="handleCategoryDropToDay"
           @create-event="handleCreateEvent"
@@ -93,6 +95,7 @@
           @event-drop="handleEventDrop"
           @event-copy="handleEventCopy"
           @task-drop-to-event="handleTaskDropToEvent"
+          @tag-drop-to-event="handleTagDropToEvent"
           @task-drop-to-day="handleTaskDropToDay"
           @category-drop-to-day="handleCategoryDropToDay"
         />
@@ -117,6 +120,7 @@
           @event-drop="handleEventDropForDay"
           @event-copy="handleEventCopyForDay"
           @task-drop-to-event="handleTaskDropToEventForDay"
+          @tag-drop-to-event="handleTagDropToEvent"
           @task-drop-to-day="handleTaskDropToDay"
           @category-drop-to-day="handleCategoryDropToDay"
           @create-event="handleCreateEvent"
@@ -915,6 +919,16 @@ const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
   await handleTaskDropToEventShared(data, loadEventsForDay)
 }
 
+// Handle tag drop to event
+const handleTagDropToEvent = async (data: { tag: any; event: any }) => {
+  await calendarStore.updateEvent(data.event.id, { tag_id: data.tag.id, color: data.tag.color })
+  if (currentView.value === 'day') {
+    await loadEventsForDay()
+  } else {
+    await loadEvents()
+  }
+}
+
 // Handle move event to next week for day view
 const handleEventUpdate = async (data: { event: any; changes: Partial<any> }) => {
   await calendarStore.updateEvent(data.event.id, data.changes)
@@ -1239,6 +1253,10 @@ onUnmounted(() => {
 
 .weekly-calendar.inbox-open {
   padding-right: 320px;
+}
+
+.weekly-calendar.tags-open {
+  padding-left: 320px;
 }
 
 .weekly-calendar.filter-open {
