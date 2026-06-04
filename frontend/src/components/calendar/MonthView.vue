@@ -37,7 +37,7 @@
             :key="event.id"
             class="month-event"
             :class="{ 'dragging': draggedEvent?.id === event.id }"
-            :style="{ backgroundColor: event.color || '#4a5568' }"
+            :style="getMonthEventStyle(event)"
             :data-event-id="event.id"
             draggable="true"
             @click.stop="handleEventClick(event)"
@@ -106,6 +106,7 @@
 import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
+import { getContrastColors } from '@/utils/color'
 
 dayjs.locale('ru')
 
@@ -180,6 +181,12 @@ const closeAllDayEvents = () => {
 const handleAllEventClick = (event: CalendarEvent) => {
   closeAllDayEvents()
   emit('open-event', event)
+}
+
+const getMonthEventStyle = (event: CalendarEvent) => {
+  const bg = event.color || '#4a5568'
+  const colors = getContrastColors(bg)
+  return { backgroundColor: bg, color: colors.text, '--event-text-color': colors.text, '--event-text-muted': colors.textMuted, '--event-icon-filter': colors.iconFilter }
 }
 
 const formatEventTime = (event: CalendarEvent) => {
@@ -531,6 +538,7 @@ const getExtraEventsCount = (date: string) => {
   width: 13px;
   height: 13px;
   flex-shrink: 0;
+  filter: var(--event-icon-filter, none);
 }
 
 .month-event {
@@ -541,7 +549,6 @@ const getExtraEventsCount = (date: string) => {
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
-  color: white;
   display: flex;
   align-items: center;
   gap: 4px;

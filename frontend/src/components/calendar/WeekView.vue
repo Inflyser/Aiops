@@ -134,6 +134,10 @@
             >
               <img src="@/assets/three-point.svg" alt="menu" />
             </button>
+            <div
+              class="event-resize-handle"
+              @mousedown.stop.prevent="startResize($event, event)"
+            ></div>
           </div>
           
           <!-- Current Time Line (only for today) -->
@@ -154,6 +158,7 @@
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
+import { getContrastColors } from '@/utils/color'
 
 dayjs.locale('ru')
 
@@ -231,6 +236,71 @@ const dragOverDay = ref<string | null>(null)
 const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const isAltPressed = ref(false)
+
+// Resize state
+const resizingEventId = ref<string | number | null>(null)
+const resizeStartY = ref(0)
+const resizeOriginalEnd = ref<dayjs.Dayjs | null>(null)
+const resizeNewEnd = ref<dayjs.Dayjs | null>(null)
+const resizeEvent = ref<CalendarEvent | null>(null)
+
+const isResizing = (eventId: string | number) => resizingEventId.value === eventId
+
+const startResize = (e: MouseEvent, event: CalendarEvent) => {
+  e.stopPropagation()
+  e.preventDefault()
+
+  resizingEventId.value = event.id
+  resizeStartY.value = e.clientY
+  resizeOriginalEnd.value = dayjs(event.end)
+  resizeEvent.value = event
+
+  document.addEventListener('pointermove', onResizeMove)
+  document.addEventListener('pointerup', onResizeEnd)
+}
+
+const onResizeMove = (e: PointerEvent) => {
+  if (!resizeOriginalEnd.value || !resizeEvent.value) return
+
+  const deltaY = e.clientY - resizeStartY.value
+  const deltaMinutes = (deltaY / props.hourHeight) * 60
+
+  const newEnd = resizeOriginalEnd.value.add(deltaMinutes, 'minute')
+
+  // Snap to 10 minutes
+  const snapMinutes = Math.round(newEnd.minute() / 10) * 10
+  const snappedEnd = newEnd.minute(snapMinutes).second(0).millisecond(0)
+
+  // Enforce minimum duration (15 minutes)
+  const start = dayjs(resizeEvent.value.start)
+  const minEnd = start.add(15, 'minute')
+
+  resizeNewEnd.value = snappedEnd.isBefore(minEnd) ? minEnd : snappedEnd
+}
+
+const onResizeEnd = () => {
+  document.removeEventListener('pointermove', onResizeMove)
+  document.removeEventListener('pointerup', onResizeEnd)
+
+  if (resizeNewEnd.value && resizeEvent.value) {
+    const event = resizeEvent.value
+    const endISO = resizeNewEnd.value.toISOString()
+    const dayStart = dayjs(event.start).startOf('day')
+
+    emit('event-drop', {
+      event,
+      newDate: dayStart.format('YYYY-MM-DD'),
+      newStart: event.start,
+      newEnd: endISO
+    })
+  }
+
+  resizingEventId.value = null
+  resizeStartY.value = 0
+  resizeOriginalEnd.value = null
+  resizeNewEnd.value = null
+  resizeEvent.value = null
+}
 
 // Auto-scroll during drag
 const SCROLL_THRESHOLD = 60
@@ -657,7 +727,7 @@ const getEventsForDay = (date: string) => {
 
 const getEventStyle = (event: CalendarEvent, dayDate: string) => {
   const start = dayjs(event.start)
-  const end = dayjs(event.end)
+  const end = isResizing(event.id) && resizeNewEnd.value ? resizeNewEnd.value : dayjs(event.end)
   const dayStart = dayjs(dayDate).startOf('day')
 
   let startMinutes = start.diff(dayStart, 'minute')
@@ -666,7 +736,12 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
   // Используем цвет события или дефолтный серый цвет
   const eventColor = event.color || '#4a5568'
   const eventBg = props.eventAccentMode ? '#1a1a1a' : eventColor
-  const eventStyleExtra: Record<string, string> = {}
+  const { text: eventTextColor, textMuted: eventTextMuted, iconFilter: eventIconFilter } = getContrastColors(eventBg)
+  const eventStyleExtra: Record<string, string> = {
+    '--event-text-color': eventTextColor,
+    '--event-text-muted': eventTextMuted,
+    '--event-icon-filter': eventIconFilter
+  }
   if (props.eventAccentMode) {
     eventStyleExtra['--event-color'] = eventColor
   }
@@ -981,6 +1056,7 @@ const submitCreate = () => {
   transition: opacity 0.2s;
   display: flex;
   min-height: 30px;
+  color: var(--event-text-color, #ffffff);
 }
 
 .event-block:hover {
@@ -1025,7 +1101,7 @@ const submitCreate = () => {
 .event-indicator {
   width: 6px;
   border-radius: 10px;
-  background-color: var(--event-color, #ffffff);
+  background-color: var(--event-text-muted, rgba(255, 255, 255, 0.7));
   margin: 1px 8px 1px 0;
   flex-shrink: 0;
   opacity: 0.9;
@@ -1043,7 +1119,7 @@ const submitCreate = () => {
 
 .event-time {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.8));
   margin-bottom: 2px;
   font-weight: 500;
   display: flex;
@@ -1054,6 +1130,7 @@ const submitCreate = () => {
 .event-time-icon {
   width: 16px;
   height: 16px;
+  filter: var(--event-icon-filter, none);
 }
 
 .event-title {
@@ -1079,18 +1156,19 @@ const submitCreate = () => {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  filter: brightness(0) invert(1);
+  filter: var(--event-icon-filter, brightness(0) invert(1));
 }
 
 .event-tag-icon {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
+  filter: var(--event-icon-filter, none);
 }
 
 .event-description {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.8));
   margin-top: 3px;
   line-height: 1.3;
 }
@@ -1113,13 +1191,13 @@ const submitCreate = () => {
 }
 
 .tasks-icon {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.8));
   font-size: 13px;
   line-height: 1;
 }
 
 .tasks-count {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.8));
   font-size: 11px;
   font-weight: 500;
 }
@@ -1163,7 +1241,7 @@ const submitCreate = () => {
 }
 
 .event-task-title {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--event-text-color, #ffffff);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1177,7 +1255,7 @@ const submitCreate = () => {
 
 .event-location {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.7));
   margin-top: 2px;
 }
 
@@ -1306,5 +1384,34 @@ const submitCreate = () => {
 
 .create-event-input:focus {
   border-color: #888;
+}
+
+.event-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  cursor: ns-resize;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.event-resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--event-text-muted, rgba(255, 255, 255, 0.4));
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.event-block:hover .event-resize-handle::after {
+  opacity: 1;
 }
 </style>
