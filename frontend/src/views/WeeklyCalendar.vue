@@ -1,6 +1,8 @@
 <template>
   <div class="weekly-calendar" :class="{ 
     'inbox-open': showInboxPanel,
+    'filter-open': showFilterPanel,
+    'snooze-open': showSnoozePanel,
     'with-background': currentBackground
   }" :style="currentBackground ? { backgroundColor: `rgba(5, 5, 5, ${1 - backgroundOpacity})` } : {}">
     <!-- Top Bar -->
@@ -9,9 +11,13 @@
       :show-tags-panel="showTagsPanel"
       :show-inbox-panel="showInboxPanel"
       :show-important-panel="showImportantPanel"
+      :show-filter-panel="showFilterPanel"
+      :show-snooze-panel="showSnoozePanel"
       @toggle-tags="showTagsPanel = !showTagsPanel"
       @toggle-inbox="showInboxPanel = !showInboxPanel"
       @toggle-important="showImportantPanel = !showImportantPanel"
+      @toggle-filter="showFilterPanel = !showFilterPanel"
+      @toggle-snooze="showSnoozePanel = !showSnoozePanel"
       @open-settings="showSettings = true"
     />
 
@@ -55,7 +61,7 @@
         <!-- Calendar Grid -->
         <WeekView
           :week-days="weekDays"
-          :events="events"
+          :events="filteredEvents"
           :compact-mode="compactMode"
           :event-accent-mode="eventAccentMode"
           :inbox-panel-open="showInboxPanel"
@@ -71,6 +77,7 @@
           @task-drop-to-day="handleTaskDropToDay"
           @category-drop-to-day="handleCategoryDropToDay"
           @create-event="handleCreateEvent"
+          @event-update="handleEventUpdate"
         />
       </div>
 
@@ -78,7 +85,7 @@
       <div v-else-if="currentView === 'month'" key="month">
         <MonthView
           :current-month="currentMonth"
-          :events="events"
+          :events="filteredEvents"
           @prev-month="prevMonth"
           @next-month="nextMonth"
           @day-click="handleMonthDayClick"
@@ -110,7 +117,10 @@
           @event-drop="handleEventDropForDay"
           @event-copy="handleEventCopyForDay"
           @task-drop-to-event="handleTaskDropToEventForDay"
+          @task-drop-to-day="handleTaskDropToDay"
+          @category-drop-to-day="handleCategoryDropToDay"
           @create-event="handleCreateEvent"
+          @event-update="handleEventUpdate"
         />
       </div>
     </Transition>
@@ -140,6 +150,26 @@
       :is-open="showInboxPanel"
       @close="showInboxPanel = false"
       @category-dropped-to-event="handleCategoryDroppedToEvent"
+    />
+
+    <!-- Filter Panel -->
+    <FilterPanel
+      :is-open="showFilterPanel"
+      :tags="tags"
+      :active-tags="activeFilterTags"
+      :show-important="filterShowImportant"
+      @close="showFilterPanel = false"
+      @update:active-tags="activeFilterTags = $event"
+      @update:show-important="filterShowImportant = $event"
+    />
+
+    <!-- Event Snooze Panel -->
+    <EventSnoozePanel
+      :is-open="showSnoozePanel"
+      :snoozed-events="snoozeStore.snoozedEvents"
+      @close="showSnoozePanel = false"
+      @calendar-event-dropped="handleCalendarEventDroppedOnSnooze"
+      @remove-snoozed="handleRemoveSnoozed"
     />
 
     <!-- Zoom Handle -->
@@ -192,6 +222,9 @@ import TagsPanel from '../components/modals/TagsPanel.vue'
 import ImportantEventsPanel from '../components/modals/ImportantEventsPanel.vue'
 import SettingsModal from '../components/modals/SettingsModal.vue'
 import InboxPanel from '../components/calendar/InboxPanel.vue'
+import FilterPanel from '../components/calendar/FilterPanel.vue'
+import EventSnoozePanel from '../components/calendar/EventSnoozePanel.vue'
+import { useEventSnoozeStore } from '../stores/eventSnooze'
 
 dayjs.locale('ru')
 
@@ -273,6 +306,15 @@ const showInboxPanel = ref(false)
 
 // Important panel state
 const showImportantPanel = ref(false)
+
+// Filter panel state
+const showFilterPanel = ref(false)
+const activeFilterTags = ref<string[]>([])
+const filterShowImportant = ref(false)
+
+// Snooze panel state
+const showSnoozePanel = ref(false)
+const snoozeStore = useEventSnoozeStore()
 
 // Акцентный режим событий: true = нейтральный фон + цветная полоска/иконка
 const eventAccentMode = ref(false)
@@ -358,10 +400,25 @@ const events = computed(() => {
   })
 })
 
+// Фильтрованные события (по тегам и важности)
+const filteredEvents = computed(() => {
+  return events.value.filter(event => {
+    if (activeFilterTags.value.length > 0) {
+      if (!event.tag_id || !activeFilterTags.value.includes(event.tag_id)) {
+        return false
+      }
+    }
+    if (filterShowImportant.value && !event.is_important) {
+      return false
+    }
+    return true
+  })
+})
+
 // Фильтрованные события для дневного вида
 const dayEvents = computed(() => {
   const currentDayStr = currentDay.value.format('YYYY-MM-DD')
-  return events.value.filter(event => {
+  return filteredEvents.value.filter(event => {
     const eventDate = dayjs(event.start).format('YYYY-MM-DD')
     return eventDate === currentDayStr
   })
@@ -859,6 +916,49 @@ const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
 }
 
 // Handle move event to next week for day view
+const handleEventUpdate = async (data: { event: any; changes: Partial<any> }) => {
+  await calendarStore.updateEvent(data.event.id, data.changes)
+  if (currentView.value === 'day') {
+    await loadEventsForDay()
+  } else {
+    await loadEvents()
+  }
+}
+
+const handleCalendarEventDroppedOnSnooze = async (eventData: any) => {
+  try {
+    await calendarStore.deleteEvent(eventData.id)
+    snoozeStore.addEvent({
+      id: eventData.id,
+      title: eventData.title,
+      description: eventData.description,
+      start: eventData.start,
+      end: eventData.end,
+      color: eventData.color || '#4a5568',
+      location: eventData.location,
+      priority: eventData.priority,
+      is_important: eventData.is_important,
+      tag_id: eventData.tag_id || eventData.tagId,
+      tagIcon: eventData.tagIcon,
+      task_ids: eventData.task_ids,
+      task_count: eventData.task_count,
+      completed_task_count: eventData.completed_task_count,
+      snoozed_at: new Date().toISOString()
+    })
+    if (currentView.value === 'day') {
+      await loadEventsForDay()
+    } else {
+      await loadEvents()
+    }
+  } catch (err) {
+    console.error('Failed to snooze event:', err)
+  }
+}
+
+const handleRemoveSnoozed = (eventId: string) => {
+  snoozeStore.removeEvent(eventId)
+}
+
 const handleToggleImportant = async (event: any) => {
   await calendarStore.updateEvent(event.id, { is_important: !event.is_important })
   console.log('Event importance toggled:', event.title, '->', !event.is_important)
@@ -927,12 +1027,39 @@ const handleTaskDropToEvent = async (data: { task: any; event: any }) => {
 }
 
 // Handle task drop to day
-const handleTaskDropToDay = async (_data: { task: any; time: dayjs.Dayjs }) => {
-  // Не создаем новые события при перетаскивании на пустое место
-  // Задачи должны прикрепляться только к существующим событиям
+const handleTaskDropToDay = async (data: { task: any; time: dayjs.Dayjs }) => {
+  const task = data.task
+  if (task._snoozed) {
+    const origStart = dayjs(task.start)
+    const origEnd = dayjs(task.end)
+    const duration = origEnd.diff(origStart, 'minute')
+    const eventData = {
+      title: task.title,
+      description: task.description || undefined,
+      start: data.time.toISOString(),
+      end: data.time.add(Math.max(duration, 30), 'minute').toISOString(),
+      location: task.location || undefined,
+      priority: task.priority || 'medium',
+      color: task.color || '#4a5568',
+      all_day: false,
+      tag_id: task.tag_id || undefined,
+      is_important: task.is_important === true
+    }
+    try {
+      await calendarStore.createEvent(eventData)
+      snoozeStore.removeEvent(task.id)
+      if (currentView.value === 'day') {
+        await loadEventsForDay()
+      } else {
+        await loadEvents()
+      }
+    } catch (err) {
+      console.error('Failed to restore snoozed event:', err)
+    }
+    return
+  }
+
   console.log('Task dropped on empty day. Please drop task on an existing event.')
-  
-  // Можно показать уведомление пользователю
   alert('Перетащите задачу на существующее событие календаря')
 }
 
@@ -1111,6 +1238,14 @@ onUnmounted(() => {
 }
 
 .weekly-calendar.inbox-open {
+  padding-right: 320px;
+}
+
+.weekly-calendar.filter-open {
+  padding-right: 320px;
+}
+
+.weekly-calendar.snooze-open {
   padding-right: 320px;
 }
 

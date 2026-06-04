@@ -53,18 +53,72 @@
             <div class="event-indicator"></div>
             <div class="event-content">
               <div class="event-title">
-                <img
-                  v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
-                  :src="getTagIconPath(event.tagIcon)"
-                  class="event-tag-icon"
-                />
-                {{ event.title }}
+                <template v-if="eventAccentMode">
+                  <div
+                    v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                    class="event-tag-icon-wrapper"
+                    :style="{ backgroundColor: event.color || '#4a5568' }"
+                    @dblclick.stop="toggleTagPicker(event)"
+                  >
+                    <img
+                      :src="getTagIconPath(event.tagIcon)"
+                      class="event-tag-icon"
+                    />
+                  </div>
+                </template>
+                <template v-else>
+                  <img
+                    v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                    :src="getTagIconPath(event.tagIcon)"
+                    class="event-tag-icon"
+                    @dblclick.stop="toggleTagPicker(event)"
+                  />
+                </template>
+                <template v-if="editingTitleEventId === event.id">
+                  <input
+                    ref="titleInputRef"
+                    v-model="editingTitleValue"
+                    class="event-title-input"
+                    @keydown.enter="saveTitle(event)"
+                    @keydown.escape="cancelTitleEdit"
+                    @blur="saveTitle(event)"
+                  />
+                </template>
+                <template v-else>
+                  <span @dblclick.stop="startEditTitle(event)" class="event-title-text">{{ event.title }}</span>
+                </template>
+                <div v-if="tagPickerEventId === event.id" class="tag-picker-dropdown" @click.stop>
+                  <div class="tag-picker-option" @click="selectTag(event, null)">— нет тега</div>
+                  <div
+                    v-for="tag in tagsStore.tags"
+                    :key="tag.id"
+                    class="tag-picker-option"
+                    :class="{ active: event.tag_id === tag.id }"
+                    @click="selectTag(event, tag.id)"
+                  >
+                    <span class="tag-picker-color" :style="{ backgroundColor: tag.color }"></span>
+                    {{ tag.name }}
+                  </div>
+                </div>
               </div>
               <div class="event-time">
                 <img src="@/assets/icon-clock.svg" alt="clock" class="event-time-icon" />
                 {{ formatEventTime(event) }}
               </div>
-              <div v-if="event.description" class="event-description">{{ event.description }}</div>
+              <div v-if="event.description" class="event-description">
+                <template v-if="editingDescEventId === event.id">
+                  <input
+                    v-model="editingDescValue"
+                    class="event-desc-input"
+                    @keydown.enter="saveDesc(event)"
+                    @keydown.escape="cancelDescEdit"
+                    @blur="saveDesc(event)"
+                  />
+                </template>
+                <template v-else>
+                  <span @dblclick.stop="startEditDesc(event)">{{ event.description }}</span>
+                </template>
+              </div>
               <div v-if="event.eventTasks && event.eventTasks.length > 0">
                 <div v-if="canShowTasksInline(event)" class="event-tasks-inline">
                   <div
@@ -145,6 +199,8 @@ import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { getContrastColors } from '@/utils/color'
+import { useTagsStore } from '@/stores/tags'
+const tagsStore = useTagsStore()
 
 dayjs.locale('ru')
 
@@ -176,6 +232,7 @@ interface CalendarEvent {
   priority?: string
   color?: string
   tagIcon?: string
+  tag_id?: string
   task_ids?: string[]
   task_count?: number
   completed_task_count?: number
@@ -202,14 +259,12 @@ const emit = defineEmits<{
   (e: 'event-drop', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'event-copy', data: { event: CalendarEvent; newDate: string; newStart: string; newEnd: string }): void
   (e: 'task-drop-to-event', data: { task: any; event: CalendarEvent }): void
+  (e: 'task-drop-to-day', data: { task: any; time: dayjs.Dayjs }): void
+  (e: 'category-drop-to-day', data: { categoryId: string; categoryTitle: string; time: dayjs.Dayjs }): void
   (e: 'event-toggle-important', event: CalendarEvent): void
   (e: 'create-event', data: { date: string; startTime: string; endTime: string; title: string }): void
+  (e: 'event-update', data: { event: CalendarEvent; changes: Partial<CalendarEvent> }): void
 }>()
-
-// Double click detection
-const lastClickEvent = ref<{ event: CalendarEvent; time: number } | null>(null)
-const clickTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
-const DOUBLE_CLICK_DELAY = 300 // ms
 
 // Focus mode state
 const focusMode = ref(false)
@@ -473,6 +528,16 @@ const handleGridDrop = (event: DragEvent) => {
   stopAutoScroll()
   currentScrollDir = null
 
+  const grid = getCalendarGrid()
+  if (!grid) return
+  const rect = grid.getBoundingClientRect()
+  const dropY = event.clientY - rect.top
+  const slotIndex = Math.floor(dropY / props.hourHeight)
+  const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
+  const minutes = Math.round(rawMinutes / 10) * 10
+  const hour = props.compactMode ? slotIndex + 7 : slotIndex
+  const dropTime = props.currentDay.hour(hour).minute(minutes)
+
   if (draggedEvent.value) {
     const eventData = draggedEvent.value
     const isCopy = event.altKey || isAltPressed.value
@@ -481,17 +546,7 @@ const handleGridDrop = (event: DragEvent) => {
     const originalEnd = dayjs(eventData.end)
     const duration = originalEnd.diff(originalStart, 'minute')
 
-    const grid = getCalendarGrid()
-    if (!grid) return
-    const rect = grid.getBoundingClientRect()
-    const dropY = event.clientY - rect.top - dragOffsetY.value
-    const slotIndex = Math.floor(dropY / props.hourHeight)
-    const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
-    const minutes = Math.round(rawMinutes / 10) * 10
-
-    const hour = props.compactMode ? slotIndex + 7 : slotIndex
-
-    const newStart = props.currentDay.hour(hour).minute(minutes)
+    const newStart = dropTime
     const newEnd = newStart.add(duration, 'minute')
 
     if (isCopy) {
@@ -508,6 +563,24 @@ const handleGridDrop = (event: DragEvent) => {
         newStart: newStart.toISOString(),
         newEnd: newEnd.toISOString()
       })
+    }
+  } else {
+    try {
+      const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
+      if (droppedData.type === 'category') {
+        emit('category-drop-to-day', {
+          categoryId: droppedData.categoryId,
+          categoryTitle: droppedData.categoryTitle,
+          time: dropTime
+        })
+      } else if (droppedData.id && droppedData.title) {
+        emit('task-drop-to-day', {
+          task: droppedData,
+          time: dropTime
+        })
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -707,37 +780,65 @@ const currentTimeLineStyle = computed(() => {
   }
 })
 
-// Handle event click with double click detection
-const handleEventClick = (event: CalendarEvent) => {
-  const now = Date.now()
-  
-  // Clear previous timeout if exists
-  if (clickTimeout.value) {
-    clearTimeout(clickTimeout.value)
-    clickTimeout.value = null
+// Inline editing state
+const editingTitleEventId = ref<string | number | null>(null)
+const editingTitleValue = ref('')
+const editingDescEventId = ref<string | number | null>(null)
+const editingDescValue = ref('')
+const tagPickerEventId = ref<string | number | null>(null)
+const titleInputRef = ref<HTMLInputElement | null>(null)
+
+const startEditTitle = (event: CalendarEvent) => {
+  editingTitleValue.value = event.title
+  editingTitleEventId.value = event.id
+  nextTick(() => titleInputRef.value?.focus())
+}
+
+const saveTitle = (event: CalendarEvent) => {
+  const val = editingTitleValue.value.trim()
+  if (val && val !== event.title) {
+    emit('event-update', { event, changes: { title: val } })
   }
-  
-  // Check if this is a double click
-  if (lastClickEvent.value &&
-      lastClickEvent.value.event.id === event.id &&
-      now - lastClickEvent.value.time < DOUBLE_CLICK_DELAY) {
-    // Double click detected - open event modal for editing
-    emit('open-event', event)
-    lastClickEvent.value = null
-  } else {
-    // Store click info and wait to see if it's a single or double click
-    lastClickEvent.value = { event, time: now }
-    
-    // Set timeout to handle single click
-    clickTimeout.value = setTimeout(() => {
-      // Single click - check if event has tasks
-      if (event.task_count && event.task_count > 0) {
-        emit('open-event-tasks', event)
-      }
-      lastClickEvent.value = null
-      clickTimeout.value = null
-    }, DOUBLE_CLICK_DELAY)
+  editingTitleEventId.value = null
+}
+
+const cancelTitleEdit = () => {
+  editingTitleEventId.value = null
+}
+
+const startEditDesc = (event: CalendarEvent) => {
+  editingDescValue.value = event.description || ''
+  editingDescEventId.value = event.id
+}
+
+const saveDesc = (event: CalendarEvent) => {
+  const val = editingDescValue.value.trim()
+  if (val !== event.description) {
+    emit('event-update', { event, changes: { description: val || '' } })
   }
+  editingDescEventId.value = null
+}
+
+const cancelDescEdit = () => {
+  editingDescEventId.value = null
+}
+
+const toggleTagPicker = (event: CalendarEvent) => {
+  tagPickerEventId.value = tagPickerEventId.value === event.id ? null : event.id
+}
+
+const selectTag = (event: CalendarEvent, tagId: string | null) => {
+  const curTagId = event.tag_id || ''
+  if (tagId !== curTagId) {
+    const tag = tagId ? tagsStore.tags.find(t => t.id === tagId) : null
+    emit('event-update', { event, changes: { tag_id: tag?.id || '', color: tag?.color || '' } })
+  }
+  tagPickerEventId.value = null
+}
+
+// Handle event click
+const handleEventClick = (_event?: CalendarEvent) => {
+  // Modal access removed - inline editing via dblclick
 }
 
 const getEventStyle = (event: CalendarEvent) => {
@@ -1316,5 +1417,98 @@ onUnmounted(() => {
 
 .day-event:hover .event-resize-handle::after {
   opacity: 1;
+}
+
+.event-tag-icon-wrapper {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.event-tag-icon-wrapper .event-tag-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  filter: var(--event-icon-filter, brightness(0) invert(1));
+}
+
+.event-title {
+  pointer-events: auto;
+}
+
+.event-title-text {
+  cursor: text;
+  pointer-events: auto;
+}
+
+.event-title-input,
+.event-desc-input {
+  pointer-events: auto;
+}
+
+.event-description {
+  pointer-events: auto;
+}
+
+.event-title-input,
+.event-desc-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  padding: 2px 6px;
+  width: 100%;
+  outline: none;
+}
+
+.event-title-input:focus,
+.event-desc-input:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.tag-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 4px 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.tag-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #ddd;
+  transition: background 0.15s;
+}
+
+.tag-picker-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tag-picker-option.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.tag-picker-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 </style>
