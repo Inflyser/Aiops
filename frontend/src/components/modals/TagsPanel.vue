@@ -151,7 +151,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
       color: tag.color,
       icon: tag.icon
     }))
-    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.effectAllowed = 'all'
   }
 }
 </script>
