@@ -916,7 +916,10 @@ const handleTaskDropToEventShared = async (data: { task: any; event: any }, onSu
 
 // Handle task drop to event for day view
 const handleTaskDropToEventForDay = async (data: { task: any; event: any }) => {
-  await handleTaskDropToEventShared(data, loadEventsForDay)
+  await handleTaskDropToEventShared(data, async () => {
+    await loadEventsForDay()
+    await tasksStore.fetchTasks()
+  })
 }
 
 // Handle tag drop to event
@@ -1037,7 +1040,10 @@ const handleMoveToNextWeek = async (event: any) => {
 
 // Handle task drop to event
 const handleTaskDropToEvent = async (data: { task: any; event: any }) => {
-  await handleTaskDropToEventShared(data, loadEvents)
+  await handleTaskDropToEventShared(data, async () => {
+    await loadEvents()
+    await tasksStore.fetchTasks()
+  })
 }
 
 // Handle task drop to day
