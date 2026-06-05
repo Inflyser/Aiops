@@ -125,15 +125,14 @@
                     v-for="t in event.eventTasks"
                     :key="t.id"
                     class="event-task-item"
-                    @click.stop="toggleTaskInline(t)"
                   >
-                    <span class="event-task-checkbox" :class="{ checked: t.completed }">
+                    <span class="event-task-checkbox" :class="{ checked: t.completed }" @click.stop="toggleTaskInline(t, event)">
                       <span v-if="t.completed">✓</span>
                     </span>
                     <span class="event-task-title" :class="{ done: t.completed }">{{ t.title }}</span>
                   </div>
                 </div>
-                <div v-else class="event-tasks-indicator" @click.stop="handleEventClick(event)">
+                <div v-else class="event-tasks-indicator" @click.stop="$emit('open-event-tasks', event)">
                   <span class="tasks-icon">•</span>
                   <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.eventTasks.length }} {{ getTaskWord(event.eventTasks.length) }}</span>
                 </div>
@@ -758,7 +757,7 @@ const canShowTasksInline = (event: CalendarEvent): boolean => {
   return needed <= available
 }
 
-const toggleTaskInline = async (task: EventTask) => {
+const toggleTaskInline = async (task: EventTask, calendarEvent: CalendarEvent) => {
   try {
     const res = await fetch(`/api/v1/tasks/${task.id}`, {
       method: 'PUT',
@@ -767,6 +766,9 @@ const toggleTaskInline = async (task: EventTask) => {
     })
     if (res.ok) {
       task.completed = !task.completed
+      if (calendarEvent.eventTasks) {
+        calendarEvent.completed_task_count = calendarEvent.eventTasks.filter(t => t.completed).length
+      }
     }
   } catch (e) {
     console.error('Failed to toggle task:', e)
@@ -1241,6 +1243,10 @@ onUnmounted(() => {
   line-height: 1.4;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
+}
+
+.event-task-checkbox {
+  pointer-events: auto;
 }
 
 .event-task-item:first-child {
