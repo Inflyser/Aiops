@@ -96,6 +96,7 @@
           @category-drop-to-day="handleCategoryDropToDay"
           @create-event="handleCreateEvent"
           @event-update="handleEventUpdate"
+          @add-task-to-event="handleAddTaskToEvent"
         />
       </div>
 
@@ -141,6 +142,7 @@
           @category-drop-to-day="handleCategoryDropToDay"
           @create-event="handleCreateEvent"
           @event-update="handleEventUpdate"
+          @add-task-to-event="handleAddTaskToEvent"
         />
       </div>
     </Transition>
@@ -1139,6 +1141,25 @@ const handleTaskDropToEvent = async (data: { task: any; event: any }) => {
     await loadEvents()
     await tasksStore.fetchTasks()
   })
+}
+
+// Handle inline add task to event
+const handleAddTaskToEvent = async (data: { event: any; title: string }) => {
+  try {
+    const newTask = await tasksStore.createTask({ title: data.title })
+    if (newTask && newTask.id) {
+      await eventTasksApi.post('/', {
+        event_id: String(data.event.id),
+        task_id: String(newTask.id),
+        order: 0
+      })
+    }
+    await loadEvents()
+    if (currentView.value === 'day') await loadEventsForDay()
+    await tasksStore.fetchTasks()
+  } catch (error) {
+    console.error('Failed to add task to event:', error)
+  }
 }
 
 // Handle task drop to day

@@ -49,6 +49,8 @@
             @dragend="handleDragEnd"
             @dragover="handleTaskDragOver($event)"
             @drop="handleTaskDrop($event)"
+            @mouseenter="hoveredEventId = event.id"
+            @mouseleave="hoveredEventId = hoveredEventId === event.id ? null : hoveredEventId"
           >
             <div
               class="event-resize-handle event-resize-handle--top"
@@ -123,22 +125,36 @@
                   <span @dblclick.stop="startEditDesc(event)">{{ event.description }}</span>
                 </template>
               </div>
-              <div v-if="event.eventTasks && event.eventTasks.length > 0">
-                <div v-if="canShowTasksInline(event)" class="event-tasks-inline">
-                  <div
-                    v-for="t in event.eventTasks"
-                    :key="t.id"
-                    class="event-task-item"
-                  >
-                    <span class="event-task-checkbox" :class="{ checked: t.completed }" @click.stop="toggleTaskInline(t, event)">
-                      <span v-if="t.completed">✓</span>
-                    </span>
-                    <span class="event-task-title" :class="{ done: t.completed }">{{ t.title }}</span>
-                  </div>
-                </div>
-                <div v-else class="event-tasks-indicator" @click.stop="$emit('open-event-tasks', event)">
+              <div v-if="(event.eventTasks?.length ?? 0) > 0 || (hoveredEventId === event.id && canShowAddTask(event))">
+                <div v-if="(event.eventTasks?.length ?? 0) > 0 && !canShowTasksInline(event)" class="event-tasks-indicator" @click.stop="$emit('open-event-tasks', event)">
                   <span class="tasks-icon">•</span>
-                  <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.eventTasks.length }} {{ getTaskWord(event.eventTasks.length) }}</span>
+                  <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.eventTasks?.length ?? 0 }} {{ getTaskWord(event.eventTasks?.length ?? 0) }}</span>
+                </div>
+                <template v-if="canShowTasksInline(event)">
+                  <div class="event-tasks-inline">
+                    <div v-for="t in event.eventTasks" :key="t.id" class="event-task-item">
+                      <span class="event-task-checkbox" :class="{ checked: t.completed }" @click.stop="toggleTaskInline(t, event)">
+                        <span v-if="t.completed">✓</span>
+                      </span>
+                      <span class="event-task-title" :class="{ done: t.completed }">{{ t.title }}</span>
+                    </div>
+                  </div>
+                  <div v-if="canShowProgressBar(event)" class="event-tasks-progress">
+                    <div class="event-progress-bar-bg">
+                      <div class="event-progress-bar-fill" :style="{ width: getProgressPercent(event) + '%' }"></div>
+                    </div>
+                  </div>
+                </template>
+                <div v-if="(hoveredEventId === event.id || activeAddTaskEventId === event.id) && canShowAddTask(event)" class="event-add-task" @click.stop>
+                  <input
+                    v-model="addTaskTitle"
+                    class="event-add-task-input"
+                    placeholder="+ задача"
+                    @focus="activeAddTaskEventId = event.id"
+                    @keydown.enter="submitAddTask(event)"
+                    @keydown.escape="cancelAddTask"
+                    @blur="handleAddTaskBlur"
+                  />
                 </div>
               </div>
             </div>
@@ -268,6 +284,7 @@ const emit = defineEmits<{
   (e: 'event-toggle-important', event: CalendarEvent): void
   (e: 'create-event', data: { date: string; startTime: string; endTime: string; title: string }): void
   (e: 'event-update', data: { event: CalendarEvent; changes: Partial<CalendarEvent> }): void
+  (e: 'add-task-to-event', data: { event: CalendarEvent; title: string }): void
 }>()
 
 // Focus mode state
@@ -295,6 +312,11 @@ const resizeNewStart = ref<dayjs.Dayjs | null>(null)
 const resizeEvent = ref<CalendarEvent | null>(null)
 
 const isResizing = (eventId: string | number) => resizingEventId.value === eventId
+
+// Hover and add-task state
+const hoveredEventId = ref<string | number | null>(null)
+const addTaskTitle = ref('')
+const activeAddTaskEventId = ref<string | number | null>(null)
 
 const startResize = (e: MouseEvent, event: CalendarEvent, direction: 'bottom' | 'top') => {
   e.stopPropagation()
@@ -789,6 +811,64 @@ const canShowTasksInline = (event: CalendarEvent): boolean => {
   const needed = tasks.length * (TASK_H + TASK_GAP) - TASK_GAP
 
   return needed <= available
+}
+
+const PROGRESS_BAR_H = 14
+const ADD_TASK_H = 28
+
+const getTasksHeight = (event: CalendarEvent): number => {
+  if (!event.eventTasks || event.eventTasks.length === 0) return 0
+  return event.eventTasks.length * (TASK_H + TASK_GAP) - TASK_GAP
+}
+
+const getAvailableAfterTasks = (event: CalendarEvent): number => {
+  const start = dayjs(event.start)
+  const end = dayjs(event.end)
+  const duration = end.diff(start, 'minute')
+  const eventHeight = Math.max((duration / 60) * props.hourHeight, 30)
+
+  let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
+  if (event.description) usedHeight += DESC_H
+  usedHeight += getTasksHeight(event)
+
+  return eventHeight - usedHeight
+}
+
+const canShowProgressBar = (event: CalendarEvent): boolean => {
+  if (!event.eventTasks || event.eventTasks.length === 0) return false
+  return getAvailableAfterTasks(event) >= PROGRESS_BAR_H
+}
+
+const canShowAddTask = (event: CalendarEvent): boolean => {
+  const available = getAvailableAfterTasks(event)
+  if (event.eventTasks && event.eventTasks.length > 0) {
+    return available >= PROGRESS_BAR_H + ADD_TASK_H
+  }
+  return available >= ADD_TASK_H
+}
+
+const getProgressPercent = (event: CalendarEvent): number => {
+  if (!event.eventTasks || event.eventTasks.length === 0) return 0
+  const completed = event.eventTasks.filter(t => t.completed).length
+  return Math.round((completed / event.eventTasks.length) * 100)
+}
+
+const submitAddTask = (event: CalendarEvent) => {
+  const title = addTaskTitle.value.trim()
+  if (!title) return
+  emit('add-task-to-event', { event, title })
+  addTaskTitle.value = ''
+}
+
+const cancelAddTask = () => {
+  addTaskTitle.value = ''
+  activeAddTaskEventId.value = null
+}
+
+const handleAddTaskBlur = () => {
+  if (!addTaskTitle.value.trim()) {
+    activeAddTaskEventId.value = null
+  }
 }
 
 const toggleTaskInline = async (task: EventTask, calendarEvent: CalendarEvent) => {
@@ -1320,6 +1400,52 @@ onUnmounted(() => {
 .event-task-title.done {
   text-decoration: line-through;
   opacity: 0.6;
+}
+
+.event-tasks-progress {
+  margin-top: 4px;
+  padding: 0 6px;
+}
+
+.event-progress-bar-bg {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.event-progress-bar-fill {
+  height: 100%;
+  background: #4ade80;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.event-add-task {
+  margin-top: 3px;
+  pointer-events: auto;
+}
+
+.event-add-task-input {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: 12px;
+  color: var(--event-text-color, #ffffff);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.event-add-task-input::placeholder {
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.event-add-task-input:focus {
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 /* Event Star Button */
