@@ -59,7 +59,7 @@
             v-for="event in getEventsForDay(day.date)"
             :key="event.id"
             class="event-block"
-            :class="{ 'dragging': draggedEvent?.id === event.id, 'bounce': event.bouncing }"
+            :class="{ 'dragging': draggedEvent?.id === event.id, 'is-resizing': isResizing(event.id) }"
             :style="getEventStyle(event, day.date)"
             :data-event-id="event.id"
             draggable="true"
@@ -70,6 +70,10 @@
             @dragover="handleTaskDragOver($event)"
             @drop="handleTaskDrop($event, day)"
           >
+            <div
+              class="event-resize-handle event-resize-handle--top"
+              @mousedown.stop.prevent="startResize($event, event, 'top')"
+            ></div>
             <div class="event-indicator"></div>
             <div class="event-content">
               <div class="event-title">
@@ -174,8 +178,8 @@
               <img src="@/assets/three-point.svg" alt="menu" />
             </button>
             <div
-              class="event-resize-handle"
-              @mousedown.stop.prevent="startResize($event, event)"
+              class="event-resize-handle event-resize-handle--bottom"
+              @mousedown.stop.prevent="startResize($event, event, 'bottom')"
             ></div>
           </div>
           
@@ -237,7 +241,6 @@ interface CalendarEvent {
   end: string
   priority?: string
   color?: string
-  bouncing?: boolean
   tagIcon?: string
   tag_id?: string
   task_ids?: string[]
@@ -285,19 +288,24 @@ const isAltPressed = ref(false)
 // Resize state
 const resizingEventId = ref<string | number | null>(null)
 const resizeStartY = ref(0)
+const resizeDirection = ref<'bottom' | 'top' | null>(null)
 const resizeOriginalEnd = ref<dayjs.Dayjs | null>(null)
 const resizeNewEnd = ref<dayjs.Dayjs | null>(null)
+const resizeOriginalStart = ref<dayjs.Dayjs | null>(null)
+const resizeNewStart = ref<dayjs.Dayjs | null>(null)
 const resizeEvent = ref<CalendarEvent | null>(null)
 
 const isResizing = (eventId: string | number) => resizingEventId.value === eventId
 
-const startResize = (e: MouseEvent, event: CalendarEvent) => {
+const startResize = (e: MouseEvent, event: CalendarEvent, direction: 'bottom' | 'top') => {
   e.stopPropagation()
   e.preventDefault()
 
   resizingEventId.value = event.id
   resizeStartY.value = e.clientY
+  resizeDirection.value = direction
   resizeOriginalEnd.value = dayjs(event.end)
+  resizeOriginalStart.value = dayjs(event.start)
   resizeEvent.value = event
 
   document.addEventListener('pointermove', onResizeMove)
@@ -305,46 +313,67 @@ const startResize = (e: MouseEvent, event: CalendarEvent) => {
 }
 
 const onResizeMove = (e: PointerEvent) => {
-  if (!resizeOriginalEnd.value || !resizeEvent.value) return
+  if (!resizeEvent.value) return
 
   const deltaY = e.clientY - resizeStartY.value
   const deltaMinutes = (deltaY / props.hourHeight) * 60
 
-  const newEnd = resizeOriginalEnd.value.add(deltaMinutes, 'minute')
-
-  // Snap to 10 minutes
-  const snapMinutes = Math.round(newEnd.minute() / 10) * 10
-  const snappedEnd = newEnd.minute(snapMinutes).second(0).millisecond(0)
-
-  // Enforce minimum duration (15 minutes)
-  const start = dayjs(resizeEvent.value.start)
-  const minEnd = start.add(15, 'minute')
-
-  resizeNewEnd.value = snappedEnd.isBefore(minEnd) ? minEnd : snappedEnd
+  if (resizeDirection.value === 'bottom') {
+    if (!resizeOriginalEnd.value) return
+    const newEnd = resizeOriginalEnd.value.add(deltaMinutes, 'minute')
+    const snapMinutes = Math.round(newEnd.minute() / 10) * 10
+    const snappedEnd = newEnd.minute(snapMinutes).second(0).millisecond(0)
+    const start = dayjs(resizeEvent.value.start)
+    const minEnd = start.add(15, 'minute')
+    resizeNewEnd.value = snappedEnd.isBefore(minEnd) ? minEnd : snappedEnd
+  } else {
+    if (!resizeOriginalStart.value) return
+    const newStart = resizeOriginalStart.value.add(deltaMinutes, 'minute')
+    const snapMinutes = Math.round(newStart.minute() / 10) * 10
+    const snappedStart = newStart.minute(snapMinutes).second(0).millisecond(0)
+    const end = dayjs(resizeEvent.value.end)
+    const maxStart = end.subtract(15, 'minute')
+    resizeNewStart.value = snappedStart.isAfter(maxStart) ? maxStart : snappedStart
+  }
 }
 
 const onResizeEnd = () => {
   document.removeEventListener('pointermove', onResizeMove)
   document.removeEventListener('pointerup', onResizeEnd)
 
-  if (resizeNewEnd.value && resizeEvent.value) {
+  if (resizeEvent.value) {
     const event = resizeEvent.value
-    const endISO = resizeNewEnd.value.toISOString()
-    const dayStart = dayjs(event.start).startOf('day')
-
-    emit('event-drop', {
-      event,
-      newDate: dayStart.format('YYYY-MM-DD'),
-      newStart: event.start,
-      newEnd: endISO
-    })
+    if (resizeDirection.value === 'top' && resizeNewStart.value) {
+      const startISO = resizeNewStart.value.toISOString()
+      const dayStart = dayjs(event.start).startOf('day')
+      emit('event-drop', {
+        event,
+        newDate: dayStart.format('YYYY-MM-DD'),
+        newStart: startISO,
+        newEnd: event.end
+      })
+    } else if (resizeDirection.value === 'bottom' && resizeNewEnd.value) {
+      const endISO = resizeNewEnd.value.toISOString()
+      const dayStart = dayjs(event.start).startOf('day')
+      emit('event-drop', {
+        event,
+        newDate: dayStart.format('YYYY-MM-DD'),
+        newStart: event.start,
+        newEnd: endISO
+      })
+    }
   }
 
-  resizingEventId.value = null
-  resizeStartY.value = 0
-  resizeOriginalEnd.value = null
-  resizeNewEnd.value = null
-  resizeEvent.value = null
+  setTimeout(() => {
+    resizingEventId.value = null
+    resizeStartY.value = 0
+    resizeDirection.value = null
+    resizeOriginalEnd.value = null
+    resizeNewEnd.value = null
+    resizeOriginalStart.value = null
+    resizeNewStart.value = null
+    resizeEvent.value = null
+  }, 60)
 }
 
 // Auto-scroll during drag
@@ -807,7 +836,7 @@ const getEventsForDay = (date: string) => {
 }
 
 const getEventStyle = (event: CalendarEvent, dayDate: string) => {
-  const start = dayjs(event.start)
+  const start = isResizing(event.id) && resizeNewStart.value ? resizeNewStart.value : dayjs(event.start)
   const end = isResizing(event.id) && resizeNewEnd.value ? resizeNewEnd.value : dayjs(event.end)
   const dayStart = dayjs(dayDate).startOf('day')
 
@@ -891,8 +920,8 @@ const formatTime = (hour: number) => {
 }
 
 const formatEventTime = (event: CalendarEvent) => {
-  const start = dayjs(event.start)
-  const end = dayjs(event.end)
+  const start = isResizing(event.id) && resizeNewStart.value ? resizeNewStart.value : dayjs(event.start)
+  const end = isResizing(event.id) && resizeNewEnd.value ? resizeNewEnd.value : dayjs(event.end)
   return `${start.format('HH:mm')} - ${end.format('HH:mm')}`
 }
 
@@ -1144,34 +1173,13 @@ const submitCreate = () => {
   opacity: 0.9;
 }
 
+.event-block.is-resizing {
+  transition: top 0.08s ease, height 0.08s ease;
+}
+
 .event-block.dragging {
   cursor: grabbing;
   z-index: 100;
-}
-
-/* Bounce animation for dropped events */
-.event-block.bounce {
-  animation: bounce-in 0.5s ease-out;
-}
-
-@keyframes bounce-in {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  30% {
-    transform: scale(1.1);
-  }
-  50% {
-    transform: scale(0.95);
-  }
-  70% {
-    transform: scale(1.03);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 
 /* Drag over state for day column */
@@ -1549,7 +1557,6 @@ const submitCreate = () => {
 
 .event-resize-handle {
   position: absolute;
-  bottom: 0;
   left: 0;
   right: 0;
   height: 10px;
@@ -1558,21 +1565,11 @@ const submitCreate = () => {
   pointer-events: auto;
 }
 
-.event-resize-handle::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--event-text-muted, rgba(255, 255, 255, 0.4));
-  opacity: 0;
-  transition: opacity 0.15s;
+.event-resize-handle--top {
+  top: 0;
 }
 
-.event-block:hover .event-resize-handle::after {
-  opacity: 1;
+.event-resize-handle--bottom {
+  bottom: 0;
 }
 </style>
