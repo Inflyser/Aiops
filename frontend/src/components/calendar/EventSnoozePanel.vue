@@ -25,19 +25,23 @@
         v-for="ev in snoozedEvents"
         :key="ev.id"
         class="snooze-event"
+        :style="snoozeEventStyle(ev)"
         :class="{ 'drag-over': dragOverEventId === ev.id }"
         draggable="true"
         @dragstart="handleDragStart($event, ev)"
         @dragend="handleDragEnd"
       >
-        <div class="snooze-event-indicator" :style="{ backgroundColor: ev.color || '#4a5568' }"></div>
-        <div class="snooze-event-content">
-          <div class="snooze-event-title">{{ ev.title }}</div>
-          <div class="snooze-event-meta">
-            <img src="@/assets/icon-clock.svg" alt="clock" class="snooze-event-clock" />
+        <div class="event-indicator"></div>
+        <div class="event-content">
+          <div class="event-title-row">
+            <img v-if="ev.tagIcon && getTagIconPath(ev.tagIcon)" :src="getTagIconPath(ev.tagIcon)" class="event-tag-icon" />
+            <span class="event-title-text">{{ ev.title }}</span>
+          </div>
+          <div class="event-time">
+            <img src="@/assets/icon-clock.svg" class="event-time-icon" />
             {{ formatDate(ev.start) }} / {{ formatTime(ev.start) }}–{{ formatTime(ev.end) }}
           </div>
-          <div v-if="ev.description" class="snooze-event-desc">{{ ev.description }}</div>
+          <div v-if="ev.description" class="event-description">{{ ev.description }}</div>
         </div>
         <button class="remove-btn" @click="removeFromSnooze(ev.id)" title="Удалить">✕</button>
       </div>
@@ -54,8 +58,31 @@ import { ref } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import type { SnoozedEvent } from '@/stores/eventSnooze'
+import { getContrastColors } from '@/utils/color'
 
 dayjs.locale('ru')
+
+const iconModules = import.meta.glob<{ default: string }>('../../assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
+
+const getTagIconPath = (iconName: string): string => {
+  for (const [path, url] of Object.entries(iconModules)) {
+    if (path.includes(`/${iconName}.svg`) || path.includes(`/${iconName}`)) {
+      return (url as unknown as string)
+    }
+  }
+  return ''
+}
+
+const snoozeEventStyle = (ev: SnoozedEvent) => {
+  const bg = ev.color || '#4a5568'
+  const colors = getContrastColors(bg)
+  return {
+    backgroundColor: bg,
+    '--event-text-color': colors.text,
+    '--event-text-muted': colors.textMuted,
+    '--event-icon-filter': colors.iconFilter
+  } as any
+}
 
 defineProps<{
   isOpen: boolean
@@ -227,18 +254,18 @@ const formatTime = (dateStr: string) => {
 
 .snooze-event {
   display: flex;
-  padding: 10px;
+  padding: 8px 10px;
   margin-bottom: 6px;
-  border: 1px solid #33333357;
   border-radius: 8px;
   cursor: grab;
-  transition: background 0.15s, border-color 0.15s;
+  transition: opacity 0.15s;
   position: relative;
+  color: var(--event-text-color, #fff);
+  min-height: 30px;
 }
 
 .snooze-event:hover {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: #444;
+  opacity: 0.9;
 }
 
 .snooze-event:active {
@@ -246,62 +273,85 @@ const formatTime = (dateStr: string) => {
 }
 
 .snooze-event.drag-over {
-  border-color: #4ade80;
-  background: rgba(74, 222, 128, 0.05);
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
 }
 
-.snooze-event-indicator {
-  width: 4px;
-  border-radius: 4px;
-  margin-right: 10px;
+.event-indicator {
+  width: 5px;
+  border-radius: 10px;
+  background: var(--event-text-muted, rgba(255,255,255,0.7));
+  margin: 2px 8px 2px 0;
   flex-shrink: 0;
+  opacity: 0.9;
 }
 
-.snooze-event-content {
+.event-content {
   flex: 1;
   overflow: hidden;
+  min-width: 0;
 }
 
-.snooze-event-title {
-  color: #fff;
+.event-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.event-tag-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  filter: var(--event-icon-filter, none);
+}
+
+.event-title-text {
+  font-size: 15px;
   font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.snooze-event-meta {
-  color: #888;
-  font-size: 11px;
+.event-time {
+  font-size: 12px;
+  color: var(--event-text-muted, rgba(255,255,255,0.7));
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.snooze-event-clock {
-  width: 12px;
-  height: 12px;
-  filter: brightness(0.5);
+.event-time-icon {
+  width: 14px;
+  height: 14px;
+  filter: var(--event-icon-filter, none);
 }
 
-.snooze-event-desc {
-  color: #666;
-  font-size: 11px;
-  margin-top: 4px;
+.event-description {
+  font-size: 12px;
+  color: var(--event-text-muted, rgba(255,255,255,0.7));
+  margin-top: 3px;
   line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .remove-btn {
   background: none;
   border: none;
-  color: #555;
+  color: var(--event-text-muted, rgba(255,255,255,0.5));
   cursor: pointer;
-  padding: 4px;
-  font-size: 12px;
+  padding: 2px 4px;
+  font-size: 14px;
   border-radius: 4px;
   transition: all 0.15s;
   flex-shrink: 0;
   align-self: flex-start;
   opacity: 0;
+  line-height: 1;
 }
 
 .snooze-event:hover .remove-btn {
@@ -309,7 +359,7 @@ const formatTime = (dateStr: string) => {
 }
 
 .remove-btn:hover {
-  background: rgba(255, 60, 60, 0.15);
+  background: rgba(255, 60, 60, 0.2);
   color: #ff4444;
 }
 

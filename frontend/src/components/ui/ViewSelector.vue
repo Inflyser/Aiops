@@ -67,7 +67,7 @@ const indicatorStyle = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30px 0px 0px 0px;
+  padding: 0;
   flex-shrink: 0;
 }
 

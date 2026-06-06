@@ -98,19 +98,19 @@ const clearFilters = () => {
 .filter-panel {
   position: fixed;
   top: 0;
-  right: -320px;
+  left: -320px;
   width: 320px;
   height: 100vh;
   background: #050505;
-  border-left: 1px solid #33333357;
-  transition: right 0.3s ease;
-  z-index: 1000;
+  border-right: 1px solid #33333357;
+  transition: left 0.3s ease;
+  z-index: 999;
   display: flex;
   flex-direction: column;
 }
 
 .filter-panel.open {
-  right: 0;
+  left: 0;
 }
 
 .filter-header {

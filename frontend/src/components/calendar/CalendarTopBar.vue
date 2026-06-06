@@ -8,15 +8,6 @@
     </div>
     <div class="header-controls">
 
-      <!-- Кнопка Tags -->
-      <button
-        class="tags-toggle-btn header-toggle"
-        :class="{ active: showTagsPanel }"
-        @click="$emit('toggle-tags')"
-        title="Теги"
-      >
-        <img src="@/assets/icon-tags.svg" style="width: 20px; height: 20px;"/>
-      </button>
       <!-- Кнопка Inbox -->
       <button
         v-if="currentView === 'week' || currentView === 'day'"
@@ -26,16 +17,6 @@
         title="Открыть Inbox"
       >
         <img src="@/assets/inbox.svg" style="width: 20px; height: 20px;"/>
-      </button>
-      <!-- Кнопка Фильтр -->
-      <button
-        v-if="currentView === 'week' || currentView === 'day'"
-        class="filter-toggle-btn header-toggle"
-        :class="{ active: showFilterPanel }"
-        @click="$emit('toggle-filter')"
-        title="Фильтр событий"
-      >
-        <img src="@/assets/icon/checklist_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg" style="width: 20px; height: 20px;"/>
       </button>
       <!-- Кнопка Перенос событий -->
       <button
@@ -75,18 +56,14 @@ dayjs.locale('ru')
 
 defineProps<{
   currentView: string
-  showTagsPanel: boolean
   showInboxPanel: boolean
   showImportantPanel: boolean
-  showFilterPanel: boolean
   showSnoozePanel: boolean
 }>()
 
 defineEmits<{
-  (e: 'toggle-tags'): void
   (e: 'toggle-inbox'): void
   (e: 'toggle-important'): void
-  (e: 'toggle-filter'): void
   (e: 'toggle-snooze'): void
   (e: 'open-settings'): void
 }>()
@@ -189,23 +166,6 @@ onUnmounted(() => {
   -webkit-backdrop-filter: blur(8px);
 }
 
-.tags-toggle-btn {
-  background: rgba(200, 200, 200, 0.12);
-  color: #ccc;
-  font-size: 11px;
-}
-
-.tags-toggle-btn:hover {
-  background: rgba(200, 200, 200, 0.22);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.tags-toggle-btn.active {
-  background: rgba(200, 200, 200, 0.25);
-  border-color: rgba(200, 200, 200, 0.4);
-  color: #eee;
-}
-
 .inbox-toggle-btn {
   background: rgba(200, 200, 200, 0.12);
   color: #ccc;
@@ -235,23 +195,6 @@ onUnmounted(() => {
 }
 
 .important-toggle-btn.active {
-  background: rgba(200, 200, 200, 0.25);
-  border-color: rgba(200, 200, 200, 0.4);
-  color: #eee;
-}
-
-.filter-toggle-btn {
-  background: rgba(200, 200, 200, 0.12);
-  color: #ccc;
-  font-size: 11px;
-}
-
-.filter-toggle-btn:hover {
-  background: rgba(200, 200, 200, 0.22);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.filter-toggle-btn.active {
   background: rgba(200, 200, 200, 0.25);
   border-color: rgba(200, 200, 200, 0.4);
   color: #eee;

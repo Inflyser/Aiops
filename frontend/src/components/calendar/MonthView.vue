@@ -199,6 +199,7 @@ const formatEventTime = (event: CalendarEvent) => {
 // Drag and drop state
 const draggedEvent = ref<CalendarEvent | null>(null)
 const dragGhost = ref<HTMLElement | null>(null)
+const dragOffsetX = ref(0)
 const dragOffsetY = ref(0)
 const dragOverDay = ref<string | null>(null)
 const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
@@ -222,6 +223,9 @@ const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
   const target = event.target as HTMLElement
   const eventBlock = target.closest('.month-event') as HTMLElement
   if (eventBlock) {
+    const rect = eventBlock.getBoundingClientRect()
+    const offsetX = event.clientX - rect.left
+    const offsetY = event.clientY - rect.top
     const ghost = eventBlock.cloneNode(true) as HTMLElement
     ghost.classList.add('drag-ghost')
     ghost.style.position = 'fixed'
@@ -229,11 +233,10 @@ const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
     ghost.style.zIndex = '9999'
     ghost.style.width = eventBlock.offsetWidth + 'px'
     ghost.style.opacity = '0.85'
-    const halfW = eventBlock.offsetWidth / 2
-    const halfH = eventBlock.offsetHeight / 2
-    ghost.style.left = (event.clientX - halfW) + 'px'
-    ghost.style.top = (event.clientY - halfH) + 'px'
-    dragOffsetY.value = halfH
+    ghost.style.left = (event.clientX - offsetX) + 'px'
+    ghost.style.top = (event.clientY - offsetY) + 'px'
+    dragOffsetX.value = offsetX
+    dragOffsetY.value = offsetY
     document.body.appendChild(ghost)
     dragGhost.value = ghost
   }
@@ -241,10 +244,8 @@ const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
 
 const handleDrag = (event: DragEvent) => {
   if (dragGhost.value) {
-    const halfW = dragGhost.value.offsetWidth / 2
-    const halfH = dragGhost.value.offsetHeight / 2
-    dragGhost.value.style.left = (event.clientX - halfW) + 'px'
-    dragGhost.value.style.top = (event.clientY - halfH) + 'px'
+    dragGhost.value.style.left = (event.clientX - dragOffsetX.value) + 'px'
+    dragGhost.value.style.top = (event.clientY - dragOffsetY.value) + 'px'
   }
 }
 
@@ -252,6 +253,7 @@ const handleDragEnd = () => {
   draggedEvent.value = null
   dragOverDay.value = null
   isAltPressed.value = false
+  dragOffsetX.value = 0
   dragOffsetY.value = 0
   if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
 

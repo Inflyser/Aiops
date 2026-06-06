@@ -1,7 +1,10 @@
 <template>
   <div class="tags-panel" :class="{ 'open': isOpen }">
     <div class="tags-panel-header">
-      <h3 class="tags-title">Теги</h3>
+      <h3 class="tags-title">
+        <svg class="tags-header-icon" xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#ccc"><path d="M200-120v-640q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v640L480-240 200-120Zm80-122 200-86 200 86v-518H280v518Zm0-518h400-400Z"/></svg>
+        Теги
+      </h3>
       <button class="close-btn" @click="$emit('close')">→</button>
     </div>
 
@@ -40,19 +43,97 @@
       <div class="form-row">
         <label class="form-label">Цвет</label>
         <div class="color-picker-wrap">
+          <div class="recent-colors">
+            <button
+              v-for="c in recentColors"
+              :key="c"
+              class="recent-color-swatch"
+              :style="{ backgroundColor: c }"
+              :class="{ active: newTagColor === c }"
+              @click="newTagColor = c"
+              :title="c"
+            ></button>
+          </div>
+          <span class="color-divider"></span>
+          <button
+            class="eyedropper-btn"
+            @click="showFullPicker = !showFullPicker"
+            title="Выбрать цвет"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#aaa"><path d="M440-120q-33 0-56.5-23.5T360-200q0-33 23.5-56.5T440-280h40v-240L200-760q-17-17-17-40t17-40q17-17 40-17t40 17l280 280q11 11 11 28t-11 28q-11 11-28 11t-28-11l-84-84v228h40q33 0 56.5 23.5T600-480v280q0 33-23.5 56.5T520-120H440Zm200-400q-17 0-28.5-11.5T600-560q0-17 11.5-28.5T640-600h40v-128l-32-32-32 32q-12 12-28.5 12T559-728q-12-12-12-28.5t12-28.5l72-72q12-12 28.5-12t28.5 12q12 12 12 28.5T688-800l-8 8v152h40q17 0 28.5 11.5T760-600q0 17-11.5 28.5T720-560h-80Z"/></svg>
+          </button>
           <input
+            v-if="showFullPicker"
             v-model="newTagColor"
             type="color"
             class="color-input"
             title="Выберите цвет"
+            @input="onColorPicked"
           />
-          <span class="color-hex">{{ newTagColor }}</span>
+        </div>
+
+      </div>
+
+      <div class="form-row">
+        <label class="form-label" @click="showPalettes = !showPalettes">
+          Палитры
+          <svg class="icon-arrow" :class="{ open: showPalettes }" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+        </label>
+        <div class="palette-toggle-row">
+          <button
+            type="button"
+            class="palette-toggle-btn"
+            @click="showPalettes = !showPalettes"
+            :title="showPalettes ? 'Свернуть' : 'Выбрать палитру'"
+          >
+            <span
+              v-for="c in currentPalette.colors"
+              :key="c"
+              class="palette-swatch"
+              :style="{ backgroundColor: c }"
+            ></span>
+            <svg class="toggle-arrow" :class="{ open: showPalettes }" xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+          </button>
+          <span class="palette-label">{{ currentPalette.label }}</span>
+        </div>
+        <div v-if="showPalettes" class="color-palettes">
+          <button
+            v-for="palette in colorPalettes"
+            :key="palette.label"
+            class="palette-btn"
+            :class="{ active: palette.colors[0] === newTagColor }"
+            @click="selectPalette(palette)"
+            :title="palette.label"
+          >
+            <span
+              v-for="c in palette.colors"
+              :key="c"
+              class="palette-swatch"
+              :style="{ backgroundColor: c }"
+            ></span>
+          </button>
         </div>
       </div>
 
       <div class="form-row">
-        <label class="form-label">Иконка</label>
-        <div class="icon-selector">
+        <label class="form-label" @click="showIcons = !showIcons">
+          Иконка
+          <svg class="icon-arrow" :class="{ open: showIcons }" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+        </label>
+        <div class="icon-toggle-row">
+          <button
+            type="button"
+            class="icon-toggle-btn"
+            @click="showIcons = !showIcons"
+            :title="showIcons ? 'Свернуть' : 'Выбрать иконку'"
+          >
+            <img v-if="newTagIcon" :src="getIconPath(newTagIcon)" class="icon-preview" />
+            <span v-else class="icon-preview none">—</span>
+            <svg class="toggle-arrow" :class="{ open: showIcons }" xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+          </button>
+          <span class="icon-filename">{{ newTagIcon || 'без иконки' }}</span>
+        </div>
+        <div v-if="showIcons" class="icon-selector">
           <button
             type="button"
             class="icon-btn"
@@ -89,6 +170,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+const RECENT_COLORS_KEY = 'tagRecentColors'
+const MAX_RECENT = 3
+
 interface Tag {
   id: string
   name: string
@@ -110,6 +194,57 @@ const emit = defineEmits<{
 const newTagName = ref('')
 const newTagColor = ref('#3B82F6')
 const newTagIcon = ref<string | undefined>(undefined)
+const showFullPicker = ref(false)
+const showIcons = ref(false)
+const showPalettes = ref(false)
+
+const recentColors = ref<string[]>(loadRecentColors())
+
+interface Palette {
+  label: string
+  colors: string[]
+}
+
+const currentPalette = computed<Palette>(() => {
+  const found = colorPalettes.find(p => p.colors[0] === newTagColor.value)
+  return found || colorPalettes[0]
+})
+
+const colorPalettes: Palette[] = [
+  { label: 'Океан', colors: ['#0EA5E9', '#06B6D4', '#14B8A6'] },
+  { label: 'Закат', colors: ['#F97316', '#EC4899', '#8B5CF6'] },
+  { label: 'Лес', colors: ['#10B981', '#22C55E', '#84CC16'] },
+  { label: 'Ночь', colors: ['#3B82F6', '#6366F1', '#8B5CF6'] },
+  { label: 'Тёплый', colors: ['#F59E0B', '#F97316', '#EF4444'] },
+  { label: 'Мятный', colors: ['#06B6D4', '#3B82F6', '#6366F1'] },
+  { label: 'Пастель', colors: ['#A78BFA', '#F472B6', '#FB923C'] },
+  { label: 'Природа', colors: ['#22C55E', '#14B8A6', '#0EA5E9'] },
+]
+
+function selectPalette(palette: Palette) {
+  newTagColor.value = palette.colors[0]
+  saveRecentColor(newTagColor.value)
+}
+
+function loadRecentColors(): string[] {
+  try {
+    const saved = localStorage.getItem(RECENT_COLORS_KEY)
+    return saved ? JSON.parse(saved) : ['#3B82F6', '#EF4444', '#10B981']
+  } catch {
+    return ['#3B82F6', '#EF4444', '#10B981']
+  }
+}
+
+function saveRecentColor(color: string) {
+  const list = recentColors.value.filter(c => c !== color)
+  list.unshift(color)
+  recentColors.value = list.slice(0, MAX_RECENT)
+  localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(recentColors.value))
+}
+
+function onColorPicked() {
+  saveRecentColor(newTagColor.value)
+}
 
 const iconModules = import.meta.glob<{ default: string }>('../../assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
 
@@ -126,6 +261,7 @@ const selectIcon = (iconName: string | undefined) => {
 
 const handleAddTag = () => {
   if (newTagName.value.trim()) {
+    saveRecentColor(newTagColor.value)
     emit('add-tag', {
       name: newTagName.value.trim(),
       color: newTagColor.value,
@@ -134,6 +270,7 @@ const handleAddTag = () => {
     newTagName.value = ''
     newTagColor.value = '#3B82F6'
     newTagIcon.value = undefined
+    showFullPicker.value = false
   }
 }
 
@@ -176,7 +313,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .tags-panel-header {
-  padding: 20px;
+  padding: 14px 16px;
   border-bottom: 1px solid #33333357;
   display: flex;
   justify-content: space-between;
@@ -186,19 +323,26 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 .tags-title {
   margin: 0;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tags-header-icon {
+  flex-shrink: 0;
 }
 
 .close-btn {
   background: none;
   border: none;
   color: #888;
-  font-size: 19px;
+  font-size: 16px;
   cursor: pointer;
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,7 +356,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .tags-list {
-  flex: 1;
+  max-height: 50vh;
   overflow-y: auto;
   padding: 10px;
 }
@@ -286,8 +430,8 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 .add-tag-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px 20px;
+  gap: 10px;
+  padding: 12px 16px 14px;
   border-top: 1px solid #33333357;
 }
 
@@ -295,8 +439,8 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   width: 100%;
   background: #0d0d0d;
   border: 1px solid #33333357;
-  border-radius: 6px;
-  padding: 10px 12px;
+  border-radius: 5px;
+  padding: 7px 10px;
   color: #fff;
   font-size: 11px;
   box-sizing: border-box;
@@ -315,27 +459,88 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 .form-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .form-label {
-  font-size: 10px;
+  font-size: 9px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon-arrow {
+  transition: transform 0.2s;
+}
+
+.icon-arrow.open {
+  transform: rotate(180deg);
 }
 
 .color-picker-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.recent-colors {
+  display: flex;
+  gap: 4px;
+}
+
+.recent-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s;
+}
+
+.recent-color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.recent-color-swatch.active {
+  border-color: #fff;
+}
+
+.color-divider {
+  width: 1px;
+  height: 18px;
+  background: #444;
+  flex-shrink: 0;
+}
+
+.eyedropper-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #33333357;
+  border-radius: 5px;
+  background: #0d0d0d;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.15s;
+}
+
+.eyedropper-btn:hover {
+  background: #1a1a1a;
+  border-color: #555;
 }
 
 .color-input {
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 32px;
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
   background: none;
   padding: 0;
@@ -347,22 +552,133 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 
 .color-input::-webkit-color-swatch {
   border: 1px solid #333;
-  border-radius: 6px;
+  border-radius: 5px;
 }
 
-.color-hex {
+.palette-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.palette-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #33333357;
+  border-radius: 5px;
+  background: #0d0d0d;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.palette-toggle-btn:hover {
+  background: #151515;
+  border-color: #555;
+}
+
+.palette-label {
   font-size: 10px;
   color: #888;
-  font-family: monospace;
+}
+
+.color-palettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px;
+}
+
+.palette-btn {
+  display: flex;
+  gap: 3px;
+  padding: 6px;
+  border: 1.5px solid #33333357;
+  border-radius: 6px;
+  background: #0d0d0d;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.palette-btn:hover {
+  background: #151515;
+  border-color: #666;
+}
+
+.palette-btn.active {
+  border-color: #3B82F6;
+  background: #3B82F610;
+}
+
+.palette-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.icon-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #33333357;
+  border-radius: 5px;
+  background: #0d0d0d;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.icon-toggle-btn:hover {
+  background: #151515;
+  border-color: #555;
+}
+
+.icon-preview {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.icon-preview.none {
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  color: #888;
+}
+
+.toggle-arrow {
+  transition: transform 0.2s;
+}
+
+.toggle-arrow.open {
+  transform: rotate(180deg);
+}
+
+.icon-filename {
+  font-size: 10px;
+  color: #888;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .icon-selector {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   max-height: 120px;
   overflow-y: auto;
   padding: 4px;
+  margin-top: 4px;
 }
 
 .icon-selector::-webkit-scrollbar {
@@ -384,16 +700,16 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 1px solid #33333357;
-  border-radius: 6px;
+  border-radius: 4px;
   background: #0d0d0d;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: 5px;
   transition: all 0.2s;
 }
 
@@ -414,10 +730,10 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 
 .add-tag-btn {
   width: 100%;
-  padding: 12px;
+  padding: 8px;
   background: #3B82F6;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #fff;
   font-size: 11px;
   font-weight: 600;

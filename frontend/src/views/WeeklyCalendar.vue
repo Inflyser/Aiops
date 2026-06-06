@@ -9,15 +9,11 @@
     <!-- Top Bar -->
     <CalendarTopBar
       :current-view="currentView"
-      :show-tags-panel="showTagsPanel"
       :show-inbox-panel="showInboxPanel"
       :show-important-panel="showImportantPanel"
-      :show-filter-panel="showFilterPanel"
       :show-snooze-panel="showSnoozePanel"
-      @toggle-tags="showTagsPanel = !showTagsPanel"
       @toggle-inbox="showInboxPanel = !showInboxPanel"
       @toggle-important="showImportantPanel = !showImportantPanel"
-      @toggle-filter="showFilterPanel = !showFilterPanel"
       @toggle-snooze="showSnoozePanel = !showSnoozePanel"
       @open-settings="showSettings = true"
     />
@@ -39,11 +35,31 @@
       @open-event="openImportantEvent"
     />
 
-    <!-- View Selector -->
-    <ViewSelector 
-      :current-view="currentView"
-      @update:model-value="currentView = $event"
-    />
+    <!-- Left Controls: Tags + Filter + View Selector -->
+    <div class="left-controls-row">
+      <div class="left-toggle-buttons">
+        <button
+          class="left-toggle-btn"
+          :class="{ active: showTagsPanel }"
+          @click="showTagsPanel = !showTagsPanel"
+          title="Теги"
+        >
+          <img src="@/assets/icon-tags.svg" width="18" height="18" />
+        </button>
+        <button
+          class="left-toggle-btn"
+          :class="{ active: showFilterPanel }"
+          @click="showFilterPanel = !showFilterPanel"
+          title="Фильтр"
+        >
+          <img src="@/assets/icon/checklist_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg" width="18" height="18" />
+        </button>
+      </div>
+      <ViewSelector 
+        :current-view="currentView"
+        @update:model-value="currentView = $event"
+      />
+    </div>
       
     <!-- Week View -->
     <Transition name="slide-fade" mode="out-in">
@@ -198,6 +214,18 @@
       @background-changed="handleBackgroundChanged"
       @background-removed="handleBackgroundRemoved"
     />
+
+    <!-- Trash Drop Zone -->
+    <div
+      class="trash-zone"
+      :class="{ visible: isDragging, 'drag-over': isOverTrash }"
+      @dragover.prevent="onTrashDragOver"
+      @dragleave="onTrashDragLeave"
+      @drop.prevent="onTrashDrop"
+    >
+      <svg class="trash-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
+      <span class="trash-label">Удалить</span>
+    </div>
   </div>
 </template>
 
@@ -319,6 +347,58 @@ const filterShowImportant = ref(false)
 // Snooze panel state
 const showSnoozePanel = ref(false)
 const snoozeStore = useEventSnoozeStore()
+
+// Trash drop zone state
+const isDragging = ref(false)
+const isOverTrash = ref(false)
+let dragCounter = 0
+
+const onGlobalDragEnter = () => {
+  dragCounter++
+  isDragging.value = true
+}
+
+const onGlobalDragEnd = () => {
+  dragCounter = 0
+  isDragging.value = false
+  isOverTrash.value = false
+}
+
+const onTrashDragOver = (e: DragEvent) => {
+  e.dataTransfer!.dropEffect = 'move'
+  isOverTrash.value = true
+}
+
+const onTrashDragLeave = () => {
+  isOverTrash.value = false
+}
+
+const onTrashDrop = async (e: DragEvent) => {
+  isOverTrash.value = false
+  isDragging.value = false
+  dragCounter = 0
+
+  try {
+    const data = JSON.parse(e.dataTransfer?.getData('text/plain') || '{}')
+    if (data.id && data.title && !data._tag && data.type !== 'category' && !data._snoozed) {
+      if (!confirm(`Удалить событие "${data.title}"?`)) return
+      await calendarStore.deleteEvent(data.id)
+      loadEvents()
+    }
+  } catch {
+    // ignore
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('dragenter', onGlobalDragEnter)
+  document.addEventListener('dragend', onGlobalDragEnd)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('dragenter', onGlobalDragEnter)
+  document.removeEventListener('dragend', onGlobalDragEnd)
+})
 
 // Акцентный режим событий: true = нейтральный фон + цветная полоска/иконка
 const eventAccentMode = ref(false)
@@ -1249,8 +1329,48 @@ onUnmounted(() => {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  transition: padding-right 0.3s ease, background-color 0.3s;
-  padding-right: 0;
+  transition: padding-left 0.3s ease, padding-right 0.3s ease, background-color 0.3s;
+}
+
+.left-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0 0;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.left-toggle-buttons {
+  position: absolute;
+  left: 12px;
+  display: flex;
+  gap: 6px;
+}
+
+.left-toggle-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  background: rgba(200, 200, 200, 0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+  flex-shrink: 0;
+}
+
+.left-toggle-btn:hover {
+  background: rgba(200, 200, 200, 0.22);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.left-toggle-btn.active {
+  background: rgba(200, 200, 200, 0.25);
+  border-color: rgba(200, 200, 200, 0.4);
 }
 
 .weekly-calendar.with-background {
@@ -1266,7 +1386,7 @@ onUnmounted(() => {
 }
 
 .weekly-calendar.filter-open {
-  padding-right: 320px;
+  padding-left: 320px;
 }
 
 .weekly-calendar.snooze-open {
@@ -1362,6 +1482,47 @@ onUnmounted(() => {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateX(-40px) scale(0.95);
+}
+
+/* Trash Drop Zone */
+.trash-zone {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(30, 30, 30, 0.9);
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #888;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 10000;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, border-color 0.2s, color 0.2s;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+.trash-zone.visible {
+  transform: translateX(-50%) translateY(-20px);
+  pointer-events: auto;
+}
+
+.trash-zone.drag-over {
+  background: rgba(220, 50, 50, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.trash-icon {
+  flex-shrink: 0;
+}
+
+.trash-label {
+  white-space: nowrap;
 }
 
 </style>
