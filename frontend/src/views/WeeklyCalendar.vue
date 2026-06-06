@@ -82,7 +82,7 @@
           :compact-mode="compactMode"
           :event-accent-mode="eventAccentMode"
           :inbox-panel-open="showInboxPanel"
-          :hour-height="hourHeight"
+          :hour-height="weekHourHeight"
           @day-click="handleWeekDayClick"
           @open-event="openEventModal"
           @open-event-tasks="openEventTasksModal"
@@ -124,7 +124,7 @@
           :events="dayEvents"
           :compact-mode="compactMode"
           :event-accent-mode="eventAccentMode"
-          :hour-height="hourHeight"
+          :hour-height="dayHourHeight"
           @prev-day="prevDay"
           @next-day="nextDay"
           @go-today="goToToday"
@@ -290,11 +290,20 @@ const selectedEventForTasks = ref<any>(null)
 // Zoom state
 const MIN_HOUR_HEIGHT = 60
 const MAX_HOUR_HEIGHT = 300
-const savedZoom = localStorage.getItem('calendarHourHeight')
-const hourHeight = ref(savedZoom ? parseInt(savedZoom) : 120)
+
+const savedWeekZoom = localStorage.getItem('calendarWeekHourHeight')
+const weekHourHeight = ref(savedWeekZoom ? parseInt(savedWeekZoom) : 120)
+
+const savedDayZoom = localStorage.getItem('calendarDayHourHeight')
+const dayHourHeight = ref(savedDayZoom ? parseInt(savedDayZoom) : 120)
+
 let isZooming = false
 let zoomStartY = 0
 let zoomStartHeight = 0
+
+const hourHeight = computed(() => {
+  return currentView.value === 'day' ? dayHourHeight.value : weekHourHeight.value
+})
 
 const startZoom = (e: MouseEvent) => {
   e.preventDefault()
@@ -305,12 +314,18 @@ const startZoom = (e: MouseEvent) => {
   const onMove = (me: MouseEvent) => {
     if (!isZooming) return
     const deltaY = me.clientY - zoomStartY
-    hourHeight.value = Math.max(MIN_HOUR_HEIGHT, Math.min(MAX_HOUR_HEIGHT, zoomStartHeight + deltaY))
+    const newVal = Math.max(MIN_HOUR_HEIGHT, Math.min(MAX_HOUR_HEIGHT, zoomStartHeight + deltaY))
+    if (currentView.value === 'day') {
+      dayHourHeight.value = newVal
+    } else {
+      weekHourHeight.value = newVal
+    }
   }
 
   const onUp = () => {
     isZooming = false
-    localStorage.setItem('calendarHourHeight', String(hourHeight.value))
+    localStorage.setItem('calendarWeekHourHeight', String(weekHourHeight.value))
+    localStorage.setItem('calendarDayHourHeight', String(dayHourHeight.value))
     document.removeEventListener('mousemove', onMove)
     document.removeEventListener('mouseup', onUp)
     document.body.style.cursor = ''
