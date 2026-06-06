@@ -145,21 +145,25 @@
                   <span @dblclick.stop="startEditDesc(event)">{{ event.description }}</span>
                 </template>
               </div>
-              <div v-if="(event.eventTasks?.length ?? 0) > 0 || (hoveredEventId === event.id && canShowAddTask(event, day.date))">
-                <div v-if="(event.eventTasks?.length ?? 0) > 0 && !canShowTasksInline(event, day.date)" class="event-tasks-indicator" @click.stop="$emit('open-event-tasks', event)">
+              <template v-for="ti in [getVisibleTaskInfo(event, day.date)]" :key="'ti'">
+              <div v-if="ti.visible > 0 || (event.eventTasks?.length ?? 0) > 0 || (hoveredEventId === event.id && canShowAddTask(event, day.date))">
+                <div v-if="ti.visible === 0 && (event.eventTasks?.length ?? 0) > 0" class="event-tasks-indicator" @click.stop="$emit('open-event-tasks', event)">
                   <span class="tasks-icon">•</span>
                   <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.eventTasks?.length ?? 0 }} {{ getTaskWord(event.eventTasks?.length ?? 0) }}</span>
                 </div>
-                <template v-if="canShowTasksInline(event, day.date)">
+                <template v-if="ti.visible > 0">
                   <div class="event-tasks-inline">
-                    <div v-for="t in event.eventTasks" :key="t.id" class="event-task-item">
+                    <div v-for="t in (event.eventTasks ?? []).slice(0, ti.visible)" :key="t.id" class="event-task-item">
                       <span class="event-task-checkbox" :class="{ checked: t.completed }" @click.stop="toggleTaskInline(t, event)">
                         <span v-if="t.completed">✓</span>
                       </span>
                       <span class="event-task-title" :class="{ done: t.completed }">{{ t.title }}</span>
                     </div>
                   </div>
-                  <div v-if="canShowProgressBar(event, day.date)" class="event-tasks-progress">
+                  <div v-if="ti.remaining > 0" class="event-tasks-more" @click.stop="$emit('open-event-tasks', event)">
+                    +{{ ti.remaining }}
+                  </div>
+                  <div v-if="ti.remaining === 0 && canShowProgressBar(event, day.date)" class="event-tasks-progress">
                     <div class="event-progress-bar-bg">
                       <div class="event-progress-bar-fill" :style="{ width: getProgressPercent(event) + '%' }"></div>
                     </div>
@@ -177,6 +181,7 @@
                   />
                 </div>
               </div>
+              </template>
             </div>
             <button 
               class="event-star-btn"
@@ -696,16 +701,24 @@ const DESC_H = 20
 const TASK_H = 22
 const TASK_GAP = 2
 
-const canShowTasksInline = (event: CalendarEvent, dayDate: string): boolean => {
-  const tasks = event.eventTasks
-  if (!tasks || tasks.length === 0) return false
+const PROGRESS_BAR_H = 14
+const ADD_TASK_H = 28
+const MORE_H = 22
 
-  const start = dayjs(event.start)
-  const end = dayjs(event.end)
+const getCurrentEventTimes = (event: CalendarEvent) => {
+  const start = isResizing(event.id) && resizeNewStart.value ? resizeNewStart.value : dayjs(event.start)
+  const end = isResizing(event.id) && resizeNewEnd.value ? resizeNewEnd.value : dayjs(event.end)
+  return { start, end }
+}
+
+const getVisibleTaskInfo = (event: CalendarEvent, dayDate: string) => {
+  const tasks = event.eventTasks
+  if (!tasks || tasks.length === 0) return { visible: 0, remaining: 0, eventHeight: 0 }
+
+  const { start, end } = getCurrentEventTimes(event)
   const dayStart = dayjs(dayDate).startOf('day')
   let startMinutes = start.diff(dayStart, 'minute')
   const duration = end.diff(start, 'minute')
-
   if (props.compactMode && startMinutes < 7 * 60) startMinutes = 7 * 60
   const eventHeight = Math.max((duration / 60) * props.hourHeight, 30)
 
@@ -713,46 +726,37 @@ const canShowTasksInline = (event: CalendarEvent, dayDate: string): boolean => {
   if (event.description) usedHeight += DESC_H
 
   const available = eventHeight - usedHeight
-  const needed = tasks.length * (TASK_H + TASK_GAP) - TASK_GAP
+  const taskHeight = TASK_H + TASK_GAP
+  const availableForTasks = available - MORE_H
+  const visible = Math.max(0, Math.floor(availableForTasks / taskHeight))
+  const remaining = Math.max(0, tasks.length - visible)
 
-  return needed <= available
-}
-
-const PROGRESS_BAR_H = 14
-const ADD_TASK_H = 28
-
-const getTasksHeight = (event: CalendarEvent): number => {
-  if (!event.eventTasks || event.eventTasks.length === 0) return 0
-  return event.eventTasks.length * (TASK_H + TASK_GAP) - TASK_GAP
-}
-
-const getAvailableAfterTasks = (event: CalendarEvent, dayDate: string): number => {
-  const start = dayjs(event.start)
-  const end = dayjs(event.end)
-  const dayStart = dayjs(dayDate).startOf('day')
-  let startMinutes = start.diff(dayStart, 'minute')
-  const duration = end.diff(start, 'minute')
-  if (props.compactMode && startMinutes < 7 * 60) startMinutes = 7 * 60
-  const eventHeight = Math.max((duration / 60) * props.hourHeight, 30)
-
-  let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
-  if (event.description) usedHeight += DESC_H
-  usedHeight += getTasksHeight(event)
-
-  return eventHeight - usedHeight
+  return { visible, remaining, eventHeight }
 }
 
 const canShowProgressBar = (event: CalendarEvent, dayDate: string): boolean => {
-  if (!event.eventTasks || event.eventTasks.length === 0) return false
-  return getAvailableAfterTasks(event, dayDate) >= PROGRESS_BAR_H
+  const info = getVisibleTaskInfo(event, dayDate)
+  if (info.remaining > 0 || !event.eventTasks?.length) return false
+  const taskHeight = TASK_H + TASK_GAP
+  const allTasksHeight = event.eventTasks.length * taskHeight - TASK_GAP
+  let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
+  if (event.description) usedHeight += DESC_H
+  usedHeight += allTasksHeight + MORE_H
+  return info.eventHeight - usedHeight >= PROGRESS_BAR_H
 }
 
 const canShowAddTask = (event: CalendarEvent, dayDate: string): boolean => {
-  const available = getAvailableAfterTasks(event, dayDate)
-  if (event.eventTasks && event.eventTasks.length > 0) {
-    return available >= PROGRESS_BAR_H + ADD_TASK_H
+  const info = getVisibleTaskInfo(event, dayDate)
+  const taskHeight = TASK_H + TASK_GAP
+  const visibleTasksHeight = info.visible * taskHeight
+  let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
+  if (event.description) usedHeight += DESC_H
+  usedHeight += visibleTasksHeight + MORE_H
+  const remaining = info.eventHeight - usedHeight
+  if (info.visible > 0 && info.remaining === 0) {
+    return remaining >= PROGRESS_BAR_H + ADD_TASK_H
   }
-  return available >= ADD_TASK_H
+  return remaining >= ADD_TASK_H
 }
 
 const getProgressPercent = (event: CalendarEvent): number => {
@@ -1447,6 +1451,24 @@ const submitCreate = () => {
   background: #4ade80;
   border-radius: 2px;
   transition: width 0.3s ease;
+}
+
+.event-tasks-more {
+  margin-top: 3px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.7));
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: auto;
+  text-align: center;
+  transition: background 0.2s;
+}
+
+.event-tasks-more:hover {
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .event-add-task {
