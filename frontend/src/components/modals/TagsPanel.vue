@@ -103,14 +103,16 @@
             class="palette-btn"
             :class="{ active: palette.colors[0] === newTagColor }"
             @click="selectPalette(palette)"
-            :title="palette.label"
           >
-            <span
-              v-for="c in palette.colors"
-              :key="c"
-              class="palette-swatch"
-              :style="{ backgroundColor: c }"
-            ></span>
+            <span class="palette-card-label">{{ palette.label }}</span>
+            <span class="palette-card-colors">
+              <span
+                v-for="c in palette.colors"
+                :key="c"
+                class="palette-swatch"
+                :style="{ backgroundColor: c }"
+              ></span>
+            </span>
           </button>
         </div>
       </div>
@@ -211,14 +213,12 @@ const currentPalette = computed<Palette>(() => {
 })
 
 const colorPalettes: Palette[] = [
-  { label: 'Океан', colors: ['#0EA5E9', '#06B6D4', '#14B8A6'] },
-  { label: 'Закат', colors: ['#F97316', '#EC4899', '#8B5CF6'] },
-  { label: 'Лес', colors: ['#10B981', '#22C55E', '#84CC16'] },
-  { label: 'Ночь', colors: ['#3B82F6', '#6366F1', '#8B5CF6'] },
-  { label: 'Тёплый', colors: ['#F59E0B', '#F97316', '#EF4444'] },
-  { label: 'Мятный', colors: ['#06B6D4', '#3B82F6', '#6366F1'] },
-  { label: 'Пастель', colors: ['#A78BFA', '#F472B6', '#FB923C'] },
-  { label: 'Природа', colors: ['#22C55E', '#14B8A6', '#0EA5E9'] },
+  { label: 'Matcha Fog', colors: ['#A3C48D', '#5D7F4C', '#E6F4D9'] },
+  { label: 'Slate Mono', colors: ['#4C5564', '#111828', '#E6E7EB'] },
+  { label: 'Icy Indigo', colors: ['#5B8DFD', '#294A8D', '#DDE7FF'] },
+  { label: 'Warm Sandstone', colors: ['#F4A072', '#BF5B3A', '#FFE5DA'] },
+  { label: 'Rose Dust', colors: ['#E8A0BF', '#BF5A7D', '#FDE8F0'] },
+  { label: 'Deep Teal', colors: ['#2DD4BF', '#0F766E', '#CCFBF1'] },
 ]
 
 function selectPalette(palette: Palette) {
@@ -584,19 +584,20 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .color-palettes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
   margin-top: 6px;
   padding: 4px;
 }
 
 .palette-btn {
   display: flex;
-  gap: 3px;
-  padding: 6px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
   border: 1.5px solid #33333357;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #0d0d0d;
   cursor: pointer;
   transition: all 0.15s;
@@ -612,9 +613,24 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   background: #3B82F610;
 }
 
+.palette-card-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #ccc;
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0.3px;
+}
+
+.palette-card-colors {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
 .palette-swatch {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
 }
 

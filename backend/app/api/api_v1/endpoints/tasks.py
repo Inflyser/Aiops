@@ -16,7 +16,7 @@ router = APIRouter()
 def read_tasks(
     db: Session = Depends(get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 10000,
     completed: Optional[bool] = None,
     project_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
