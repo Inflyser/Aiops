@@ -651,8 +651,9 @@ const handleTaskDragOver = (event: DragEvent) => {
 
 const handleTaskDrop = (event: DragEvent, _day: WeekDay) => {
   event.preventDefault()
+  if (draggedEvent.value) return
   event.stopPropagation()
-  
+
   try {
     const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
     
