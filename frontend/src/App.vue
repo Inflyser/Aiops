@@ -8,7 +8,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, provide } from 'vue'
+import { ref, computed, onMounted, watch, provide } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const LAST_ROUTE_KEY = 'app-last-route'
 
 const backgroundImage = ref<string | null>(null)
 const backgroundOpacity = ref(0.5)
@@ -39,6 +44,15 @@ onMounted(() => {
     backgroundImage.value = url
     backgroundOpacity.value = opacity
   }
+
+  const lastRoute = localStorage.getItem(LAST_ROUTE_KEY)
+  if (lastRoute && lastRoute !== router.currentRoute.value.path) {
+    router.push(lastRoute)
+  }
+})
+
+watch(() => router.currentRoute.value.path, (path) => {
+  localStorage.setItem(LAST_ROUTE_KEY, path)
 })
 
 provide('backgroundUrl', backgroundImage)

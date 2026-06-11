@@ -146,7 +146,7 @@
                 </template>
               </div>
               <template v-for="ti in [getVisibleTaskInfo(event, day.date)]" :key="'ti'">
-              <div v-if="ti.visible > 0 || (event.eventTasks?.length ?? 0) > 0 || (hoveredEventId === event.id && canShowAddTask(event, day.date))">
+              <div v-if="(ti.visible > 0 || (event.eventTasks?.length ?? 0) > 0 || (hoveredEventId === event.id && canShowAddTask(event, day.date))) && quickAddEventId !== event.id">
                 <div v-if="ti.visible === 0 && (event.eventTasks?.length ?? 0) > 0" class="event-tasks-indicator" @click.stop="$emit('open-event-tasks', event)">
                   <span class="tasks-icon">•</span>
                   <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.eventTasks?.length ?? 0 }} {{ getTaskWord(event.eventTasks?.length ?? 0) }}</span>
@@ -181,6 +181,16 @@
                   />
                 </div>
               </div>
+              <div v-if="quickAddEventId === event.id" class="event-quick-add" @click.stop>
+                <input
+                  v-model="quickAddTitle"
+                  class="event-quick-add-input"
+                  placeholder="+ задача"
+                  @keydown.enter="submitQuickAdd(event)"
+                  @keydown.escape="cancelQuickAdd"
+                  @blur="cancelQuickAdd"
+                />
+              </div>
               </template>
             </div>
             <button 
@@ -198,6 +208,11 @@
             >
               <img src="@/assets/three-point.svg" alt="menu" />
             </button>
+            <button
+              class="event-quick-add-btn"
+              @click.stop="toggleQuickAdd(event)"
+              title="Добавить задачу"
+            >+</button>
             <div
               class="event-resize-handle event-resize-handle--bottom"
               @mousedown.stop.prevent="startResize($event, event, 'bottom')"
@@ -321,6 +336,10 @@ const resizeEvent = ref<CalendarEvent | null>(null)
 const hoveredEventId = ref<string | number | null>(null)
 const addTaskTitle = ref('')
 const activeAddTaskEventId = ref<string | number | null>(null)
+
+// Quick add state
+const quickAddEventId = ref<string | number | null>(null)
+const quickAddTitle = ref('')
 
 const isResizing = (eventId: string | number) => resizingEventId.value === eventId
 
@@ -736,7 +755,7 @@ const getVisibleTaskInfo = (event: CalendarEvent, dayDate: string) => {
 
 const canShowProgressBar = (event: CalendarEvent, dayDate: string): boolean => {
   const info = getVisibleTaskInfo(event, dayDate)
-  if (info.remaining > 0 || !event.eventTasks?.length) return false
+  if (info.remaining > 0 || !event.eventTasks?.length || event.eventTasks.length < 5) return false
   const taskHeight = TASK_H + TASK_GAP
   const allTasksHeight = event.eventTasks.length * taskHeight - TASK_GAP
   let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
@@ -781,6 +800,32 @@ const handleAddTaskBlur = () => {
   if (!addTaskTitle.value.trim()) {
     activeAddTaskEventId.value = null
   }
+}
+
+const toggleQuickAdd = (event: CalendarEvent) => {
+  if (quickAddEventId.value === event.id) {
+    cancelQuickAdd()
+  } else {
+    quickAddEventId.value = event.id
+    quickAddTitle.value = ''
+    nextTick(() => {
+      const el = document.querySelector('.event-quick-add-input') as HTMLInputElement
+      el?.focus()
+    })
+  }
+}
+
+const submitQuickAdd = (event: CalendarEvent) => {
+  const title = quickAddTitle.value.trim()
+  if (!title) return
+  emit('add-task-to-event', { event, title })
+  quickAddEventId.value = null
+  quickAddTitle.value = ''
+}
+
+const cancelQuickAdd = () => {
+  quickAddEventId.value = null
+  quickAddTitle.value = ''
 }
 
 const toggleTaskInline = async (task: EventTask, calendarEvent: CalendarEvent) => {
@@ -1571,6 +1616,62 @@ const submitCreate = () => {
   display: block;
   width: 20px;
   height: auto;
+}
+
+/* Event Quick Add Button */
+.event-quick-add-btn {
+  position: absolute;
+  top: 4px;
+  right: 28px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #888;
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity 0.2s, transform 0.2s, color 0.2s;
+  z-index: 15;
+  line-height: 1;
+}
+
+.event-block:hover .event-quick-add-btn {
+  opacity: 1;
+}
+
+.event-quick-add-btn:hover {
+  opacity: 0.8 !important;
+  transform: scale(1.3);
+  color: #4ade80;
+}
+
+/* Event Quick Add Input */
+.event-quick-add {
+  margin-top: 3px;
+  pointer-events: auto;
+}
+
+.event-quick-add-input {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: 12px;
+  color: var(--event-text-color, #ffffff);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.event-quick-add-input::placeholder {
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.event-quick-add-input:focus {
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 /* Current Time Line */
