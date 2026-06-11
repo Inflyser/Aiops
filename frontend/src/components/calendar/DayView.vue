@@ -282,7 +282,8 @@ interface CalendarEvent {
 const props = defineProps<{
   currentDay: dayjs.Dayjs
   events: CalendarEvent[]
-  compactMode: boolean
+  dayStartHour: number
+  dayEndHour: number
   eventAccentMode: boolean
   hourHeight: number
 }>()
@@ -445,14 +446,11 @@ const currentTime = ref(dayjs())
 let timeInterval: ReturnType<typeof setInterval> | null = null
 
 const hours = computed(() => {
-  if (props.compactMode) {
-    return Array.from({ length: 17 }, (_, i) => i + 7) // 7:00 to 23:00
-  }
-  return Array.from({ length: 24 }, (_, i) => i) // 0:00 to 23:00
+  return Array.from({ length: props.dayEndHour - props.dayStartHour }, (_, i) => i + props.dayStartHour)
 })
 
 const calendarHeight = computed(() => {
-  const totalHours = props.compactMode ? 17 : 24
+  const totalHours = props.dayEndHour - props.dayStartHour
   return totalHours * props.hourHeight
 })
 
@@ -628,7 +626,7 @@ const handleGridDrop = (event: DragEvent) => {
   const slotIndex = Math.floor(dropY / props.hourHeight)
   const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
   const minutes = Math.round(rawMinutes / 10) * 10
-  const hour = props.compactMode ? slotIndex + 7 : slotIndex
+  const hour = slotIndex + props.dayStartHour
   const dropTime = props.currentDay.hour(hour).minute(minutes)
 
   if (draggedEvent.value) {
@@ -754,7 +752,7 @@ const startSelection = (event: MouseEvent) => {
 const getTimeFromPixel = (pixelY: number): { hour: number; minute: number } => {
   const slotIndex = Math.floor(pixelY / props.hourHeight)
   const offsetMin = Math.round(((pixelY % props.hourHeight) / props.hourHeight) * 60 / 10) * 10
-  const hour = props.compactMode ? slotIndex + 7 : slotIndex
+  const hour = slotIndex + props.dayStartHour
   return { hour, minute: offsetMin }
 }
 
@@ -954,8 +952,7 @@ const currentTimeLineStyle = computed(() => {
   const hours = currentTime.value.hour()
   const minutes = currentTime.value.minute()
   
-  const startHour = props.compactMode ? 7 : 0
-  const totalMinutes = (hours - startHour) * 60 + minutes
+  const totalMinutes = (hours - props.dayStartHour) * 60 + minutes
   
   const top = (totalMinutes / 60) * props.hourHeight
   
@@ -1045,18 +1042,20 @@ const getEventStyle = (event: CalendarEvent) => {
     eventStyleExtra['--event-color'] = eventColor
   }
   
-  if (props.compactMode) {
-    if (startMinutes < 7 * 60) {
-      startMinutes = 7 * 60
-    } else if (startMinutes >= 24 * 60) {
+  const totalDisplayHours = props.dayEndHour - props.dayStartHour
+  const offsetMinutes = props.dayStartHour * 60
+
+  if (totalDisplayHours < 24) {
+    if (startMinutes < offsetMinutes) {
+      startMinutes = offsetMinutes
+    } else if (startMinutes >= props.dayEndHour * 60) {
       return { display: 'none' }
     }
-    
-    const offsetMinutes = 7 * 60
+
     const top = ((startMinutes - offsetMinutes) / 60) * props.hourHeight
     const height = Math.max((duration / 60) * props.hourHeight, 30)
     
-    const maxTop = 17 * props.hourHeight
+    const maxTop = totalDisplayHours * props.hourHeight
     const clampedTop = Math.max(0, Math.min(top, maxTop))
     const clampedHeight = Math.min(height, maxTop - clampedTop)
     
@@ -1065,13 +1064,12 @@ const getEventStyle = (event: CalendarEvent) => {
     }
     
     if (focusMode.value) {
-      // Focus mode: 25% width, centered
       return {
         top: `${clampedTop}px`,
         height: `${clampedHeight}px`,
         backgroundColor: eventBg,
         position: 'absolute' as const,
-        left: '37.5%', // (100% - 25%) / 2
+        left: '37.5%',
         width: '25%',
         right: 'auto',
         zIndex: 10,
@@ -1090,7 +1088,7 @@ const getEventStyle = (event: CalendarEvent) => {
       ...eventStyleExtra
     }
   }
-  
+
   const top = (startMinutes / 60) * props.hourHeight
   const height = Math.max((duration / 60) * props.hourHeight, 30)
   
@@ -1103,13 +1101,12 @@ const getEventStyle = (event: CalendarEvent) => {
   }
   
   if (focusMode.value) {
-    // Focus mode: 25% width, centered
     return {
       top: `${clampedTop}px`,
       height: `${clampedHeight}px`,
       backgroundColor: eventBg,
       position: 'absolute' as const,
-      left: '37.5%', // (100% - 25%) / 2
+      left: '37.5%',
       width: '25%',
       right: 'auto',
       zIndex: 10,

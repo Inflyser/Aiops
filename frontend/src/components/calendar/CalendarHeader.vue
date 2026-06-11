@@ -13,7 +13,7 @@
         <div
           class="compact-toggle"
           @click="$emit('toggle-compact', !compactMode)"
-          :title="compactMode ? 'Показать полный день (0:00–23:00)' : 'Рабочий день (7:00–23:00)'"
+          :title="compactMode ? `Полный день (0:00–24:00)` : `Рабочий день (${String(dayStartHour).padStart(2, '0')}:00–${String(dayEndHour).padStart(2, '0')}:00)`"
         >
           <img v-if="compactMode" src="@/assets/sun.svg" class="toggle-svg" />
           <img v-else src="@/assets/moon.svg" class="toggle-svg" />
@@ -42,6 +42,8 @@ dayjs.locale('ru')
 const props = defineProps<{
   currentWeekStart: dayjs.Dayjs
   compactMode: boolean
+  dayStartHour: number
+  dayEndHour: number
 }>()
 
 defineEmits<{

@@ -69,6 +69,8 @@
           <CalendarHeader
             :current-week-start="currentWeekStart"
             :compact-mode="compactMode"
+            :day-start-hour="dayStartHour"
+            :day-end-hour="dayEndHour"
             @prev-week="lastWeek"
             @next-week="nextWeek"
             @toggle-compact="compactMode = $event"
@@ -79,7 +81,8 @@
         <WeekView
           :week-days="weekDays"
           :events="filteredEvents"
-          :compact-mode="compactMode"
+          :day-start-hour="displayStartHour"
+          :day-end-hour="displayEndHour"
           :event-accent-mode="eventAccentMode"
           :inbox-panel-open="showInboxPanel"
           :hour-height="weekHourHeight"
@@ -123,7 +126,8 @@
         <DayView
           :current-day="currentDay"
           :events="dayEvents"
-          :compact-mode="compactMode"
+          :day-start-hour="displayStartHour"
+          :day-end-hour="displayEndHour"
           :event-accent-mode="eventAccentMode"
           :hour-height="dayHourHeight"
           @prev-day="prevDay"
@@ -211,8 +215,12 @@
     <SettingsModal
       :show="showSettings"
       :event-accent-mode="eventAccentMode"
+      :day-start-hour="dayStartHour"
+      :day-end-hour="dayEndHour"
       @close="showSettings = false"
       @update:event-accent-mode="eventAccentMode = $event"
+      @update:day-start-hour="dayStartHour = $event"
+      @update:day-end-hour="dayEndHour = $event"
       @background-changed="handleBackgroundChanged"
       @background-removed="handleBackgroundRemoved"
     />
@@ -346,6 +354,23 @@ const bouncingEvents = ref<Set<string>>(new Set())
 // Переключатель режима: true = рабочий день (7-23), false = полный день (0-23)
 // По умолчанию рабочий день (7-24)
 const compactMode = ref(true)
+const dayStartHour = ref(7)
+const dayEndHour = ref(23)
+
+onMounted(() => {
+  const savedStart = localStorage.getItem('day-start-hour')
+  if (savedStart) dayStartHour.value = parseFloat(savedStart)
+  const savedEnd = localStorage.getItem('day-end-hour')
+  if (savedEnd) dayEndHour.value = parseFloat(savedEnd)
+})
+
+watch([dayStartHour, dayEndHour], () => {
+  localStorage.setItem('day-start-hour', String(dayStartHour.value))
+  localStorage.setItem('day-end-hour', String(dayEndHour.value))
+})
+
+const displayStartHour = computed(() => compactMode.value ? dayStartHour.value : 0)
+const displayEndHour = computed(() => compactMode.value ? dayEndHour.value : 24)
 
 // Tags state
 const showTagsPanel = ref(false)

@@ -289,7 +289,8 @@ interface CalendarEvent {
 const props = defineProps<{
   weekDays: WeekDay[]
   events: CalendarEvent[]
-  compactMode: boolean
+  dayStartHour: number
+  dayEndHour: number
   eventAccentMode: boolean
   inboxPanelOpen: boolean
   hourHeight: number
@@ -583,7 +584,7 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
       const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
       const minutes = Math.round(rawMinutes / 10) * 10
       
-      const hour = props.compactMode ? slotIndex + 7 : slotIndex
+      const hour = slotIndex + props.dayStartHour
       
       const newStart = day.fullDate.hour(hour).minute(minutes)
       const newEnd = newStart.add(duration, 'minute')
@@ -610,7 +611,7 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
       const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
       const minutes = Math.round(rawMinutes / 10) * 10
       
-      const hour = props.compactMode ? slotIndex + 7 : slotIndex
+      const hour = slotIndex + props.dayStartHour
       const dropTime = day.fullDate.hour(hour).minute(minutes)
       
       emit('category-drop-to-day', {
@@ -625,7 +626,7 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
       const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
       const minutes = Math.round(rawMinutes / 10) * 10
       
-      const hour = props.compactMode ? slotIndex + 7 : slotIndex
+      const hour = slotIndex + props.dayStartHour
       const dropTime = day.fullDate.hour(hour).minute(minutes)
       
       emit('task-drop-to-day', {
@@ -739,7 +740,7 @@ const getVisibleTaskInfo = (event: CalendarEvent, dayDate: string) => {
   const dayStart = dayjs(dayDate).startOf('day')
   let startMinutes = start.diff(dayStart, 'minute')
   const duration = end.diff(start, 'minute')
-  if (props.compactMode && startMinutes < 7 * 60) startMinutes = 7 * 60
+  if (props.dayStartHour > 0 && startMinutes < props.dayStartHour * 60) startMinutes = props.dayStartHour * 60
   const eventHeight = Math.max((duration / 60) * props.hourHeight, 30)
 
   let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
@@ -934,7 +935,7 @@ const currentTimeLineStyle = computed(() => {
   const minutes = currentTime.value.minute()
   
   // Calculate total minutes from start of day (or 7:00 for compact mode)
-  const startHour = props.compactMode ? 7 : 0
+  const startHour = props.dayStartHour
   const totalMinutes = (hours - startHour) * 60 + minutes
   
   const top = (totalMinutes / 60) * props.hourHeight
@@ -950,14 +951,11 @@ const isCurrentDay = (day: WeekDay) => {
 }
 
 const hours = computed(() => {
-  if (props.compactMode) {
-    return Array.from({ length: 17 }, (_, i) => i + 7) // 7:00 to 23:00
-  }
-  return Array.from({ length: 24 }, (_, i) => i) // 0:00 to 23:00
+  return Array.from({ length: props.dayEndHour - props.dayStartHour }, (_, i) => i + props.dayStartHour)
 })
 
 const calendarHeight = computed(() => {
-  const totalHours = props.compactMode ? 17 : 24
+  const totalHours = props.dayEndHour - props.dayStartHour
   return totalHours * props.hourHeight
 })
 
@@ -989,22 +987,20 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
     eventStyleExtra['--event-color'] = eventColor
   }
 
-  // В компактном режиме (7-24): события раньше 7:00 показываем с 7:00
-  // События позже 23:00 скрываем
-  if (props.compactMode) {
-    if (startMinutes < 7 * 60) {
-      // Событие начинается до 7:00 - показываем с 7:00
-      startMinutes = 7 * 60
-    } else if (startMinutes >= 24 * 60) {
-      // Событие начинается после полуночи - скрываем
+  const totalDisplayHours = props.dayEndHour - props.dayStartHour
+  const offsetMinutes = props.dayStartHour * 60
+
+  if (totalDisplayHours < 24) {
+    if (startMinutes < offsetMinutes) {
+      startMinutes = offsetMinutes
+    } else if (startMinutes >= props.dayEndHour * 60) {
       return { display: 'none' }
     }
-    
-    const offsetMinutes = 7 * 60
+
     const top = ((startMinutes - offsetMinutes) / 60) * props.hourHeight
     const height = Math.max((duration / 60) * props.hourHeight, 30)
 
-    const maxTop = 17 * props.hourHeight
+    const maxTop = totalDisplayHours * props.hourHeight
     const clampedTop = Math.max(0, Math.min(top, maxTop))
     const clampedHeight = Math.min(height, maxTop - clampedTop)
 
@@ -1024,7 +1020,6 @@ const getEventStyle = (event: CalendarEvent, dayDate: string) => {
     }
   }
 
-  // Не компактный режим (0-24)
   const top = (startMinutes / 60) * props.hourHeight
   const height = Math.max((duration / 60) * props.hourHeight, 30)
 
@@ -1107,7 +1102,7 @@ const addMouseListeners = () => {
         const slotIndex = Math.floor(clickY / props.hourHeight)
         const rawMinutes = Math.floor((clickY % props.hourHeight) / props.hourHeight * 60)
         const minutes = Math.round(rawMinutes / 10) * 10
-        const hour = props.compactMode ? slotIndex + 7 : slotIndex
+        const hour = slotIndex + props.dayStartHour
         const dayData = props.weekDays.find(d => d.date === selStartDay)
         if (dayData) {
           const clickedDateTime = dayData.fullDate.hour(hour).minute(minutes)
@@ -1164,7 +1159,7 @@ const startSelection = (event: MouseEvent, day: WeekDay) => {
 const getTimeFromPixel = (pixelY: number): { hour: number; minute: number } => {
   const slotIndex = Math.floor(pixelY / props.hourHeight)
   const offsetMin = Math.round(((pixelY % props.hourHeight) / props.hourHeight) * 60 / 10) * 10
-  const hour = props.compactMode ? slotIndex + 7 : slotIndex
+  const hour = slotIndex + props.dayStartHour
   return { hour, minute: offsetMin }
 }
 

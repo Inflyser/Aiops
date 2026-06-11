@@ -102,28 +102,30 @@
               <span class="setting-hint">Отображаемый временной промежуток в дневном и недельном виде</span>
             </div>
             <div class="time-range-display">
-              <span class="time-label">{{ formatTime(defaultStartHour) }}</span>
+              <span class="time-label">{{ formatTime(props.dayStartHour) }}</span>
               <span class="time-separator">—</span>
-              <span class="time-label">{{ formatTime(defaultEndHour) }}</span>
+              <span class="time-label">{{ formatTime(props.dayEndHour) }}</span>
             </div>
             <div class="range-slider-wrapper">
               <div class="range-track">
                 <div
                   class="range-fill"
                   :style="{
-                    left: (defaultStartHour / 24) * 100 + '%',
-                    width: ((defaultEndHour - defaultStartHour) / 24) * 100 + '%'
+                    left: (props.dayStartHour / 24) * 100 + '%',
+                    width: ((props.dayEndHour - props.dayStartHour) / 24) * 100 + '%'
                   }"
                 ></div>
               </div>
               <input
-                type="range" min="0" max="24" step="0.5"
-                v-model.number="defaultStartHour"
+                type="range" min="0" max="24" step="1"
+                :value="props.dayStartHour"
+                @input="emit('update:dayStartHour', parseFloat(($event.target as HTMLInputElement).value))"
                 class="range-input range-start"
               />
               <input
-                type="range" min="0" max="24" step="0.5"
-                v-model.number="defaultEndHour"
+                type="range" min="0" max="24" step="1"
+                :value="props.dayEndHour"
+                @input="emit('update:dayEndHour', parseFloat(($event.target as HTMLInputElement).value))"
                 class="range-input range-end"
               />
             </div>
@@ -241,11 +243,15 @@ import { ref, watch } from 'vue'
 const props = defineProps<{
   show: boolean
   eventAccentMode: boolean
+  dayStartHour: number
+  dayEndHour: number
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'update:eventAccentMode', value: boolean): void
+  (e: 'update:dayStartHour', value: number): void
+  (e: 'update:dayEndHour', value: number): void
   (e: 'background-changed', data: { url: string; opacity: number }): void
   (e: 'background-removed'): void
 }>()
@@ -260,8 +266,6 @@ const tabs = [
 
 const activeTab = ref('appearance')
 const selectedTheme = ref('dark')
-const defaultStartHour = ref(7)
-const defaultEndHour = ref(23)
 const soundEnabled = ref(true)
 const notificationsEnabled = ref(true)
 const connecting = ref(false)
