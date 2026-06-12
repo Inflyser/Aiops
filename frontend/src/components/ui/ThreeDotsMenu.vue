@@ -27,6 +27,11 @@
           <div class="icon-wrapper" @click.stop="navigateToStatistics">
             <img :src="kanbanIcon" alt="Statistics" class="svg-icon" />
           </div>
+
+          <!-- Цели -->
+          <div class="icon-wrapper" @click.stop="navigateToGoals">
+            <img :src="goalsIcon" alt="Goals" class="svg-icon" />
+          </div>
         </div>
       </div>
     </Transition>
@@ -40,6 +45,7 @@ import { useRouter } from 'vue-router'
 // Импортируем SVG иконки из assets
 import calendarIcon from '@/assets/icon-colendar.svg'
 import kanbanIcon from '@/assets/icon-kanban.svg'
+import goalsIcon from '@/assets/icon/trophy_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg'
 import dotsIcon from '@/assets/three-point.svg' // Иконка для трех точек
 
 const isMenuOpen = ref(false)
@@ -65,6 +71,11 @@ const navigateToKanban = () => {
 
 const navigateToStatistics = () => {
   router.push('/statistics')
+  isMenuOpen.value = false
+}
+
+const navigateToGoals = () => {
+  router.push('/goals')
   isMenuOpen.value = false
 }
 </script>
