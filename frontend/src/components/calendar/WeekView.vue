@@ -2,6 +2,12 @@
   <div class="week-view">
     <!-- Calendar Grid -->
     <div class="calendar-grid">
+      <!-- Sleep gap markers -->
+      <div v-for="gap in sleepGaps" :key="'gap-' + gap.sleepStart" class="sleep-gap-marker" :style="{ top: gap.top + 'px' }">
+        <div class="sleep-gap-line"></div>
+        <span class="sleep-gap-text">{{ String(gap.sleepStart).padStart(2, '0') }}:00 — {{ String(gap.sleepEnd).padStart(2, '0') }}:00</span>
+        <div class="sleep-gap-line"></div>
+      </div>
       <div class="time-column">
         <div
           v-for="hour in hours"
@@ -998,6 +1004,22 @@ const calendarHeight = computed(() => {
   return totalHours * props.hourHeight
 })
 
+const sleepGaps = computed(() => {
+  if (!props.sleepMode) return []
+  const h = hours.value
+  const gaps = []
+  for (let i = 1; i < h.length; i++) {
+    if (h[i] - h[i-1] > 1) {
+      gaps.push({
+        sleepStart: h[i-1] + 1,
+        sleepEnd: h[i],
+        top: i * props.hourHeight
+      })
+    }
+  }
+  return gaps
+})
+
 const toVisibleMinutes = (minutes: number): number => {
   if (!props.sleepMode) return minutes
   const sleepStartMin = props.sleepStartHour * 60
@@ -1938,5 +1960,36 @@ const submitCreate = () => {
 
 .event-resize-handle--bottom {
   bottom: 0;
+}
+
+/* Sleep gap marker */
+.sleep-gap-marker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 5;
+  margin-top: -14px;
+}
+
+.sleep-gap-line {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 1px;
+}
+
+.sleep-gap-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  padding: 0 4px;
 }
 </style>
