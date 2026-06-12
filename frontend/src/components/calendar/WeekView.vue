@@ -111,6 +111,8 @@
                     ref="titleInputRef"
                     v-model="editingTitleValue"
                     class="event-title-input"
+                    draggable="true"
+                    @mousedown="onTitleInputMouseDown($event, event)"
                     @keydown.enter="saveTitle(event)"
                     @keydown.escape="cancelTitleEdit"
                     @blur="saveTitle(event)"
@@ -479,7 +481,6 @@ const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
     event.dataTransfer.setDragImage(transparentImg, 0, 0)
   }
 
-  // Создаём кастомный ghost с анимацией
   const target = event.target as HTMLElement
   const eventBlock = target.closest('.event-block') as HTMLElement
   if (eventBlock) {
@@ -905,6 +906,25 @@ const saveTitle = (event: CalendarEvent) => {
 
 const cancelTitleEdit = () => {
   editingTitleEventId.value = null
+}
+
+const onTitleInputMouseDown = (e: MouseEvent, event: CalendarEvent) => {
+  if (editingTitleEventId.value !== event.id) return
+  const startX = e.clientX
+  const startY = e.clientY
+  const onMove = (e: MouseEvent) => {
+    if (Math.abs(e.clientX - startX) > 3 || Math.abs(e.clientY - startY) > 3) {
+      saveTitle(event)
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+  }
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
 }
 
 const startEditDesc = (event: CalendarEvent) => {
