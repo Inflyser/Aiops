@@ -46,13 +46,15 @@ onMounted(() => {
   }
 
   const lastRoute = localStorage.getItem(LAST_ROUTE_KEY)
-  if (lastRoute && lastRoute !== router.currentRoute.value.path) {
+  if (lastRoute && lastRoute !== '/' && lastRoute !== router.currentRoute.value.path) {
     router.push(lastRoute)
   }
 })
 
 watch(() => router.currentRoute.value.path, (path) => {
-  localStorage.setItem(LAST_ROUTE_KEY, path)
+  if (path !== '/') {
+    localStorage.setItem(LAST_ROUTE_KEY, path)
+  }
 })
 
 provide('backgroundUrl', backgroundImage)

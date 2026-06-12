@@ -5,6 +5,11 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      name: 'landing',
+      component: () => import('../views/LandingPage.vue')
+    },
+    {
+      path: '/calendar',
       name: 'weekly-calendar',
       component: () => import('../views/WeeklyCalendar.vue')
     },

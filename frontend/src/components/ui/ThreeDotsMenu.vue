@@ -25,7 +25,7 @@
           
           <!-- Статистика -->
           <div class="icon-wrapper" @click.stop="navigateToStatistics">
-            <img :src="kanbanIcon" alt="Statistics" class="svg-icon" />
+            <img :src="statsIcon" alt="Statistics" class="svg-icon" />
           </div>
 
           <!-- Цели -->
@@ -45,6 +45,7 @@ import { useRouter } from 'vue-router'
 // Импортируем SVG иконки из assets
 import calendarIcon from '@/assets/icon-colendar.svg'
 import kanbanIcon from '@/assets/icon-kanban.svg'
+import statsIcon from '@/assets/icon/finance_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg'
 import goalsIcon from '@/assets/icon/trophy_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg'
 import dotsIcon from '@/assets/three-point.svg' // Иконка для трех точек
 
@@ -60,7 +61,7 @@ const closeMenu = () => {
 }
 
 const navigateToWeeklyCalendar = () => {
-  router.push('/')
+  router.push('/calendar')
   isMenuOpen.value = false
 }
 
