@@ -1401,13 +1401,13 @@ const submitCreate = () => {
 
 .time-column {
   width: 60px;
-  border-right: 1px solid #33333357;
+  border-right: 1px solid var(--border-subtle);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   position: sticky;
   left: 0;
-  background-color: #050505;
+  background-color: var(--bg-primary);
   z-index: 5;
   box-sizing: border-box;
   min-height: 100%;
@@ -1421,7 +1421,7 @@ const submitCreate = () => {
   font-size: 16px;
   color: #6b6b6b;
   font-weight: bold;
-  border-bottom: 1px solid #33333357;
+  border-bottom: 1px solid var(--border-subtle);
   box-sizing: border-box;
   flex-shrink: 0;
 }
@@ -1436,7 +1436,7 @@ const submitCreate = () => {
 }
 
 .day-column {
-  border-right: 1px solid #33333357;
+  border-right: 1px solid var(--border-subtle);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1445,7 +1445,7 @@ const submitCreate = () => {
 }
 
 .hour-slot {
-  border-bottom: 1px solid #33333357;
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -1495,6 +1495,12 @@ const submitCreate = () => {
   flex: 1;
   overflow: hidden;
   pointer-events: none;
+}
+
+.event-title,
+.event-time,
+.event-description {
+  padding-right: 36px;
 }
 
 .event-content * {

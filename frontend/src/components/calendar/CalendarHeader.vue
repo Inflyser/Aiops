@@ -106,7 +106,7 @@ const monthYear = computed(() => {
 .nav-btn1 {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 30px;
   cursor: pointer;
   font-weight: bold;
@@ -150,7 +150,7 @@ const monthYear = computed(() => {
 
 .day-header {
   text-align: center;
-  border-right: 1px solid #33333357;
+  border-right: 1px solid var(--border-subtle);
   box-sizing: border-box;
 }
 
@@ -171,7 +171,7 @@ const monthYear = computed(() => {
 }
 
 .is-today .day-number {
-  background-color: #333333;
+  background-color: var(--bg-elevated);
   color: white;
   width: 42px;
   height: 42px;

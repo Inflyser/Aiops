@@ -1322,7 +1322,7 @@ onUnmounted(() => {
   padding: 20px;
   border-bottom: 1px solid #80808021;
   flex-shrink: 0;
-  background-color: #050505;
+  background-color: var(--bg-primary);
   z-index: 10;
 }
 
@@ -1366,7 +1366,7 @@ onUnmounted(() => {
 .nav-btn1 {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 32px;
   cursor: pointer;
   font-weight: bold;
@@ -1374,8 +1374,8 @@ onUnmounted(() => {
 }
 
 .today-btn {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   color: #fff;
   font-size: 16px;
   cursor: pointer;
@@ -1389,8 +1389,8 @@ onUnmounted(() => {
 }
 
 .focus-btn {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   color: #fff;
   font-size: 13px;
   cursor: pointer;
@@ -1416,7 +1416,7 @@ onUnmounted(() => {
 
 .day-hour-row {
   display: flex;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid var(--bg-tertiary);
 }
 
 .hour-label {
@@ -1426,7 +1426,7 @@ onUnmounted(() => {
   font-weight: bold;
   color: #666;
   flex-shrink: 0;
-  border-right: 1px solid #1a1a1a;
+  border-right: 1px solid var(--bg-tertiary);
 }
 
 .hour-events {
@@ -1488,6 +1488,12 @@ onUnmounted(() => {
   flex: 1;
   overflow: hidden;
   pointer-events: none;
+}
+
+.event-title,
+.event-time,
+.event-description {
+  padding-right: 36px;
 }
 
 .event-content * {

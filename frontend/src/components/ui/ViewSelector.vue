@@ -74,7 +74,7 @@ const indicatorStyle = computed(() => {
 .view-selector {
   display: flex;
   gap: 20px;
-  background-color: #0f0f0f;
+  background-color: var(--bg-secondary);
   padding: 5px;
   border-radius: 15px;
   position: relative;
@@ -86,7 +86,7 @@ const indicatorStyle = computed(() => {
   top: 5px;
   left: 5px;
   height: calc(100% - 10px);
-  background: #333;
+  background: var(--bg-elevated);
   border-radius: 12px;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 0;
@@ -112,6 +112,6 @@ const indicatorStyle = computed(() => {
 }
 
 .view-btn.active {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 </style>

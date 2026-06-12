@@ -107,7 +107,7 @@ onUnmounted(() => {
 
 .time-display {
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 500;
   margin-left: 12px;
   display: flex;

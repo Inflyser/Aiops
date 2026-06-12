@@ -475,7 +475,7 @@ const getExtraEventsCount = (date: string) => {
 .nav-btn1 {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 30px;
   cursor: pointer;
   font-weight: bold;
@@ -502,8 +502,8 @@ const getExtraEventsCount = (date: string) => {
 .month-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  border-left: 1px solid #333;
-  border-top: 1px solid #333;
+  border-left: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-color);
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
   overflow: hidden;
@@ -511,15 +511,15 @@ const getExtraEventsCount = (date: string) => {
 
 .month-day {
   min-height: 120px;
-  border-right: 1px solid #333;
-  border-bottom: 1px solid #333;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   padding: 8px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .month-day:hover {
-  background-color: #1a1a1a;
+  background-color: var(--bg-tertiary);
 }
 
 .month-day.today {
@@ -617,7 +617,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .day-events-modal {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-radius: 12px;
   width: 400px;
   max-width: 90vw;
@@ -632,7 +632,7 @@ const getExtraEventsCount = (date: string) => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .day-events-modal-title {

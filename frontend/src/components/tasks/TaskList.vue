@@ -274,8 +274,8 @@ onMounted(() => {
 }
 
 .task-item {
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 20px;
   display: flex;
@@ -396,7 +396,7 @@ onMounted(() => {
 }
 
 .modal-content {
-  background-color: #1a1a1a;
+  background-color: var(--bg-tertiary);
   padding: 30px;
   border-radius: 8px;
   width: 90%;
@@ -481,7 +481,7 @@ onMounted(() => {
 }
 
 .btn-secondary {
-  background-color: #333;
+  background-color: var(--bg-elevated);
   color: #fff;
 }
 

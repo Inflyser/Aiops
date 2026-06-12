@@ -509,7 +509,7 @@ const removeBackground = () => {
 
 /* ===== Setting Cards ===== */
 .setting-card {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border: 1px solid #2a2a2a;
   border-radius: 16px;
   padding: 20px;
@@ -564,7 +564,7 @@ const removeBackground = () => {
 .toggle-slider {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: #333;
+  background: var(--bg-elevated);
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s;
@@ -612,7 +612,7 @@ const removeBackground = () => {
 }
 
 .theme-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   color: #ccc;
 }
 
@@ -635,7 +635,7 @@ const removeBackground = () => {
   max-width: 100%;
   max-height: 120px;
   border-radius: 10px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   display: block;
 }
 
@@ -654,7 +654,7 @@ const removeBackground = () => {
 }
 
 .upload-label:hover {
-  background: #333;
+  background: var(--bg-elevated);
   border-color: #666;
   color: #fff;
 }
@@ -682,7 +682,7 @@ const removeBackground = () => {
 .opacity-slider {
   width: 100%;
   height: 6px;
-  background: #333;
+  background: var(--bg-elevated);
   border-radius: 3px;
   outline: none;
   cursor: pointer;
@@ -697,7 +697,7 @@ const removeBackground = () => {
   background: #8b5cf6;
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid #1a1a1a;
+  border: 2px solid var(--bg-tertiary);
 }
 
 .remove-bg-btn {
@@ -714,7 +714,7 @@ const removeBackground = () => {
 }
 
 .remove-bg-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
 }
 
 /* ===== Time Range Slider ===== */
@@ -750,7 +750,7 @@ const removeBackground = () => {
   left: 0;
   right: 0;
   height: 4px;
-  background: #333;
+  background: var(--bg-elevated);
   border-radius: 2px;
   transform: translateY(-50%);
   pointer-events: none;
@@ -786,7 +786,7 @@ const removeBackground = () => {
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
-  border: 3px solid #1a1a1a;
+  border: 3px solid var(--bg-tertiary);
   box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3);
   transition: transform 0.15s;
 }
@@ -826,7 +826,7 @@ const removeBackground = () => {
 }
 
 .connect-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   border-color: #8b5cf6;
   color: #fff;
 }

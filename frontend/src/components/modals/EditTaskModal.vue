@@ -126,8 +126,8 @@ const saveTask = () => {
 }
 
 .modal-content {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 15px;
   width: 90%;
   max-width: 500px;
@@ -153,7 +153,7 @@ const saveTask = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h3 {
@@ -162,7 +162,7 @@ const saveTask = () => {
 }
 
 .close-btn {
-  background: #333;
+  background: var(--bg-elevated);
   border: none;
   color: white;
   width: 28px;
@@ -173,7 +173,7 @@ const saveTask = () => {
 }
 
 .close-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
 }
 
 .modal-body {
@@ -194,9 +194,9 @@ const saveTask = () => {
 .form-control {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  background: #333;
+  background: var(--bg-elevated);
   color: #d1d1d1;
   font-size: 11px;
 }

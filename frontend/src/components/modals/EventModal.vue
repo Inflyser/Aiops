@@ -443,7 +443,7 @@ const selectTag = (tag: Tag) => {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -483,7 +483,7 @@ const selectTag = (tag: Tag) => {
   font-size: 16px;
   display: flex;
   align-items: center;
-  color: #ffffffd8;
+  color: var(--text-secondary);
   gap: 10px;
   margin: 0;
 }
@@ -533,7 +533,7 @@ const selectTag = (tag: Tag) => {
   width: 100%;
   padding: 8px 10px;
   background-color: #0d0d0d;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   color: #fff;
   font-size: 13px;
   font-family: inherit;
@@ -562,7 +562,7 @@ const selectTag = (tag: Tag) => {
   left: 0;
   right: 0;
   height: 6px;
-  background: #333;
+  background: var(--bg-elevated);
   border-radius: 999px;
   pointer-events: none;
   z-index: 1;
@@ -652,7 +652,7 @@ const selectTag = (tag: Tag) => {
   width: 100%;
   padding: 10px;
   background-color: #0d0d0d;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   color: #fff;
   font-size: 14px;
   border-radius: 6px;
@@ -668,7 +668,7 @@ const selectTag = (tag: Tag) => {
 .day-btn {
   width: 32px;
   height: 28px;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   background: #0d0d0d;
   color: #888;
@@ -721,7 +721,7 @@ const selectTag = (tag: Tag) => {
 
 .divider {
   height: 1px;
-  background-color: #333;
+  background-color: var(--bg-elevated);
   margin: 12px -20px 12px -20px;
 }
 
@@ -746,7 +746,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .date-btn:hover {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-color: #555;
 }
 
@@ -857,43 +857,7 @@ const selectTag = (tag: Tag) => {
 }
 
 .calendar-day:hover {
-  background-color: #333;
-}
-
-.calendar-day.other-month {
-  color: #444;
-}
-
-.calendar-day.today {
-  border: 1px solid #555;
-}
-
-.calendar-day.selected {
-  background-color: #2a2a2a;
-  color: #fff;
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-
-.btn {
-  padding: 10px 12%;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: opacity 0.2s;
-}
-
-.btn:hover {
-  opacity: 0.8;
-}
-
-.btn-primary {
-  background-color: #444;
+  background-color: var(--bg-elevated);
   color: #fff;
 }
 
@@ -932,7 +896,7 @@ const selectTag = (tag: Tag) => {
   gap: 8px;
   padding: 10px;
   background-color: #0d0d0d;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   max-height: 100px;
   overflow-y: auto;
@@ -949,7 +913,7 @@ const selectTag = (tag: Tag) => {
   gap: 6px;
   padding: 6px 12px;
   border-radius: 16px;
-  background-color: #1a1a1a;
+  background-color: var(--bg-tertiary);
   cursor: pointer;
   transition: all 0.2s;
   border: 2px solid transparent;
@@ -1006,7 +970,7 @@ const selectTag = (tag: Tag) => {
   display: flex;
   align-items: flex-start;
   padding: 10px;
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-radius: 6px;
   gap: 10px;
 }

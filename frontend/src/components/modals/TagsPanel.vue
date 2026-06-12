@@ -300,8 +300,8 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   left: -320px;
   width: 320px;
   height: 100vh;
-  background: #050505;
-  border-right: 1px solid #33333357;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-subtle);
   transition: left 0.3s ease;
   z-index: 1000;
   display: flex;
@@ -314,7 +314,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 
 .tags-panel-header {
   padding: 14px 16px;
-  border-bottom: 1px solid #33333357;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -351,7 +351,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .close-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   color: #fff;
 }
 
@@ -432,13 +432,13 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   flex-direction: column;
   gap: 10px;
   padding: 12px 16px 14px;
-  border-top: 1px solid #33333357;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .tag-input {
   width: 100%;
   background: #0d0d0d;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 5px;
   padding: 7px 10px;
   color: #fff;
@@ -520,7 +520,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 .eyedropper-btn {
   width: 26px;
   height: 26px;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 5px;
   background: #0d0d0d;
   cursor: pointer;
@@ -532,7 +532,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .eyedropper-btn:hover {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-color: #555;
 }
 
@@ -551,7 +551,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .color-input::-webkit-color-swatch {
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 5px;
 }
 
@@ -566,7 +566,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 5px;
   background: #0d0d0d;
   cursor: pointer;
@@ -596,7 +596,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   flex-direction: column;
   gap: 6px;
   padding: 10px;
-  border: 1.5px solid #33333357;
+  border: 1.5px solid var(--border-subtle);
   border-radius: 8px;
   background: #0d0d0d;
   cursor: pointer;
@@ -645,7 +645,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 5px;
   background: #0d0d0d;
   cursor: pointer;
@@ -702,7 +702,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .icon-selector::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-radius: 3px;
 }
 
@@ -718,7 +718,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 .icon-btn {
   width: 28px;
   height: 28px;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   background: #0d0d0d;
   cursor: pointer;
@@ -763,7 +763,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .add-tag-btn:disabled {
-  background: #33333357;
+  background: var(--border-subtle);
   cursor: not-allowed;
 }
 </style>

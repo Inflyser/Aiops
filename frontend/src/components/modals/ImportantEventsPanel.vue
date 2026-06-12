@@ -107,9 +107,9 @@ const formatDeadline = (event: CalendarEvent) => {
   right: 20px;
   width: 320px;
   max-height: calc(100vh - 100px);
-  background: #050505;
+  background: var(--bg-primary);
   border-radius: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -121,7 +121,7 @@ const formatDeadline = (event: CalendarEvent) => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .important-panel-header h3 {
@@ -148,7 +148,7 @@ const formatDeadline = (event: CalendarEvent) => {
 }
 
 .close-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   color: #fff;
 }
 
@@ -163,7 +163,7 @@ const formatDeadline = (event: CalendarEvent) => {
 }
 
 .important-events-list::-webkit-scrollbar-thumb {
-  background: #333;
+  background: var(--bg-elevated);
   border-radius: 2px;
 }
 
@@ -180,7 +180,7 @@ const formatDeadline = (event: CalendarEvent) => {
 
 .important-event-item:hover {
   background: #080808;
-  border-color: #333;
+  border-color: var(--border-color);
 }
 
 .important-event-item.is-past {

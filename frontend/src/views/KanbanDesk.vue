@@ -656,8 +656,8 @@ const handleKeydown = (event: KeyboardEvent) => {
 .kanban-desk {
   width: 100%;
   height: 100vh;
-  background-color: #050505;
-  color: #ffffff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -685,7 +685,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .time-display {
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -713,7 +713,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   justify-content: center;
   gap: 8px;
   padding: 8px 16px;
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border: 1px solid #2a2a2a;
   border-radius: 8px 8px 0 0;
   cursor: pointer;
@@ -781,7 +781,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .add-tab-btn {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border: 1px dashed #3a3a3a;
   color: #666;
   width: 28px;
@@ -806,7 +806,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 /* ─── Inbox Tab ─────────────────────────────────────────── */
 .inbox-tab {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border: 1px solid #2a2a2a;
   margin-left: auto;
 }
@@ -817,9 +817,9 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .inbox-tab.tab-active {
-  background: #0f0f0f;
+  background: var(--bg-secondary);
   border-color: #3a3a3a;
-  border-bottom-color: #0f0f0f;
+  border-bottom-color: var(--bg-secondary);
 }
 
 /* ─── Board Header ──────────────────────────────────────── */
@@ -875,7 +875,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 /* ─── Column ────────────────────────────────────────────── */
 .kanban-column {
-  background: #0f0f0f;
+  background: var(--bg-secondary);
   border: 1px solid #1e1e1e;
   border-radius: 12px;
   padding: 16px;
@@ -934,7 +934,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 .column-count {
   font-size: 10px;
   color: #444;
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border: 1px solid #2a2a2a;
   border-radius: 10px;
   padding: 2px 8px;
@@ -957,7 +957,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .collapse-col-btn:hover {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   color: #fff;
 }
 
@@ -1061,7 +1061,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 .add-task-btn-new {
   width: 100%;
   padding: 12px;
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border: 1px dashed #3a3a3a;
   border-radius: 8px;
   color: #666;
@@ -1159,7 +1159,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .modal-content {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border: 1px solid #2a2a2a;
   border-radius: 16px;
   padding: 32px;
@@ -1218,7 +1218,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 /* ─── Drag and Drop ───────────────────────────────────── */
 .ghost {
   opacity: 0.4;
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
 }
 
 .chosen {

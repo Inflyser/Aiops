@@ -49,7 +49,7 @@ const goToApp = () => {
 <style scoped>
 .landing {
   min-height: 100vh;
-  background-color: #050505;
+  background-color: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -90,7 +90,7 @@ const goToApp = () => {
 .app-name {
   font-size: 48px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0;
   letter-spacing: 2px;
 }
@@ -108,9 +108,9 @@ const goToApp = () => {
   padding: 14px 48px;
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   background: transparent;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--text-primary);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -118,7 +118,7 @@ const goToApp = () => {
 }
 
 .sign-in-btn:hover {
-  background: #ffffff;
+  background: var(--text-primary);
   color: #050505;
   transform: scale(1.05);
 }

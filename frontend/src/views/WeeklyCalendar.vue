@@ -1415,7 +1415,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100vh;
   background-color: rgba(5, 5, 5, 0.95);
-  color: #ffffff;
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1499,7 +1499,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
   width: 100%;
   box-sizing: border-box;
 }

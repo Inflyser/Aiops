@@ -554,8 +554,8 @@ watch([currentPeriod, currentDate], async () => {
 .statistics-page {
   padding: 0 20px;
   min-height: 100vh;
-  background-color: #050505;
-  color: #ffffff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   overflow-y: auto;
 }
 
@@ -580,7 +580,7 @@ watch([currentPeriod, currentDate], async () => {
 
 .time-display {
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -603,7 +603,7 @@ watch([currentPeriod, currentDate], async () => {
   background: transparent;
   padding: 5px;
   border-radius: 10px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .period-btn {
@@ -623,7 +623,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .period-btn.active {
-  background: #333;
+  background: var(--bg-elevated);
   color: #fff;
 }
 
@@ -638,7 +638,7 @@ watch([currentPeriod, currentDate], async () => {
 
 .nav-btn {
   background: transparent;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   color: #fff;
   font-size: 19px;
   width: 50px;
@@ -649,7 +649,7 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .nav-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   border-color: #555;
 }
 
@@ -666,160 +666,7 @@ watch([currentPeriod, currentDate], async () => {
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 30px;
-  border: 1px solid #333;
-}
-
-.chart-title {
-  font-size: 19px;
-  margin: 0 0 8px;
-  color: #ccc;
-}
-
-/* Day View */
-.day-percentage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 60px;
-  padding: 40px;
-}
-
-.percentage-ring {
-  position: relative;
-  width: 200px;
-  height: 200px;
-}
-
-.percentage-svg {
-  width: 100%;
-  height: 100%;
-}
-
-.percentage-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-
-.percentage-value {
-  display: block;
-  font-size: 38px;
-  font-weight: bold;
-  color: #4a90e2;
-}
-
-.percentage-label {
-  display: block;
-  font-size: 11px;
-  color: #888;
-}
-
-.day-details {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 40px;
-}
-
-.detail-label {
-  color: #888;
-}
-
-.detail-value {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-/* Week View */
-.week-chart {
-  display: flex;
-  gap: 16px;
-  height: 400px;
-  align-items: flex-end;
-  padding: 20px;
-}
-
-.week-day {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.week-day-label {
-  font-size: 14px;
-  color: #ddd;
-  font-weight: 600;
-}
-
-.week-day-bar-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  position: relative;
-}
-
-.week-day-bar {
-  width: 100%;
-  height: 300px;
-  background: repeating-linear-gradient(
-    45deg,
-    transparent 0px,
-    transparent 4px,
-    rgba(255, 255, 255, 0.04) 4px,
-    rgba(255, 255, 255, 0.04) 8px
-  );
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
-}
-
-.week-day-fill {
-  width: 100%;
-  border-radius: 20px;
-  transition: height 0.3s ease;
-  min-height: 4px;
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 10px 12px;
-  box-sizing: border-box;
-  gap: 4px;
-}
-
-.week-day-above {
-  position: absolute;
-  bottom: 100%;
-  left: 12px;
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.week-day-percentage {
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1;
-}
-
-.week-day-hours {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border-color);
 }
 
 /* Month View */
@@ -880,7 +727,7 @@ watch([currentPeriod, currentDate], async () => {
 .year-month-bar {
   width: 100%;
   height: 180px;
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-radius: 6px;
   display: flex;
   align-items: flex-end;
@@ -910,7 +757,7 @@ watch([currentPeriod, currentDate], async () => {
   background: transparent;
   padding: 20px 40px;
   border-radius: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -950,7 +797,7 @@ watch([currentPeriod, currentDate], async () => {
 
 .bar-wrapper {
   flex: 1;
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-radius: 8px;
   height: 40px;
   overflow: hidden;

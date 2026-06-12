@@ -193,7 +193,7 @@ watch(() => props.show, (isVisible) => {
 }
 
 .modal-content {
-  background-color: #050505;
+  background-color: var(--bg-primary);
   padding: 20px;
   border-radius: 12px;
   width: 90%;
@@ -201,7 +201,7 @@ watch(() => props.show, (isVisible) => {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -210,7 +210,7 @@ watch(() => props.show, (isVisible) => {
 }
 
 .modal-content::-webkit-scrollbar-thumb {
-  background: #333;
+  background: var(--bg-elevated);
   border-radius: 3px;
 }
 
@@ -244,7 +244,7 @@ watch(() => props.show, (isVisible) => {
 }
 
 .close-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   color: #fff;
 }
 
@@ -264,7 +264,7 @@ watch(() => props.show, (isVisible) => {
   padding: 12px;
   background: #080808;
   border-radius: 8px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .event-title {
@@ -300,7 +300,7 @@ watch(() => props.show, (isVisible) => {
   background: #080808;
   border-radius: 8px;
   gap: 10px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .task-checkbox {
@@ -363,13 +363,13 @@ watch(() => props.show, (isVisible) => {
 }
 
 .remove-task-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   color: #ff6b6b;
 }
 
 /* Progress bar */
 .progress-section {
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border-color);
   padding-top: 16px;
   display: flex;
   flex-direction: column;
@@ -380,7 +380,7 @@ watch(() => props.show, (isVisible) => {
 .progress-bar-container {
   width: 100%;
   height: 6px;
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-radius: 3px;
   overflow: hidden;
 }

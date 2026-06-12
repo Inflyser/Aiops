@@ -53,8 +53,8 @@ onUnmounted(() => {
 .goals-page {
   padding: 0 20px;
   min-height: 100vh;
-  background-color: #050505;
-  color: #ffffff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   overflow-y: auto;
 }
 
@@ -78,7 +78,7 @@ onUnmounted(() => {
 
 .time-display {
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -89,7 +89,7 @@ onUnmounted(() => {
 .goals-title {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -106,7 +106,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 20px;
   padding: 40px;
-  background: #0f0f0f;
+  background: var(--bg-secondary);
   border-radius: 16px;
   border: 1px dashed #3a3a3a;
 }

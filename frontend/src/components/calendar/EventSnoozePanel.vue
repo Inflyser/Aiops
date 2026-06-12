@@ -170,8 +170,8 @@ const formatTime = (dateStr: string) => {
   right: -320px;
   width: 320px;
   height: 100vh;
-  background: #050505;
-  border-left: 1px solid #33333357;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-subtle);
   transition: right 0.3s ease;
   z-index: 1000;
   display: flex;
@@ -184,7 +184,7 @@ const formatTime = (dateStr: string) => {
 
 .snooze-header {
   padding: 20px;
-  border-bottom: 1px solid #33333357;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -214,7 +214,7 @@ const formatTime = (dateStr: string) => {
 }
 
 .close-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   color: #fff;
 }
 
@@ -248,7 +248,7 @@ const formatTime = (dateStr: string) => {
   padding: 8px;
   color: #555;
   font-size: 11px;
-  border-bottom: 1px solid #33333357;
+  border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 8px;
 }
 

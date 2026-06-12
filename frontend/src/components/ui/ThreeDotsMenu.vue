@@ -32,6 +32,11 @@
           <div class="icon-wrapper" @click.stop="navigateToGoals">
             <img :src="goalsIcon" alt="Goals" class="svg-icon" />
           </div>
+
+          <!-- Лендинг (временная кнопка) -->
+          <div class="icon-wrapper" @click.stop="navigateToLanding">
+            <img :src="homeIcon" alt="Landing" class="svg-icon" />
+          </div>
         </div>
       </div>
     </Transition>
@@ -47,6 +52,7 @@ import calendarIcon from '@/assets/icon-colendar.svg'
 import kanbanIcon from '@/assets/icon-kanban.svg'
 import statsIcon from '@/assets/icon/finance_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg'
 import goalsIcon from '@/assets/icon/trophy_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg'
+import homeIcon from '@/assets/icon/home_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg'
 import dotsIcon from '@/assets/three-point.svg' // Иконка для трех точек
 
 const isMenuOpen = ref(false)
@@ -77,6 +83,11 @@ const navigateToStatistics = () => {
 
 const navigateToGoals = () => {
   router.push('/goals')
+  isMenuOpen.value = false
+}
+
+const navigateToLanding = () => {
+  router.push('/')
   isMenuOpen.value = false
 }
 </script>
@@ -123,7 +134,7 @@ const navigateToGoals = () => {
 .menu-panel {
   display: flex;
   flex-direction: row;
-  background-color: #0f0f0f;
+  background-color: var(--bg-secondary);
   border-radius: 10px;
   padding: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -168,7 +179,7 @@ const navigateToGoals = () => {
 }
 
 .icon-wrapper:hover {
-  background-color: #333;
+  background-color: var(--bg-elevated);
   transform: scale(1.1);
 }
 

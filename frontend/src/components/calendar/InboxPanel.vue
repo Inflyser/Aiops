@@ -149,8 +149,8 @@ const toggleTask = async (task: Task) => {
   right: -320px;
   width: 320px;
   height: 100vh;
-  background: #050505;
-  border-left: 1px solid #33333357;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-subtle);
   transition: right 0.3s ease;
   z-index: 1000;
   display: flex;
@@ -163,7 +163,7 @@ const toggleTask = async (task: Task) => {
 
 .inbox-header {
   padding: 20px;
-  border-bottom: 1px solid #33333357;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -193,7 +193,7 @@ const toggleTask = async (task: Task) => {
 }
 
 .close-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   color: #fff;
 }
 
@@ -219,7 +219,7 @@ const toggleTask = async (task: Task) => {
 
 .inbox-category {
   margin-bottom: 20px;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -229,8 +229,8 @@ const toggleTask = async (task: Task) => {
   align-items: center;
   padding: 12px;
   gap: 10px;
-  background: #050505;
-  border-bottom: 1px solid #33333357;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .category-dot {
@@ -267,7 +267,7 @@ const toggleTask = async (task: Task) => {
 }
 
 .collapse-btn:hover {
-  background: #33333357;
+  background: var(--border-subtle);
   color: #fff;
 }
 
@@ -285,14 +285,14 @@ const toggleTask = async (task: Task) => {
   padding: 10px;
   max-height: 300px;
   overflow-y: auto;
-  background: #050505;
+  background: var(--bg-primary);
 }
 
 .inbox-task {
   display: flex;
   align-items: flex-start;
   padding: 8px;
-  background: #050505;
+  background: var(--bg-primary);
   margin-bottom: 4px;
   border-radius: 4px;
   cursor: grab;
@@ -305,7 +305,7 @@ const toggleTask = async (task: Task) => {
 .task-checkbox {
   width: 20px;
   height: 20px;
-  border: 1px solid #33333357;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -337,7 +337,7 @@ const toggleTask = async (task: Task) => {
 
 .edit-container {
   padding: 10px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border-color);
 }
 
 .edit-btn {
@@ -345,7 +345,7 @@ const toggleTask = async (task: Task) => {
   padding: 12px;
   background: transparent;
   color: #888;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
@@ -354,7 +354,7 @@ const toggleTask = async (task: Task) => {
 }
 
 .edit-btn:hover {
-  background: #33333357;
+  background: var(--border-subtle);
   color: #fff;
   border-color: #555;
 }

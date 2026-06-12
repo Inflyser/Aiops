@@ -101,8 +101,8 @@ const clearFilters = () => {
   left: -320px;
   width: 320px;
   height: 100vh;
-  background: #050505;
-  border-right: 1px solid #33333357;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-subtle);
   transition: left 0.3s ease;
   z-index: 999;
   display: flex;
@@ -115,7 +115,7 @@ const clearFilters = () => {
 
 .filter-header {
   padding: 20px;
-  border-bottom: 1px solid #33333357;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -145,7 +145,7 @@ const clearFilters = () => {
 }
 
 .close-btn:hover {
-  background: #333;
+  background: var(--bg-elevated);
   color: #fff;
 }
 
@@ -225,7 +225,7 @@ const clearFilters = () => {
   padding: 12px;
   background: transparent;
   color: #888;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
@@ -234,7 +234,7 @@ const clearFilters = () => {
 }
 
 .clear-btn:hover {
-  background: #33333357;
+  background: var(--border-subtle);
   color: #fff;
   border-color: #555;
 }
