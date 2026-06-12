@@ -71,6 +71,7 @@
             :compact-mode="compactMode"
             :day-start-hour="dayStartHour"
             :day-end-hour="dayEndHour"
+            :sleep-mode="sleepMode"
             @prev-week="lastWeek"
             @next-week="nextWeek"
             @toggle-compact="compactMode = $event"
@@ -86,6 +87,9 @@
           :event-accent-mode="eventAccentMode"
           :inbox-panel-open="showInboxPanel"
           :hour-height="weekHourHeight"
+          :sleep-mode="sleepMode"
+          :sleep-start-hour="sleepStartHour"
+          :sleep-end-hour="sleepEndHour"
           @day-click="handleWeekDayClick"
           @open-event="openEventModal"
           @open-event-tasks="openEventTasksModal"
@@ -130,6 +134,9 @@
           :day-end-hour="displayEndHour"
           :event-accent-mode="eventAccentMode"
           :hour-height="dayHourHeight"
+          :sleep-mode="sleepMode"
+          :sleep-start-hour="sleepStartHour"
+          :sleep-end-hour="sleepEndHour"
           @prev-day="prevDay"
           @next-day="nextDay"
           @go-today="goToToday"
@@ -217,10 +224,16 @@
       :event-accent-mode="eventAccentMode"
       :day-start-hour="dayStartHour"
       :day-end-hour="dayEndHour"
+      :sleep-mode="sleepMode"
+      :sleep-start-hour="sleepStartHour"
+      :sleep-end-hour="sleepEndHour"
       @close="showSettings = false"
       @update:event-accent-mode="eventAccentMode = $event"
       @update:day-start-hour="dayStartHour = $event"
       @update:day-end-hour="dayEndHour = $event"
+      @update:sleep-mode="sleepMode = $event"
+      @update:sleep-start-hour="sleepStartHour = $event"
+      @update:sleep-end-hour="sleepEndHour = $event"
       @background-changed="handleBackgroundChanged"
       @background-removed="handleBackgroundRemoved"
     />
@@ -357,11 +370,22 @@ const compactMode = ref(true)
 const dayStartHour = ref(7)
 const dayEndHour = ref(23)
 
+// Режим сна: скрывает выбранный промежуток в календаре
+const sleepMode = ref(false)
+const sleepStartHour = ref(0)
+const sleepEndHour = ref(0)
+
 onMounted(() => {
   const savedStart = localStorage.getItem('day-start-hour')
   if (savedStart) dayStartHour.value = parseFloat(savedStart)
   const savedEnd = localStorage.getItem('day-end-hour')
   if (savedEnd) dayEndHour.value = parseFloat(savedEnd)
+  const savedSleepMode = localStorage.getItem('sleep-mode')
+  if (savedSleepMode) sleepMode.value = savedSleepMode === 'true'
+  const savedSleepStart = localStorage.getItem('sleep-start-hour')
+  if (savedSleepStart) sleepStartHour.value = parseFloat(savedSleepStart)
+  const savedSleepEnd = localStorage.getItem('sleep-end-hour')
+  if (savedSleepEnd) sleepEndHour.value = parseFloat(savedSleepEnd)
 })
 
 watch([dayStartHour, dayEndHour], () => {
@@ -369,8 +393,14 @@ watch([dayStartHour, dayEndHour], () => {
   localStorage.setItem('day-end-hour', String(dayEndHour.value))
 })
 
-const displayStartHour = computed(() => compactMode.value ? dayStartHour.value : 0)
-const displayEndHour = computed(() => compactMode.value ? dayEndHour.value : 24)
+watch([sleepMode, sleepStartHour, sleepEndHour], () => {
+  localStorage.setItem('sleep-mode', String(sleepMode.value))
+  localStorage.setItem('sleep-start-hour', String(sleepStartHour.value))
+  localStorage.setItem('sleep-end-hour', String(sleepEndHour.value))
+})
+
+const displayStartHour = computed(() => sleepMode.value ? 0 : (compactMode.value ? dayStartHour.value : 0))
+const displayEndHour = computed(() => sleepMode.value ? 24 : (compactMode.value ? dayEndHour.value : 24))
 
 // Tags state
 const showTagsPanel = ref(false)

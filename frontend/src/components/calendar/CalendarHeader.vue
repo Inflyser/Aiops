@@ -11,6 +11,7 @@
       <!-- Empty column for time labels + compact toggle -->
       <div class="time-header">
         <div
+          v-if="!sleepMode"
           class="compact-toggle"
           @click="$emit('toggle-compact', !compactMode)"
           :title="compactMode ? `Полный день (0:00–24:00)` : `Рабочий день (${String(dayStartHour).padStart(2, '0')}:00–${String(dayEndHour).padStart(2, '0')}:00)`"
@@ -44,6 +45,7 @@ const props = defineProps<{
   compactMode: boolean
   dayStartHour: number
   dayEndHour: number
+  sleepMode: boolean
 }>()
 
 defineEmits<{

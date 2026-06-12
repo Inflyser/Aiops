@@ -286,6 +286,9 @@ const props = defineProps<{
   dayEndHour: number
   eventAccentMode: boolean
   hourHeight: number
+  sleepMode: boolean
+  sleepStartHour: number
+  sleepEndHour: number
 }>()
 
 const emit = defineEmits<{
@@ -446,13 +449,28 @@ const currentTime = ref(dayjs())
 let timeInterval: ReturnType<typeof setInterval> | null = null
 
 const hours = computed(() => {
+  if (props.sleepMode) {
+    return Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
+  }
   return Array.from({ length: props.dayEndHour - props.dayStartHour }, (_, i) => i + props.dayStartHour)
 })
 
 const calendarHeight = computed(() => {
+  if (props.sleepMode) {
+    return (24 - (props.sleepEndHour - props.sleepStartHour)) * props.hourHeight
+  }
   const totalHours = props.dayEndHour - props.dayStartHour
   return totalHours * props.hourHeight
 })
+
+const toVisibleMinutes = (minutes: number): number => {
+  if (!props.sleepMode) return minutes
+  const sleepStartMin = props.sleepStartHour * 60
+  const sleepDuration = (props.sleepEndHour - props.sleepStartHour) * 60
+  if (minutes <= sleepStartMin) return minutes
+  if (minutes >= props.sleepEndHour * 60) return minutes - sleepDuration
+  return sleepStartMin
+}
 
 const handleRowClick = (hour: number) => {
   emit('hour-click', { hour, date: props.currentDay })
@@ -626,7 +644,14 @@ const handleGridDrop = (event: DragEvent) => {
   const slotIndex = Math.floor(dropY / props.hourHeight)
   const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
   const minutes = Math.round(rawMinutes / 10) * 10
-  const hour = slotIndex + props.dayStartHour
+
+  let hour: number
+  if (props.sleepMode) {
+    const visibleHours = Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
+    hour = visibleHours[slotIndex] ?? 0
+  } else {
+    hour = slotIndex + props.dayStartHour
+  }
   const dropTime = props.currentDay.hour(hour).minute(minutes)
 
   if (draggedEvent.value) {
@@ -752,6 +777,13 @@ const startSelection = (event: MouseEvent) => {
 const getTimeFromPixel = (pixelY: number): { hour: number; minute: number } => {
   const slotIndex = Math.floor(pixelY / props.hourHeight)
   const offsetMin = Math.round(((pixelY % props.hourHeight) / props.hourHeight) * 60 / 10) * 10
+
+  if (props.sleepMode) {
+    const visibleHours = Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
+    const hour = visibleHours[slotIndex] ?? 0
+    return { hour, minute: offsetMin }
+  }
+
   const hour = slotIndex + props.dayStartHour
   return { hour, minute: offsetMin }
 }
@@ -951,9 +983,20 @@ const isCurrentDay = () => {
 const currentTimeLineStyle = computed(() => {
   const hours = currentTime.value.hour()
   const minutes = currentTime.value.minute()
+  const nowMinutes = hours * 60 + minutes
+
+  if (props.sleepMode) {
+    const sleepStartMin = props.sleepStartHour * 60
+    const sleepEndMin = props.sleepEndHour * 60
+    if (nowMinutes >= sleepStartMin && nowMinutes < sleepEndMin) {
+      return { display: 'none' }
+    }
+    const visMin = toVisibleMinutes(nowMinutes)
+    const top = (visMin / 60) * props.hourHeight
+    return { top: `${top}px` }
+  }
   
   const totalMinutes = (hours - props.dayStartHour) * 60 + minutes
-  
   const top = (totalMinutes / 60) * props.hourHeight
   
   return {
@@ -1029,6 +1072,78 @@ const getEventStyle = (event: CalendarEvent) => {
   
   let startMinutes = start.diff(dayStart, 'minute')
   const duration = end.diff(start, 'minute')
+
+  if (props.sleepMode) {
+    const sleepStartMin = props.sleepStartHour * 60
+    const sleepEndMin = props.sleepEndHour * 60
+    const eventStartMin = startMinutes
+    const eventEndMin = startMinutes + duration
+
+    if (eventStartMin >= sleepStartMin && eventEndMin <= sleepEndMin) {
+      return { display: 'none' }
+    }
+
+    let visibleStart = eventStartMin
+    let visibleEnd = eventEndMin
+
+    if (visibleStart < sleepStartMin && visibleEnd > sleepStartMin && visibleEnd <= sleepEndMin) {
+      visibleEnd = sleepStartMin
+    } else if (visibleStart >= sleepStartMin && visibleStart < sleepEndMin) {
+      visibleStart = sleepEndMin
+    }
+
+    const visStart = toVisibleMinutes(visibleStart)
+    const visEnd = toVisibleMinutes(visibleEnd)
+    const visDuration = visEnd - visStart
+
+    const eventColor = event.color || '#4a5568'
+    const eventBg = props.eventAccentMode ? '#1a1a1a' : eventColor
+    const { text: eventTextColor, textMuted: eventTextMuted, iconFilter: eventIconFilter } = getContrastColors(eventBg)
+    const eventStyleExtra: Record<string, string> = {
+      '--event-text-color': eventTextColor,
+      '--event-text-muted': eventTextMuted,
+      '--event-icon-filter': eventIconFilter
+    }
+    if (props.eventAccentMode) {
+      eventStyleExtra['--event-color'] = eventColor
+    }
+
+    const totalVisibleHours = 24 - (props.sleepEndHour - props.sleepStartHour)
+    const top = (visStart / 60) * props.hourHeight
+    const height = Math.max((visDuration / 60) * props.hourHeight, 30)
+    const maxTop = totalVisibleHours * props.hourHeight
+    const clampedTop = Math.max(0, Math.min(top, maxTop))
+    const clampedHeight = Math.min(height, maxTop - clampedTop)
+
+    if (clampedTop >= maxTop || clampedHeight <= 0) {
+      return { display: 'none' }
+    }
+
+    if (focusMode.value) {
+      return {
+        top: `${clampedTop}px`,
+        height: `${clampedHeight}px`,
+        backgroundColor: eventBg,
+        position: 'absolute' as const,
+        left: '37.5%',
+        width: '25%',
+        right: 'auto',
+        zIndex: 10,
+        ...eventStyleExtra
+      }
+    }
+
+    return {
+      top: `${clampedTop}px`,
+      height: `${clampedHeight}px`,
+      backgroundColor: eventBg,
+      position: 'absolute' as const,
+      left: '2px',
+      right: '2px',
+      zIndex: 10,
+      ...eventStyleExtra
+    }
+  }
   
   const eventColor = event.color || '#4a5568'
   const eventBg = props.eventAccentMode ? '#1a1a1a' : eventColor

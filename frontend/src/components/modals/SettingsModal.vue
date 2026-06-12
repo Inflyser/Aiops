@@ -97,35 +97,45 @@
           <h3 class="tab-title">Календарь</h3>
 
           <div class="setting-card">
-            <div class="setting-info" style="margin-bottom: 12px;">
-              <span class="setting-label">Дневной интервал по умолчанию</span>
-              <span class="setting-hint">Отображаемый временной промежуток в дневном и недельном виде</span>
+            <div class="setting-row" style="margin-bottom: 12px;">
+              <div class="setting-info">
+                <span class="setting-label">{{ props.sleepMode ? 'Режим сна' : 'Дневной интервал по умолчанию' }}</span>
+                <span class="setting-hint">{{ props.sleepMode ? 'Скрываемый временной промежуток (время сна)' : 'Отображаемый временной промежуток в дневном и недельном виде' }}</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" :checked="props.sleepMode" @change="emit('update:sleepMode', ($event.target as HTMLInputElement).checked)" />
+                <span class="toggle-slider"></span>
+              </label>
             </div>
             <div class="time-range-display">
-              <span class="time-label">{{ formatTime(props.dayStartHour) }}</span>
+              <span class="time-label">{{ formatTime(props.sleepMode ? props.sleepStartHour : props.dayStartHour) }}</span>
               <span class="time-separator">—</span>
-              <span class="time-label">{{ formatTime(props.dayEndHour) }}</span>
+              <span class="time-label">{{ formatTime(props.sleepMode ? props.sleepEndHour : props.dayEndHour) }}</span>
             </div>
             <div class="range-slider-wrapper">
               <div class="range-track">
                 <div
                   class="range-fill"
                   :style="{
-                    left: (props.dayStartHour / 24) * 100 + '%',
-                    width: ((props.dayEndHour - props.dayStartHour) / 24) * 100 + '%'
+                    left: ((props.sleepMode ? props.sleepStartHour : props.dayStartHour) / 24) * 100 + '%',
+                    width: (((props.sleepMode ? props.sleepEndHour : props.dayEndHour) - (props.sleepMode ? props.sleepStartHour : props.dayStartHour)) / 24) * 100 + '%'
                   }"
                 ></div>
               </div>
               <input
                 type="range" min="0" max="24" step="1"
-                :value="props.dayStartHour"
-                @input="emit('update:dayStartHour', parseFloat(($event.target as HTMLInputElement).value))"
+                :value="props.sleepMode ? props.sleepStartHour : props.dayStartHour"
+                @input="props.sleepMode
+                  ? emit('update:sleepStartHour', parseFloat(($event.target as HTMLInputElement).value))
+                  : emit('update:dayStartHour', parseFloat(($event.target as HTMLInputElement).value))"
                 class="range-input range-start"
               />
               <input
                 type="range" min="0" max="24" step="1"
-                :value="props.dayEndHour"
-                @input="emit('update:dayEndHour', parseFloat(($event.target as HTMLInputElement).value))"
+                :value="props.sleepMode ? props.sleepEndHour : props.dayEndHour"
+                @input="props.sleepMode
+                  ? emit('update:sleepEndHour', parseFloat(($event.target as HTMLInputElement).value))
+                  : emit('update:dayEndHour', parseFloat(($event.target as HTMLInputElement).value))"
                 class="range-input range-end"
               />
             </div>
@@ -245,6 +255,9 @@ const props = defineProps<{
   eventAccentMode: boolean
   dayStartHour: number
   dayEndHour: number
+  sleepMode: boolean
+  sleepStartHour: number
+  sleepEndHour: number
 }>()
 
 const emit = defineEmits<{
@@ -252,6 +265,9 @@ const emit = defineEmits<{
   (e: 'update:eventAccentMode', value: boolean): void
   (e: 'update:dayStartHour', value: number): void
   (e: 'update:dayEndHour', value: number): void
+  (e: 'update:sleepMode', value: boolean): void
+  (e: 'update:sleepStartHour', value: number): void
+  (e: 'update:sleepEndHour', value: number): void
   (e: 'background-changed', data: { url: string; opacity: number }): void
   (e: 'background-removed'): void
 }>()
