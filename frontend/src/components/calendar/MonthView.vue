@@ -409,6 +409,17 @@ const monthDays = computed(() => {
     })
     currentDay = currentDay.add(1, 'day')
   }
+
+  // Удаляем хвостовые недели, где нет ни одного дня текущего месяца
+  while (days.length > 28) {
+    const lastWeek = days.slice(-7)
+    if (lastWeek.every(d => !d.isCurrentMonth)) {
+      days.splice(-7)
+    } else {
+      break
+    }
+  }
+
   return days
 })
 

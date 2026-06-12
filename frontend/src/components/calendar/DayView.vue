@@ -97,7 +97,7 @@
                   />
                 </template>
                 <template v-else>
-                  <span @dblclick.stop="startEditTitle(event)" class="event-title-text">{{ event.title }}</span>
+                  <span @click.stop="startEditTitle(event)" class="event-title-text">{{ event.title }}</span>
                 </template>
                 <div v-if="tagPickerEventId === event.id" class="tag-picker-dropdown" @click.stop>
                   <div class="tag-picker-option" @click="selectTag(event, null)">— нет тега</div>
@@ -179,6 +179,14 @@
               </div>
               </template>
             </div>
+            <span 
+              v-if="showTaskBadge(event)" 
+              class="event-task-badge" 
+              @click.stop="$emit('open-event-tasks', event)"
+              :title="'Задачи: ' + (event.eventTasks?.length ?? 0)"
+            >
+              {{ event.eventTasks?.length ?? 0 }}
+            </span>
             <button 
               class="event-star-btn"
               :class="{ 'is-important': event.is_important }"
@@ -186,13 +194,6 @@
               :title="event.is_important ? 'Убрать важность' : 'Отметить как важное'"
             >
               {{ event.is_important ? '★' : '☆' }}
-            </button>
-            <button 
-              class="event-menu-btn"
-              @click.stop="$emit('event-move-to-next-week', event)"
-              title="Перенести на следующую неделю"
-            >
-              <img src="@/assets/three-point.svg" alt="menu" />
             </button>
             <button
               class="event-quick-add-btn"
@@ -778,9 +779,6 @@ const removeListeners = () => {
 const startSelection = (event: MouseEvent) => {
   if ((event.target as HTMLElement).closest('.day-event')) return
   if ((event.target as HTMLElement).closest('.event-star-btn')) return
-  if ((event.target as HTMLElement).closest('.event-menu-btn')) return
-  if ((event.target as HTMLElement).closest('.event-quick-add-btn')) return
-
   const grid = getCalendarGrid()
   if (!grid) return
   const rect = grid.getBoundingClientRect()
@@ -912,6 +910,11 @@ const canShowProgressBar = (event: CalendarEvent): boolean => {
   if (event.description) usedHeight += DESC_H
   usedHeight += allTasksHeight + MORE_H
   return info.eventHeight - usedHeight >= PROGRESS_BAR_H
+}
+
+const showTaskBadge = (event: CalendarEvent): boolean => {
+  const info = getVisibleTaskInfo(event)
+  return (event.eventTasks?.length ?? 0) > 0 && info.visible === 0
 }
 
 const canShowAddTask = (event: CalendarEvent): boolean => {
@@ -1658,17 +1661,17 @@ onUnmounted(() => {
 /* Event Star Button */
 .event-star-btn {
   position: absolute;
-  top: 15px;
+  top: 4px;
   right: 6px;
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 4px;
   font-size: 20px;
-  color: #888;
+  color: #aaa;
   z-index: 14;
   opacity: 0;
-  transition: opacity 0.2s, top 0.2s, transform 0.2s;
+  transition: opacity 0.2s, transform 0.2s;
   pointer-events: auto;
   line-height: 1;
 }
@@ -1682,60 +1685,52 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-.day-event:hover .event-star-btn.is-important {
-  top: 15px;
-  opacity: 1;
-}
-
-.day-event:not(:hover) .event-star-btn.is-important {
-  top: 4px;
-}
-
 .event-star-btn:hover {
-  opacity: 0.8 !important;
+  opacity: 0.8;
   transform: scale(1.2);
 }
 
-.event-menu-btn {
+/* Event Task Badge */
+.event-task-badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: transparent;
-  border: none;
+  top: 0px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 16;
   cursor: pointer;
-  padding: 4px;
-  opacity: 0;
   pointer-events: auto;
-  transition: opacity 0.2s;
-  z-index: 15;
+  padding: 0 4px;
+  box-sizing: border-box;
+  line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.day-event:hover .event-menu-btn {
-  opacity: 1;
-}
-
-.event-menu-btn:hover {
-  opacity: 0.8 !important;
-}
-
-.event-menu-btn img {
-  display: block;
-  width: 20px;
-  height: auto;
+.event-task-badge:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(1.15);
 }
 
 /* Event Quick Add Button */
 .event-quick-add-btn {
   position: absolute;
-  top: 4px;
-  right: 28px;
+  top: 30px;
+  right: 6px;
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 4px 6px;
   font-size: 18px;
   font-weight: 600;
-  color: #888;
+  color: #aaa;
   opacity: 0;
   pointer-events: auto;
   transition: opacity 0.2s, transform 0.2s, color 0.2s;
@@ -1748,9 +1743,22 @@ onUnmounted(() => {
 }
 
 .event-quick-add-btn:hover {
-  opacity: 0.8 !important;
+  opacity: 0.8;
   transform: scale(1.3);
   color: #4ade80;
+}
+
+/* When badge exists: shift star/plus below badge */
+.event-task-badge ~ .event-star-btn {
+  top: 20px;
+}
+
+.event-task-badge ~ .event-star-btn.is-important {
+  opacity: 1;
+}
+
+.event-task-badge ~ .event-quick-add-btn {
+  top: 46px;
 }
 
 /* Event Quick Add Input */
