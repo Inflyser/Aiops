@@ -1528,8 +1528,20 @@ const submitCreate = () => {
   font-weight: 600;
   margin-bottom: 2px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
+  position: relative;
+}
+
+.event-tag-icon-wrapper,
+.event-tag-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.event-title-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .event-tag-icon-wrapper {

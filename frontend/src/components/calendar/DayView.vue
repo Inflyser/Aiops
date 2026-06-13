@@ -1519,8 +1519,15 @@ onUnmounted(() => {
   font-size: 20px;
   font-weight: 600;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  position: relative;
+}
+
+.event-tag-icon-wrapper,
+.event-tag-icon {
+  flex-shrink: 0;
+  margin-top: 3px;
 }
 
 .event-tag-icon {
@@ -1914,6 +1921,8 @@ onUnmounted(() => {
 .event-title-text {
   cursor: text;
   pointer-events: auto;
+  flex: 1;
+  min-width: 0;
 }
 
 .event-title-input,
