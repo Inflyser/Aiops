@@ -50,70 +50,47 @@
               class="recent-color-swatch"
               :style="{ backgroundColor: c }"
               :class="{ active: newTagColor === c }"
-              @click="newTagColor = c"
+              @click="selectRecentColor(c)"
               :title="c"
             ></button>
           </div>
           <span class="color-divider"></span>
           <button
             class="eyedropper-btn"
-            @click="showFullPicker = !showFullPicker"
+            @click="triggerColorPicker"
             title="Выбрать цвет"
           >
             <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#aaa"><path d="M440-120q-33 0-56.5-23.5T360-200q0-33 23.5-56.5T440-280h40v-240L200-760q-17-17-17-40t17-40q17-17 40-17t40 17l280 280q11 11 11 28t-11 28q-11 11-28 11t-28-11l-84-84v228h40q33 0 56.5 23.5T600-480v280q0 33-23.5 56.5T520-120H440Zm200-400q-17 0-28.5-11.5T600-560q0-17 11.5-28.5T640-600h40v-128l-32-32-32 32q-12 12-28.5 12T559-728q-12-12-12-28.5t12-28.5l72-72q12-12 28.5-12t28.5 12q12 12 12 28.5T688-800l-8 8v152h40q17 0 28.5 11.5T760-600q0 17-11.5 28.5T720-560h-80Z"/></svg>
           </button>
           <input
-            v-if="showFullPicker"
+            ref="colorInputRef"
             v-model="newTagColor"
             type="color"
-            class="color-input"
+            class="color-input-hidden"
             title="Выберите цвет"
             @input="onColorPicked"
           />
         </div>
-
-      </div>
-
-      <div class="form-row">
-        <label class="form-label" @click="showPalettes = !showPalettes">
-          Палитры
-          <svg class="icon-arrow" :class="{ open: showPalettes }" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
-        </label>
-        <div class="palette-toggle-row">
-          <button
-            type="button"
-            class="palette-toggle-btn"
-            @click="showPalettes = !showPalettes"
-            :title="showPalettes ? 'Свернуть' : 'Выбрать палитру'"
-          >
-            <span
-              v-for="c in currentPalette.colors"
-              :key="c"
-              class="palette-swatch"
-              :style="{ backgroundColor: c }"
-            ></span>
-            <svg class="toggle-arrow" :class="{ open: showPalettes }" xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
-          </button>
-          <span class="palette-label">{{ currentPalette.label }}</span>
-        </div>
         <div v-if="showPalettes" class="color-palettes">
-          <button
+          <div
             v-for="palette in colorPalettes"
             :key="palette.label"
-            class="palette-btn"
-            :class="{ active: palette.colors[0] === newTagColor }"
-            @click="selectPalette(palette)"
+            class="palette-card"
+            :class="{ active: palette.colors.includes(newTagColor) }"
           >
             <span class="palette-card-label">{{ palette.label }}</span>
             <span class="palette-card-colors">
-              <span
+              <button
                 v-for="c in palette.colors"
                 :key="c"
-                class="palette-swatch"
+                class="palette-swatch-btn"
+                :class="{ active: newTagColor === c }"
                 :style="{ backgroundColor: c }"
-              ></span>
+                @click="selectColor(c)"
+                :title="c"
+              ></button>
             </span>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -196,7 +173,7 @@ const emit = defineEmits<{
 const newTagName = ref('')
 const newTagColor = ref('#3B82F6')
 const newTagIcon = ref<string | undefined>(undefined)
-const showFullPicker = ref(false)
+const colorInputRef = ref<HTMLInputElement | null>(null)
 const showIcons = ref(false)
 const showPalettes = ref(false)
 
@@ -221,9 +198,14 @@ const colorPalettes: Palette[] = [
   { label: 'Deep Teal', colors: ['#2DD4BF', '#0F766E', '#CCFBF1'] },
 ]
 
-function selectPalette(palette: Palette) {
-  newTagColor.value = palette.colors[0]
-  saveRecentColor(newTagColor.value)
+function selectRecentColor(color: string) {
+  newTagColor.value = color
+  saveRecentColor(color)
+}
+
+function selectColor(color: string) {
+  newTagColor.value = color
+  saveRecentColor(color)
 }
 
 function loadRecentColors(): string[] {
@@ -244,6 +226,10 @@ function saveRecentColor(color: string) {
 
 function onColorPicked() {
   saveRecentColor(newTagColor.value)
+}
+
+function triggerColorPicker() {
+  colorInputRef.value?.click()
 }
 
 const iconModules = import.meta.glob<{ default: string }>('../../assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
@@ -270,7 +256,6 @@ const handleAddTag = () => {
     newTagName.value = ''
     newTagColor.value = '#3B82F6'
     newTagIcon.value = undefined
-    showFullPicker.value = false
   }
 }
 
@@ -481,10 +466,35 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .color-picker-wrap {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.color-picker-wrap .palette-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  background: #0d0d0d;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.color-picker-wrap .palette-toggle-btn:hover {
+  background: #151515;
+  border-color: #555;
+}
+
+.color-picker-wrap .palette-label {
+  font-size: 10px;
+  color: #888;
+  white-space: nowrap;
 }
 
 .recent-colors {
@@ -493,8 +503,8 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .recent-color-swatch {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
   border: 1.5px solid transparent;
   cursor: pointer;
@@ -536,52 +546,17 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   border-color: #555;
 }
 
-.color-input {
-  width: 100%;
-  height: 32px;
+.color-input-hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  padding: 0;
   border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  background: none;
-  padding: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.color-input::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
 
-.color-input::-webkit-color-swatch {
-  border: 1px solid var(--border-color);
-  border-radius: 5px;
-}
-
-.palette-toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.palette-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 5px;
-  background: #0d0d0d;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.palette-toggle-btn:hover {
-  background: #151515;
-  border-color: #555;
-}
-
-.palette-label {
-  font-size: 10px;
-  color: #888;
-}
 
 .color-palettes {
   display: grid;
@@ -591,7 +566,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   padding: 4px;
 }
 
-.palette-btn {
+.palette-card {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -599,18 +574,35 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   border: 1.5px solid var(--border-subtle);
   border-radius: 8px;
   background: #0d0d0d;
-  cursor: pointer;
   transition: all 0.15s;
 }
 
-.palette-btn:hover {
+.palette-card:hover {
   background: #151515;
   border-color: #666;
 }
 
-.palette-btn.active {
+.palette-card.active {
   border-color: #3B82F6;
   background: #3B82F610;
+}
+
+.palette-swatch-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s;
+}
+
+.palette-swatch-btn:hover {
+  transform: scale(1.2);
+}
+
+.palette-swatch-btn.active {
+  border-color: #fff;
 }
 
 .palette-card-label {
