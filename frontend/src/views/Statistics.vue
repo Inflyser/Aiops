@@ -669,6 +669,104 @@ watch([currentPeriod, currentDate], async () => {
   border: 1px solid var(--border-color);
 }
 
+.chart-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  color: var(--text-primary);
+}
+
+/* Week View */
+.week-chart {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.week-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 100px;
+}
+
+.week-day-label {
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+  text-align: center;
+}
+
+.week-day-bar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.week-day-bar {
+  width: 32px;
+  flex: 1;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  min-height: 40px;
+}
+
+.week-day-fill {
+  width: 100%;
+  border-radius: 6px;
+  transition: height 0.3s ease;
+  min-height: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+.week-day-percentage {
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.week-day-hours {
+  font-size: 10px;
+  color: rgba(255,255,255,0.8);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.week-day-above {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.week-day-above .week-day-percentage {
+  color: #888;
+  text-shadow: none;
+}
+
+.week-day-above .week-day-hours {
+  color: #666;
+  text-shadow: none;
+}
+
 /* Month View */
 .month-chart {
   display: grid;
