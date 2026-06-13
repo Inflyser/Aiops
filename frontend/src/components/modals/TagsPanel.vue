@@ -62,6 +62,21 @@
           >
             <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#aaa"><path d="M440-120q-33 0-56.5-23.5T360-200q0-33 23.5-56.5T440-280h40v-240L200-760q-17-17-17-40t17-40q17-17 40-17t40 17l280 280q11 11 11 28t-11 28q-11 11-28 11t-28-11l-84-84v228h40q33 0 56.5 23.5T600-480v280q0 33-23.5 56.5T520-120H440Zm200-400q-17 0-28.5-11.5T600-560q0-17 11.5-28.5T640-600h40v-128l-32-32-32 32q-12 12-28.5 12T559-728q-12-12-12-28.5t12-28.5l72-72q12-12 28.5-12t28.5 12q12 12 12 28.5T688-800l-8 8v152h40q17 0 28.5 11.5T760-600q0 17-11.5 28.5T720-560h-80Z"/></svg>
           </button>
+          <button
+            type="button"
+            class="palette-toggle-btn"
+            @click="showPalettes = !showPalettes"
+            :title="showPalettes ? 'Свернуть' : 'Выбрать палитру'"
+          >
+            <span
+              v-for="c in currentPalette.colors"
+              :key="c"
+              class="palette-swatch"
+              :style="{ backgroundColor: c }"
+            ></span>
+            <svg class="toggle-arrow" :class="{ open: showPalettes }" xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+          </button>
+          <span class="palette-label">{{ currentPalette.label }}</span>
           <input
             ref="colorInputRef"
             v-model="newTagColor"
