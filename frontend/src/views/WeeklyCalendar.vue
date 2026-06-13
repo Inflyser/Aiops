@@ -104,6 +104,7 @@
           @create-event="handleCreateEvent"
           @event-update="handleEventUpdate"
           @add-task-to-event="handleAddTaskToEvent"
+          @toggle-tags-panel="showTagsPanel = !showTagsPanel"
         />
       </div>
 
@@ -154,6 +155,7 @@
           @create-event="handleCreateEvent"
           @event-update="handleEventUpdate"
           @add-task-to-event="handleAddTaskToEvent"
+          @toggle-tags-panel="showTagsPanel = !showTagsPanel"
         />
       </div>
     </Transition>

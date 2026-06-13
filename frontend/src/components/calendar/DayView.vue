@@ -67,10 +67,10 @@
               <div class="event-title">
                 <template v-if="eventAccentMode">
                   <div
-                    v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                    v-if="event.tagIcon && getTagIconPath(event.tagIcon) && editingTitleEventId !== event.id"
                     class="event-tag-icon-wrapper"
                     :style="{ backgroundColor: event.color || '#4a5568' }"
-                    @dblclick.stop="toggleTagPicker(event)"
+                    @click.stop="$emit('toggle-tags-panel')"
                   >
                     <img
                       :src="getTagIconPath(event.tagIcon)"
@@ -80,10 +80,10 @@
                 </template>
                 <template v-else>
                   <img
-                    v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                    v-if="event.tagIcon && getTagIconPath(event.tagIcon) && editingTitleEventId !== event.id"
                     :src="getTagIconPath(event.tagIcon)"
                     class="event-tag-icon"
-                    @dblclick.stop="toggleTagPicker(event)"
+                    @click.stop="$emit('toggle-tags-panel')"
                   />
                 </template>
                 <template v-if="editingTitleEventId === event.id">
@@ -318,6 +318,7 @@ const emit = defineEmits<{
   (e: 'create-event', data: { date: string; startTime: string; endTime: string; title: string }): void
   (e: 'event-update', data: { event: CalendarEvent; changes: Partial<CalendarEvent> }): void
   (e: 'add-task-to-event', data: { event: CalendarEvent; title: string }): void
+  (e: 'toggle-tags-panel'): void
 }>()
 
 // Focus mode state
@@ -1042,7 +1043,22 @@ const titleInputRef = ref<HTMLInputElement | null>(null)
 const startEditTitle = (event: CalendarEvent) => {
   editingTitleValue.value = event.title
   editingTitleEventId.value = event.id
-  nextTick(() => titleInputRef.value?.focus())
+  nextTick(() => {
+    titleInputRef.value?.focus()
+    document.addEventListener('mousedown', onDocumentMouseDown)
+  })
+}
+
+const onDocumentMouseDown = (e: MouseEvent) => {
+  if (!editingTitleEventId.value) {
+    document.removeEventListener('mousedown', onDocumentMouseDown)
+    return
+  }
+  const input = titleInputRef.value
+  if (input && !input.contains(e.target as Node)) {
+    cancelTitleEdit()
+    document.removeEventListener('mousedown', onDocumentMouseDown)
+  }
 }
 
 const saveTitle = (event: CalendarEvent) => {
@@ -1051,10 +1067,12 @@ const saveTitle = (event: CalendarEvent) => {
     emit('event-update', { event, changes: { title: val } })
   }
   editingTitleEventId.value = null
+  document.removeEventListener('mousedown', onDocumentMouseDown)
 }
 
 const cancelTitleEdit = () => {
   editingTitleEventId.value = null
+  document.removeEventListener('mousedown', onDocumentMouseDown)
 }
 
 const onTitleInputMouseDown = (e: MouseEvent, event: CalendarEvent) => {
@@ -1091,10 +1109,6 @@ const saveDesc = (event: CalendarEvent) => {
 
 const cancelDescEdit = () => {
   editingDescEventId.value = null
-}
-
-const toggleTagPicker = (event: CalendarEvent) => {
-  tagPickerEventId.value = tagPickerEventId.value === event.id ? null : event.id
 }
 
 const selectTag = (event: CalendarEvent, tagId: string | null) => {
@@ -1491,9 +1505,8 @@ onUnmounted(() => {
 }
 
 .event-title,
-.event-time,
-.event-description {
-  padding-right: 36px;
+.event-time {
+  padding-right: 0;
 }
 
 .event-content * {
@@ -1518,16 +1531,29 @@ onUnmounted(() => {
 .event-title {
   font-size: 20px;
   font-weight: 600;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
   position: relative;
+}
+
+.event-tag-icon-wrapper,
+.event-tag-icon {
+  float: left;
+  margin-right: 8px;
+  margin-top: 3px;
+  flex-shrink: 0;
+  pointer-events: auto;
+}
+
+.event-title-text {
+  cursor: text;
+  pointer-events: auto;
+  min-width: 0;
 }
 
 .event-tag-icon-wrapper,
 .event-tag-icon {
   flex-shrink: 0;
   margin-top: 3px;
+  pointer-events: auto;
 }
 
 .event-tag-icon {
@@ -1535,6 +1561,7 @@ onUnmounted(() => {
   height: 18px;
   flex-shrink: 0;
   filter: var(--event-icon-filter, none);
+  pointer-events: auto;
 }
 
 .event-description {
@@ -1608,11 +1635,11 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 9px;
-  color: #4ade80;
+  color: #ffffff;
 }
 
 .event-task-checkbox.checked {
-  border-color: #4ade80;
+  border-color: #ffffff;
 }
 
 .event-task-title {
@@ -1643,7 +1670,7 @@ onUnmounted(() => {
 
 .event-progress-bar-fill {
   height: 100%;
-  background: #4ade80;
+  background: #ffffff;
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -1779,7 +1806,7 @@ onUnmounted(() => {
 .event-quick-add-btn:hover {
   opacity: 0.8;
   transform: scale(1.3);
-  color: #4ade80;
+  color: #ffffff;
 }
 
 /* When badge exists: shift star/plus below badge */
@@ -1925,7 +1952,10 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-.event-title-input,
+.event-title-input {
+  pointer-events: auto;
+}
+
 .event-desc-input {
   pointer-events: auto;
 }
@@ -1934,7 +1964,17 @@ onUnmounted(() => {
   pointer-events: auto;
 }
 
-.event-title-input,
+.event-title-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  padding: 2px 6px;
+  width: 100%;
+  outline: none;
+}
+
 .event-desc-input {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
