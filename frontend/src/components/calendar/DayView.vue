@@ -1500,7 +1500,7 @@ onUnmounted(() => {
 
 .event-content {
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   pointer-events: none;
 }
 
@@ -1537,6 +1537,7 @@ onUnmounted(() => {
 .event-tag-icon-wrapper,
 .event-tag-icon {
   float: left;
+  margin-left: -3px;
   margin-right: 8px;
   margin-top: 3px;
   flex-shrink: 0;

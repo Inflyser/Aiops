@@ -1507,7 +1507,7 @@ const submitCreate = () => {
 
 .event-content {
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   pointer-events: none;
 }
 
@@ -1546,6 +1546,7 @@ const submitCreate = () => {
 .event-tag-icon-wrapper,
 .event-tag-icon {
   float: left;
+  margin-left: -3px;
   margin-right: 6px;
   margin-top: 2px;
   flex-shrink: 0;
