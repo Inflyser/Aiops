@@ -2,12 +2,14 @@
   <div class="landing">
     <div class="landing-content">
       <div class="hero">
-        <div class="logo-wrapper">
-          <img :src="logo" alt="Logo" class="logo" />
+        <div class="hero-text">
+          <div class="heading-row">
+            <h1 class="app-name">Aoips — Time Tracker</h1>
+            <img :src="lendImg" alt="" class="heading-lend" />
+          </div>
+          <p class="description">Understand how you spend your time and how<br />things you do affect your mental state.</p>
+          <button class="sign-in-btn" @click="goToApp">Sign In</button>
         </div>
-        <h1 class="app-name">To-Do</h1>
-        <p class="tagline">Управляй задачами, событиями и целями — всё в одном месте</p>
-        <button class="sign-in-btn" @click="goToApp">Sign In</button>
       </div>
       <div class="features">
         <div class="feature">
@@ -33,7 +35,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import logo from '../assets/logo.svg'
+import lendImg from '../assets/lend.svg'
 import calendarIcon from '../assets/icon-colendar.svg'
 import kanbanIcon from '../assets/icon-kanban.svg'
 import statsIcon from '../assets/icon/finance_24dp_B1B3B2_FILL0_wght400_GRAD0_opsz24.svg'
@@ -61,50 +63,63 @@ const goToApp = () => {
   flex-direction: column;
   align-items: center;
   gap: 80px;
-  max-width: 600px;
+  max-width: 1100px;
+  width: 100%;
 }
 
 .hero {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 24px;
-  text-align: center;
-}
-
-.logo-wrapper {
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logo {
+  justify-content: space-between;
+  gap: 60px;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
+}
+
+.hero-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.heading-row {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  margin-left: -30px;
 }
 
 .app-name {
-  font-size: 48px;
-  font-weight: 800;
+  font-family: 'Mitr', sans-serif;
+  font-size: 90px;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  letter-spacing: 2px;
+  line-height: 1.05;
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 1;
 }
 
-.tagline {
-  font-size: 18px;
+.heading-lend {
+  position: absolute;
+  right: -80px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 0;
+  width: 456px;
+  pointer-events: none;
+}
+
+.description {
+  font-size: 32px;
   color: #888;
   margin: 0;
-  max-width: 400px;
-  line-height: 1.5;
+  line-height: 1.3;
 }
 
 .sign-in-btn {
-  margin-top: 16px;
+  margin-top: 8px;
   padding: 14px 48px;
   font-size: 18px;
   font-weight: 700;
@@ -115,6 +130,7 @@ const goToApp = () => {
   cursor: pointer;
   transition: all 0.2s ease;
   letter-spacing: 1px;
+  align-self: flex-start;
 }
 
 .sign-in-btn:hover {
@@ -149,5 +165,40 @@ const goToApp = () => {
   font-size: 14px;
   color: #666;
   font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .hero-text {
+    align-items: center;
+  }
+
+  .heading-row {
+    white-space: normal;
+  }
+
+  .app-name {
+    font-size: 48px;
+  }
+
+  .heading-lend {
+    display: none;
+  }
+
+  .description {
+    font-size: 20px;
+  }
+
+  .sign-in-btn {
+    align-self: center;
+  }
+
+  .landing-content {
+    gap: 48px;
+  }
 }
 </style>
