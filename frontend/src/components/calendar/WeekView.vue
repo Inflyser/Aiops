@@ -209,6 +209,7 @@
               {{ event.eventTasks?.length ?? 0 }}
             </span>
             <button 
+              v-show="editingTitleEventId !== event.id"
               class="event-star-btn"
               :class="{ 'is-important': event.is_important }"
               @click.stop="$emit('event-toggle-important', event)"
@@ -217,6 +218,7 @@
               {{ event.is_important ? '★' : '☆' }}
             </button>
             <button
+              v-show="editingTitleEventId !== event.id"
               class="event-quick-add-btn"
               @click.stop="toggleQuickAdd(event)"
               title="Добавить задачу"
