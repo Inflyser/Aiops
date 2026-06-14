@@ -143,7 +143,7 @@
                   <div class="event-tasks-inline">
                     <div v-for="t in (event.eventTasks ?? []).slice(0, ti.visible)" :key="t.id" class="event-task-item">
                       <span class="event-task-checkbox" :class="{ checked: t.completed }" @click.stop="toggleTaskInline(t, event)">
-                        <span v-if="t.completed">✓</span>
+                        <span v-if="t.completed" class="checkmark"></span>
                       </span>
                       <span class="event-task-title" :class="{ done: t.completed }">{{ t.title }}</span>
                     </div>
@@ -1166,9 +1166,7 @@ const getEventStyle = (event: CalendarEvent) => {
       '--event-text-muted': eventTextMuted,
       '--event-icon-filter': eventIconFilter
     }
-    if (props.eventAccentMode) {
-      eventStyleExtra['--event-color'] = eventColor
-    }
+    eventStyleExtra['--event-color'] = eventColor
 
     const totalVisibleHours = 24 - (props.sleepEndHour - props.sleepStartHour)
     const top = (visStart / 60) * props.hourHeight
@@ -1215,9 +1213,7 @@ const getEventStyle = (event: CalendarEvent) => {
     '--event-text-muted': eventTextMuted,
     '--event-icon-filter': eventIconFilter
   }
-  if (props.eventAccentMode) {
-    eventStyleExtra['--event-color'] = eventColor
-  }
+  eventStyleExtra['--event-color'] = eventColor
   
   const totalDisplayHours = props.dayEndHour - props.dayStartHour
   const offsetMinutes = props.dayStartHour * 60
@@ -1610,14 +1606,18 @@ onUnmounted(() => {
 .event-task-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   padding: 2px 6px;
   margin-top: 2px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.4;
-  background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
+  border: 1px solid transparent;
+}
+.event-task-item:hover {
+  border-color: #555;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .event-task-checkbox {
@@ -1629,20 +1629,30 @@ onUnmounted(() => {
 }
 
 .event-task-checkbox {
-  width: 13px;
-  height: 13px;
-  border: 1px solid #888;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
   border-radius: 3px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 13px;
+  font-weight: 700;
   color: #ffffff;
 }
-
 .event-task-checkbox.checked {
   border-color: #ffffff;
+  background: #ffffff;
+}
+.event-task-checkbox.checked .checkmark {
+  display: block;
+  width: 5px;
+  height: 9px;
+  border: solid var(--event-color, #333);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: -3px;
 }
 
 .event-task-title {
@@ -1665,9 +1675,9 @@ onUnmounted(() => {
 
 .event-progress-bar-bg {
   width: 100%;
-  height: 4px;
+  height: 6px;
   background: rgba(255, 255, 255, 0.15);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
