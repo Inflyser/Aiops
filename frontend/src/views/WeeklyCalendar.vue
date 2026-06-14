@@ -900,10 +900,15 @@ const deleteEvent = async () => {
 }
 
 const loadEvents = async () => {
-  // Load events from backend for current week
-  const startOfWeek = currentWeekStart.value.format('YYYY-MM-DD')
-  const endOfWeek = currentWeekStart.value.add(6, 'day').format('YYYY-MM-DD')
-  await calendarStore.fetchEvents(startOfWeek, endOfWeek)
+  if (currentView.value === 'month') {
+    await loadEventsForMonth()
+  } else if (currentView.value === 'day') {
+    await loadEventsForDay()
+  } else {
+    const startOfWeek = currentWeekStart.value.format('YYYY-MM-DD')
+    const endOfWeek = currentWeekStart.value.add(6, 'day').format('YYYY-MM-DD')
+    await calendarStore.fetchEvents(startOfWeek, endOfWeek)
+  }
 }
 
 // Handle drag and drop event
