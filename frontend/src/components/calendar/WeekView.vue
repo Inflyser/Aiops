@@ -2,12 +2,6 @@
   <div class="week-view">
     <!-- Calendar Grid -->
     <div class="calendar-grid">
-      <!-- Sleep gap markers -->
-      <div v-for="gap in sleepGaps" :key="'gap-' + gap.sleepStart" class="sleep-gap-marker" :style="{ top: gap.top + 'px' }">
-        <div class="sleep-gap-line"></div>
-        <span class="sleep-gap-text">{{ String(gap.sleepStart).padStart(2, '0') }}:00 — {{ String(gap.sleepEnd).padStart(2, '0') }}:00</span>
-        <div class="sleep-gap-line"></div>
-      </div>
       <div class="time-column">
         <div
           v-for="hour in hours"
@@ -20,6 +14,11 @@
       </div>
 
       <div class="days-container" :style="{ minHeight: calendarHeight + 'px' }">
+        <div v-for="gap in sleepGaps" :key="'gap-' + gap.sleepStart" class="sleep-gap-marker" :style="{ top: gap.top + 'px' }">
+          <div class="sleep-gap-line"></div>
+          <span class="sleep-gap-text">{{ String(gap.sleepStart).padStart(2, '0') }}:00 — {{ String(gap.sleepEnd).padStart(2, '0') }}:00</span>
+          <div class="sleep-gap-line"></div>
+        </div>
         <div
           v-for="day in weekDays"
           :key="day.date"
