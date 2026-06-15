@@ -155,6 +155,13 @@
 ```bash
 docker-compose up --build
 ```
+Вот команды для применения:
+# Пересобрать образы (один раз)
+docker-compose up --build
+# Или если контейнеры уже запущены, пересобрать и запустить:
+docker-compose down
+docker-compose up --build
+После этого — все изменения в коде (и фронт, и бэк) подхватываются мгновенно, просто docker-compose up без --build.
 
 После запуска:
 - **Frontend:** http://localhost:8080
