@@ -68,7 +68,7 @@
             :style="getEventStyle(event, day.date)"
             :data-event-id="event.id"
             draggable="true"
-            @click.stop="handleEventClick(event)"
+            @click.stop="handleEventClick($event, event)"
             @dragstart="handleDragStart($event, event)"
             @drag="handleDrag($event)"
             @dragend="handleDragEnd"
@@ -79,6 +79,7 @@
           >
             <div
               class="event-resize-handle event-resize-handle--top"
+              draggable="false"
               @mousedown.stop.prevent="startResize($event, event, 'top')"
             ></div>
             <div class="event-indicator"></div>
@@ -89,7 +90,6 @@
                     v-if="event.tagIcon && getTagIconPath(event.tagIcon) && editingTitleEventId !== event.id"
                     class="event-tag-icon-wrapper"
                     :style="{ backgroundColor: event.color || '#4a5568' }"
-                    @click.stop="$emit('toggle-tags-panel')"
                   >
                     <img
                       :src="getTagIconPath(event.tagIcon)"
@@ -102,7 +102,6 @@
                     v-if="event.tagIcon && getTagIconPath(event.tagIcon) && editingTitleEventId !== event.id"
                     :src="getTagIconPath(event.tagIcon)"
                     class="event-tag-icon"
-                    @click.stop="$emit('toggle-tags-panel')"
                   />
                 </template>
                 <template v-if="editingTitleEventId === event.id">
@@ -110,7 +109,7 @@
                     ref="titleInputRef"
                     v-model="editingTitleValue"
                     class="event-title-input"
-                    draggable="true"
+                    draggable="false"
                     @mousedown="onTitleInputMouseDown($event, event)"
                     @keydown.enter="saveTitle(event)"
                     @keydown.escape="cancelTitleEdit"
@@ -118,7 +117,7 @@
                   />
                 </template>
                 <template v-else>
-                  <span @click.stop="startEditTitle(event)" class="event-title-text">{{ event.title }}</span>
+                  <span class="event-title-text" data-edit-title>{{ event.title }}</span>
                 </template>
                 <div v-if="tagPickerEventId === event.id" class="tag-picker-dropdown" @click.stop>
                   <div class="tag-picker-option" @click="selectTag(event, null)">— нет тега</div>
@@ -135,10 +134,10 @@
                 </div>
               </div>
               <div class="event-time">
-                <img src="@/assets/icon-clock.svg" alt="clock" class="event-time-icon" />
+                <img src="@/assets/icon-clock.svg" alt="clock" class="event-time-icon" draggable="false" />
                 {{ formatEventTime(event) }}
               </div>
-              <div v-if="event.description" class="event-description">
+              <div v-if="event.description" class="event-description" draggable="false">
                 <template v-if="editingDescEventId === event.id">
                   <input
                     v-model="editingDescValue"
@@ -211,6 +210,7 @@
             <button 
               v-show="editingTitleEventId !== event.id"
               class="event-star-btn"
+              draggable="false"
               :class="{ 'is-important': event.is_important }"
               @click.stop="$emit('event-toggle-important', event)"
               :title="event.is_important ? 'Убрать важность' : 'Отметить как важное'"
@@ -220,11 +220,13 @@
             <button
               v-show="editingTitleEventId !== event.id"
               class="event-quick-add-btn"
+              draggable="false"
               @click.stop="toggleQuickAdd(event)"
               title="Добавить задачу"
             >+</button>
             <div
               class="event-resize-handle event-resize-handle--bottom"
+              draggable="false"
               @mousedown.stop.prevent="startResize($event, event, 'bottom')"
             ></div>
           </div>
@@ -973,8 +975,27 @@ const selectTag = (event: CalendarEvent, tagId: string | null) => {
 }
 
 // Handle event click
-const handleEventClick = (_event?: CalendarEvent) => {
-  // Modal access removed - inline editing via dblclick
+const handleEventClick = (e: MouseEvent, calEvent?: CalendarEvent) => {
+  if (!calEvent) return
+
+  const container = e.currentTarget as HTMLElement
+
+  const iconAreas = container.querySelectorAll('.event-tag-icon-wrapper, .event-tag-icon')
+  for (const el of iconAreas) {
+    const r = el.getBoundingClientRect()
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      emit('toggle-tags-panel')
+      return
+    }
+  }
+
+  const titleEl = container.querySelector('[data-edit-title]')
+  if (titleEl) {
+    const r = titleEl.getBoundingClientRect()
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      startEditTitle(calEvent)
+    }
+  }
 }
 
 // Current time for the red line
@@ -1468,6 +1489,8 @@ const submitCreate = () => {
   padding: 5px 8px;
   cursor: pointer;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
   z-index: 10;
   transition: opacity 0.2s;
   display: flex;
@@ -1547,14 +1570,16 @@ const submitCreate = () => {
   margin-right: 6px;
   margin-top: 2px;
   flex-shrink: 0;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .event-title-text {
+  pointer-events: none;
   min-width: 0;
 }
 
 .event-tag-icon-wrapper {
+  pointer-events: none;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -1562,7 +1587,6 @@ const submitCreate = () => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  pointer-events: auto;
 }
 
 .event-tag-icon-wrapper .event-tag-icon {
@@ -1576,7 +1600,7 @@ const submitCreate = () => {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  pointer-events: auto;
+  pointer-events: none;
   filter: var(--event-icon-filter, none);
 }
 
@@ -1648,7 +1672,7 @@ const submitCreate = () => {
 .event-task-checkbox {
   width: 13px;
   height: 13px;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--event-text-color, #ffffff);
   border-radius: 3px;
   flex-shrink: 0;
   display: flex;
@@ -1656,11 +1680,11 @@ const submitCreate = () => {
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--event-text-color, #ffffff);
 }
 .event-task-checkbox.checked {
-  border-color: #ffffff;
-  background: #ffffff;
+  border-color: var(--event-text-color, #ffffff);
+  background: var(--event-text-color, #ffffff);
 }
 .event-task-checkbox.checked .checkmark {
   display: block;
@@ -1948,7 +1972,7 @@ const submitCreate = () => {
 
 .event-title-text {
   cursor: text;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .event-title-input {

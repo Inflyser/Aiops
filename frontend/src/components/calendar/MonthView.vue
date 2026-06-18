@@ -47,12 +47,14 @@
             @dragover="handleTaskDragOver($event)"
             @drop="handleTaskDrop($event, day)"
           >
-            <img
-              v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
-              :src="getTagIconPath(event.tagIcon)"
-              class="event-tag-icon"
-            />
-            {{ event.title }}
+            <span>
+              <img
+                v-if="event.tagIcon && getTagIconPath(event.tagIcon)"
+                :src="getTagIconPath(event.tagIcon)"
+                class="event-tag-icon"
+              />
+            </span>
+            <span>{{ event.title }}</span>
           </div>
           <div
             v-if="getExtraEventsCount(day.date) > 0"
@@ -88,7 +90,7 @@
                   class="event-tag-icon"
                 />
                 <span class="day-events-modal-item-star" v-if="event.is_important">★</span>
-                {{ event.title }}
+                <span>{{ event.title }}</span>
               </div>
               <div class="day-events-modal-item-time">{{ formatEventTime(event) }}</div>
             </div>
@@ -565,6 +567,11 @@ const getExtraEventsCount = (date: string) => {
   height: 13px;
   flex-shrink: 0;
   filter: var(--event-icon-filter, none);
+  pointer-events: none;
+}
+
+.month-event > span {
+  pointer-events: none;
 }
 
 .month-event {
@@ -575,6 +582,8 @@ const getExtraEventsCount = (date: string) => {
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   display: flex;
   align-items: center;
   gap: 4px;
