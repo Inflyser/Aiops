@@ -8,40 +8,38 @@
       <button class="close-btn" @click="$emit('close')">→</button>
     </div>
 
-    <div class="tags-list">
-      <div
-        v-for="tag in tags"
-        :key="tag.id"
-        class="tag-item"
-        draggable="true"
-        @dragstart="handleDragStart($event, tag)"
-      >
-        <img
-          v-if="tag.icon"
-          :src="getIconPath(tag.icon)"
-          class="tag-icon"
-        />
-        <span v-else class="tag-icon-placeholder"></span>
-        <span class="tag-color" :style="{ backgroundColor: tag.color }"></span>
-        <span class="tag-name">{{ tag.name }}</span>
-        <button class="delete-tag-btn" @click="$emit('delete-tag', tag.id)">✕</button>
-      </div>
+    <div class="block block--tags">
+      <div class="tags-list">
+        <div
+          v-for="tag in tags"
+          :key="tag.id"
+          class="tag-item"
+          draggable="true"
+          @dragstart="handleDragStart($event, tag)"
+        >
+          <img
+            v-if="tag.icon"
+            :src="getIconPath(tag.icon)"
+            class="tag-icon"
+          />
+          <span v-else class="tag-icon-placeholder"></span>
+          <span class="tag-color" :style="{ backgroundColor: tag.color }"></span>
+          <span class="tag-name">{{ tag.name }}</span>
+          <button class="delete-tag-btn" @click="$emit('delete-tag', tag.id)">✕</button>
+        </div>
 
-      <div v-if="tags.length === 0" class="no-tags">
-        Нет тегов. Добавьте новый тег.
+        <div v-if="tags.length === 0" class="no-tags">
+          Нет тегов. Добавьте новый тег.
+        </div>
       </div>
     </div>
 
     <div class="add-tag-form">
-      <input
-        v-model="newTagName"
-        type="text"
-        placeholder="Название тега"
-        class="tag-input"
-      />
-
-      <div class="form-row">
-        <label class="form-label">Цвет</label>
+      <div class="block block--color">
+        <div class="block__header">
+          <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#888"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-166 117-283t283-117q166 0 283 117t117 283q0 51-19 98t-52 84q-33 37-79 58t-99 21q-33 0-63.5-11T610-248q-10 28-32 44t-49 16q-38 0-62-24t-24-62q0-12 3-23t9-21q5-8 8-17t3-19q0-38-26-64t-64-26q-20 0-38 8t-31 22q-13 14-32 22t-40 8q-38 0-62-24t-24-62q0-78 55-133t133-55q20 0 38.5 4t35.5 12q17 8 35.5 12t38.5 4q38 0 64-26t26-64q0-20-8-38t-22-31q-14-13-22-32t-8-40q0-38 24-62t62-24q14 0 28.5 3t27.5 9q50 23 91.5 57t74.5 74q33 40 52 88t19 102q0 51-19 98t-52 84q-33 37-79 58t-99 21q-18 0-35.5-4.5T608-206q-4 12-14 19t-23 7q-10 0-17.5-7.5T546-205q0-8 3-16t9-15q7-9 10-18t3-20q0-22-16-38t-38-16q-22 0-38 16t-16 38q0 18-5 34t-13 30q-8 14-13 30t-5 34q0 22 16 38t38 16h40q13 0 21.5-8.5T524-280q0-13 8.5-21.5T554-310q13 0 21.5 8.5T584-280v20q0 17 4.5 32t12.5 28q13 18 32 29t40 11q23 0 42-9.5t33-25.5q26-30 42-67t16-78q0-66-25-124.5T689-585q-44-47-104-74t-125-27q-83 0-141.5 58.5T260-486q0 38 26 64t64 26q25 0 47.5-10t39.5-28q17-18 39.5-28t47.5-10q38 0 64 26t26 64q0 38-26 64t-64 26q-12 0-23.5-3t-20.5-9q-9-6-20.5-9t-23.5-3q-22 0-38 16t-16 38q0 18 4.5 34t13.5 30q12 18 19 38t7 42q0 24-8.5 45.5T613-146q-23 25-56 41.5T490-88h-10Z"/></svg>
+          Цвет
+        </div>
         <div class="color-picker-wrap">
           <div class="recent-colors">
             <button
@@ -109,44 +107,53 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <label class="form-label" @click="showIcons = !showIcons">
-          Иконка
-          <svg class="icon-arrow" :class="{ open: showIcons }" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
-        </label>
-        <div class="icon-toggle-row">
-          <button
-            type="button"
-            class="icon-toggle-btn"
-            @click="showIcons = !showIcons"
-            :title="showIcons ? 'Свернуть' : 'Выбрать иконку'"
-          >
-            <img v-if="newTagIcon" :src="getIconPath(newTagIcon)" class="icon-preview" />
-            <span v-else class="icon-preview none">—</span>
-            <svg class="toggle-arrow" :class="{ open: showIcons }" xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
-          </button>
-          <span class="icon-filename">{{ newTagIcon || 'без иконки' }}</span>
-        </div>
-        <div v-if="showIcons" class="icon-selector">
-          <button
-            type="button"
-            class="icon-btn"
-            :class="{ selected: !newTagIcon }"
-            @click="selectIcon(undefined)"
-            title="Без иконки"
-          >
-            —
-          </button>
-          <button
-            v-for="icon in iconFiles"
-            :key="icon.name"
-            type="button"
-            class="icon-btn"
-            :class="{ selected: newTagIcon === icon.name }"
-            @click="selectIcon(icon.name)"
-          >
-            <img :src="icon.path" />
-          </button>
+      <div class="block block--details">
+        <input
+          v-model="newTagName"
+          type="text"
+          placeholder="Название тега"
+          class="tag-input"
+        />
+
+        <div class="form-row">
+          <label class="form-label" @click="showIcons = !showIcons">
+            Иконка
+            <svg class="icon-arrow" :class="{ open: showIcons }" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+          </label>
+          <div class="icon-toggle-row">
+            <button
+              type="button"
+              class="icon-toggle-btn"
+              @click="showIcons = !showIcons"
+              :title="showIcons ? 'Свернуть' : 'Выбрать иконку'"
+            >
+              <img v-if="newTagIcon" :src="getIconPath(newTagIcon)" class="icon-preview" />
+              <span v-else class="icon-preview none">—</span>
+              <svg class="toggle-arrow" :class="{ open: showIcons }" xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#888"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+            </button>
+            <span class="icon-filename">{{ newTagIcon || 'без иконки' }}</span>
+          </div>
+          <div v-if="showIcons" class="icon-selector">
+            <button
+              type="button"
+              class="icon-btn"
+              :class="{ selected: !newTagIcon }"
+              @click="selectIcon(undefined)"
+              title="Без иконки"
+            >
+              —
+            </button>
+            <button
+              v-for="icon in iconFiles"
+              :key="icon.name"
+              type="button"
+              class="icon-btn"
+              :class="{ selected: newTagIcon === icon.name }"
+              @click="selectIcon(icon.name)"
+            >
+              <img :src="icon.path" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -356,9 +363,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 }
 
 .tags-list {
-  max-height: 50vh;
-  overflow-y: auto;
-  padding: 10px;
+  padding: 0;
 }
 
 .tag-item {
@@ -430,9 +435,49 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
 .add-tag-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 16px 14px;
-  border-top: 1px solid var(--border-subtle);
+  gap: 8px;
+  padding: 10px 12px 14px;
+}
+
+.block {
+  background: #0d0d0d;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.block--tags {
+  margin: 0 12px;
+  max-height: 35vh;
+  overflow-y: auto;
+  padding: 6px 8px;
+}
+
+.block--color {
+  border-radius: 20px 20px 14px 14px;
+  overflow: hidden;
+}
+
+.block--details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.block--details .tag-input {
+  margin-bottom: 0;
+}
+
+.block__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
 }
 
 .tag-input {
@@ -487,6 +532,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   gap: 6px;
   flex-wrap: wrap;
   row-gap: 4px;
+  justify-content: center;
 }
 
 .color-picker-wrap .palette-toggle-btn {
@@ -577,8 +623,7 @@ const handleDragStart = (e: DragEvent, tag: Tag) => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
-  margin-top: 6px;
-  padding: 4px;
+  padding: 8px 4px 2px;
 }
 
 .palette-card {
