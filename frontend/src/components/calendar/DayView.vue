@@ -1977,10 +1977,6 @@ onUnmounted(() => {
   filter: var(--event-icon-filter, brightness(0) invert(1));
 }
 
-.event-title {
-  pointer-events: auto;
-}
-
 .event-title-text {
   cursor: text;
   pointer-events: none;
@@ -2039,6 +2035,7 @@ onUnmounted(() => {
   padding: 4px 0;
   max-height: 180px;
   overflow-y: auto;
+  pointer-events: auto;
 }
 
 .tag-picker-option {

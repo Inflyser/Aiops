@@ -1966,10 +1966,6 @@ const submitCreate = () => {
   border-color: #888;
 }
 
-.event-title {
-  pointer-events: auto;
-}
-
 .event-title-text {
   cursor: text;
   pointer-events: none;
@@ -2026,6 +2022,7 @@ const submitCreate = () => {
   padding: 4px 0;
   max-height: 180px;
   overflow-y: auto;
+  pointer-events: auto;
 }
 
 .tag-picker-option {
