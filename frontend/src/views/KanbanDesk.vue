@@ -9,7 +9,7 @@
     </div>
 
     <!-- Board Tabs (Browser-like tabs) -->
-    <div class="board-tabs">
+    <div class="board-tabs" @wheel="onTabsWheel">
       <draggable
         v-model="boardOrder"
         class="tabs-container"
@@ -34,21 +34,19 @@
             >✕</button>
           </div>
         </template>
-        <template #footer>
-          <!-- Add Board Button - inside draggable, right after tabs -->
-          <button class="add-tab-btn" @click="showAddBoardModal = true" title="Добавить доску">
-            +
-          </button>
-        </template>
       </draggable>
-      
-      <!-- Inbox Tab (always last) -->
-      <div
-        class="board-tab inbox-tab"
-        :class="{ 'tab-active': isInboxActive }"
-        @click="selectInbox"
-      >
-        <span class="tab-title">Inbox</span>
+
+      <div class="tabs-end">
+        <button class="add-tab-btn" @click="showAddBoardModal = true" title="Добавить доску">
+          +
+        </button>
+        <div
+          class="board-tab inbox-tab"
+          :class="{ 'tab-active': isInboxActive }"
+          @click="selectInbox"
+        >
+          <span class="tab-title">Inbox</span>
+        </div>
       </div>
     </div>
 
@@ -61,7 +59,7 @@
     </div>
 
     <!-- Kanban Board -->
-    <div class="kanban-board">
+    <div ref="boardRef" class="kanban-board" @wheel="onBoardWheel">
       <draggable
         v-model="columnOrder"
         class="kanban-columns"
@@ -234,6 +232,22 @@ const updateTime = () => {
   currentTime.value = dayjs().format('HH:mm DD MMMM')
 }
 
+
+const boardRef = ref<HTMLElement | null>(null)
+
+const onBoardWheel = (e: WheelEvent) => {
+  const target = e.target as HTMLElement
+  if (target.closest('.column-body')) return
+  const el = boardRef.value
+  if (!el) return
+  el.scrollLeft += e.deltaY
+}
+
+const onTabsWheel = (e: WheelEvent) => {
+  const el = (e.currentTarget as HTMLElement)?.querySelector('.tabs-container')
+  if (!el) return
+  el.scrollLeft += e.deltaY
+}
 
 const tasksStore = useTasksStore()
 const kanbanStore = useKanbanStore()
@@ -704,7 +718,17 @@ const handleKeydown = (event: KeyboardEvent) => {
   display: flex;
   align-items: center;
   gap: 2px;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.tabs-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .board-tab {
@@ -720,6 +744,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   transition: all 0.2s;
   min-width: 120px;
   max-width: 200px;
+  flex-shrink: 0;
   position: relative;
 }
 
@@ -808,7 +833,6 @@ const handleKeydown = (event: KeyboardEvent) => {
 .inbox-tab {
   background: var(--bg-tertiary);
   border: 1px solid #2a2a2a;
-  margin-left: auto;
 }
 
 .inbox-tab:hover {
@@ -855,22 +879,24 @@ const handleKeydown = (event: KeyboardEvent) => {
 /* ─── Board Layout ──────────────────────────────────────── */
 .kanban-board {
   flex: 1;
+  min-height: 0;
   padding: 24px 20px;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: hidden;
   display: flex;
   gap: 16px;
-  align-items: flex-start;
-  min-width: max-content;
+  align-items: stretch;
   padding-bottom: 12px;
 }
 
 /* Override for draggable to align items at top */
 .kanban-columns {
-  align-items: flex-start;
+  align-items: stretch;
   min-width: max-content;
+  flex-shrink: 0;
   display: flex;
   gap: 16px;
+  min-height: 0;
 }
 
 /* ─── Column ────────────────────────────────────────────── */
@@ -884,6 +910,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-height: 0;
   transition: border-color 0.2s;
 }
 
@@ -983,8 +1010,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 100px;
-  max-height: calc(100vh - 300px);
+  min-height: 0;
   overflow-y: auto;
   padding: 8px 4px 8px 0;
 }
@@ -1104,6 +1130,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 .add-col {
   width: 300px;
   flex-shrink: 0;
+  align-self: flex-start;
   padding: 16px;
   border: 2px dashed #2a2a2a;
   border-radius: 12px;
