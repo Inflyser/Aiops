@@ -36,6 +36,7 @@ class TaskInDB(TaskBase):
     user_id: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+    order: int = 0
 
 class Task(TaskInDB):
     pass

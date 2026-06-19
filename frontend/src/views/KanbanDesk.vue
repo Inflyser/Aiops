@@ -350,13 +350,13 @@ const columnTasks = ref<Record<string, any[]>>({})
 
 const distributeTasksToColumns = () => {
   columns.value.forEach(col => {
-    if (isInboxActive.value && col.key === 'inbox') {
-      columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) =>
-        !t.column_id && t.status === 'todo'
-      )
-    } else {
-      columnTasks.value[col.key] = tasksStore.tasks.filter((t: any) => t.column_id === col.key)
-    }
+    const tasks = isInboxActive.value && col.key === 'inbox'
+      ? tasksStore.tasks.filter((t: any) =>
+          !t.column_id && t.status === 'todo'
+        )
+      : tasksStore.tasks.filter((t: any) => t.column_id === col.key)
+
+    columnTasks.value[col.key] = tasks.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
   })
 }
 
