@@ -679,9 +679,11 @@ watch([currentPeriod, currentDate], async () => {
 /* Week View */
 .week-chart {
   display: flex;
-  gap: 8px;
+  gap: 24px;
   justify-content: center;
   align-items: stretch;
+  padding: 0 10px;
+  min-height: 400px;
 }
 
 .week-day {
@@ -689,12 +691,12 @@ watch([currentPeriod, currentDate], async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  max-width: 100px;
+  gap: 12px;
+  max-width: 220px;
 }
 
 .week-day-label {
-  font-size: 13px;
+  font-size: 16px;
   color: #888;
   font-weight: 500;
   text-align: center;
@@ -710,38 +712,38 @@ watch([currentPeriod, currentDate], async () => {
 }
 
 .week-day-bar {
-  width: 32px;
+  width: 140px;
   flex: 1;
   background: var(--bg-tertiary);
-  border-radius: 6px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
-  min-height: 40px;
+  min-height: 180px;
 }
 
 .week-day-fill {
   width: 100%;
-  border-radius: 6px;
+  border-radius: 10px;
   transition: height 0.3s ease;
   min-height: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding-top: 4px;
+  padding-top: 8px;
 }
 
 .week-day-percentage {
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 700;
   color: white;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 .week-day-hours {
-  font-size: 10px;
+  font-size: 13px;
   color: rgba(255,255,255,0.8);
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
@@ -753,18 +755,20 @@ watch([currentPeriod, currentDate], async () => {
   transform: translateX(-50%);
   white-space: nowrap;
   display: flex;
-  gap: 2px;
+  gap: 4px;
   align-items: center;
 }
 
 .week-day-above .week-day-percentage {
   color: #888;
   text-shadow: none;
+  font-size: 14px;
 }
 
 .week-day-above .week-day-hours {
   color: #666;
   text-shadow: none;
+  font-size: 12px;
 }
 
 /* Month View */
