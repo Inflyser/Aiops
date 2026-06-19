@@ -23,6 +23,7 @@ from app.models.task import Task, Subtask
 from app.models.kanban import KanbanColumn
 from app.models.tag import Tag
 from app.models.event_task import EventTask
+from app.models.goal import Goal
 
 # target_metadata must be set to the Base.metadata from your models
 target_metadata = Base.metadata

@@ -21,3 +21,4 @@ class User(Base):
     calendar_events = relationship("CalendarEvent", back_populates="user", cascade="all, delete-orphan")
     tags = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
     kanban_boards = relationship("KanbanBoard", back_populates="user", cascade="all, delete-orphan")
+    goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")
