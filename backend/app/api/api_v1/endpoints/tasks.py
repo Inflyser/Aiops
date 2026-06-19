@@ -45,16 +45,10 @@ def create_task(
     task_data["id"] = str(uuid4())
     task_data["user_id"] = current_user.id
     
-    # Получаем максимальный order для сортировки
-    project_filter = TaskModel.project_id == task_in.project_id
-    if task_in.project_id is None:
-        project_filter = TaskModel.project_id.is_(None)
-        
     max_order = db.query(TaskModel.order).filter(
         TaskModel.user_id == current_user.id,
-        project_filter
+        TaskModel.project_id == task_data.get("project_id")
     ).order_by(TaskModel.order.desc()).first()
-    
     task_data["order"] = (max_order[0] + 1) if max_order and max_order[0] is not None else 0
     
     task = TaskModel(**task_data)
