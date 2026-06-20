@@ -366,29 +366,18 @@ const startZoom = (e: MouseEvent) => {
 // Локальное состояние для bounce анимации
 const bouncingEvents = ref<Set<string>>(new Set())
 
-// Переключатель режима: true = рабочий день (7-23), false = полный день (0-23)
-// По умолчанию рабочий день (7-24)
+const savedStart = localStorage.getItem('day-start-hour')
+const savedEnd = localStorage.getItem('day-end-hour')
+const savedSleepMode = localStorage.getItem('sleep-mode')
+const savedSleepStart = localStorage.getItem('sleep-start-hour')
+const savedSleepEnd = localStorage.getItem('sleep-end-hour')
+
 const compactMode = ref(true)
-const dayStartHour = ref(7)
-const dayEndHour = ref(23)
-
-// Режим сна: скрывает выбранный промежуток в календаре
-const sleepMode = ref(false)
-const sleepStartHour = ref(0)
-const sleepEndHour = ref(0)
-
-onMounted(() => {
-  const savedStart = localStorage.getItem('day-start-hour')
-  if (savedStart) dayStartHour.value = parseFloat(savedStart)
-  const savedEnd = localStorage.getItem('day-end-hour')
-  if (savedEnd) dayEndHour.value = parseFloat(savedEnd)
-  const savedSleepMode = localStorage.getItem('sleep-mode')
-  if (savedSleepMode) sleepMode.value = savedSleepMode === 'true'
-  const savedSleepStart = localStorage.getItem('sleep-start-hour')
-  if (savedSleepStart) sleepStartHour.value = parseFloat(savedSleepStart)
-  const savedSleepEnd = localStorage.getItem('sleep-end-hour')
-  if (savedSleepEnd) sleepEndHour.value = parseFloat(savedSleepEnd)
-})
+const dayStartHour = ref(savedStart ? parseFloat(savedStart) : 7)
+const dayEndHour = ref(savedEnd ? parseFloat(savedEnd) : 23)
+const sleepMode = ref(savedSleepMode ? savedSleepMode === 'true' : false)
+const sleepStartHour = ref(savedSleepStart ? parseFloat(savedSleepStart) : 0)
+const sleepEndHour = ref(savedSleepEnd ? parseFloat(savedSleepEnd) : 0)
 
 watch([dayStartHour, dayEndHour], () => {
   localStorage.setItem('day-start-hour', String(dayStartHour.value))

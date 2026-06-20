@@ -40,6 +40,14 @@
             class="hour-slot"
             :style="{ height: hourHeight + 'px' }"
           ></div>
+
+          <!-- Sleep Events Section -->
+          <div v-if="props.sleepMode && getSleepEventsForDay(day.date).length > 0" class="sleep-events" style="top: 0">
+            <div v-for="event in getSleepEventsForDay(day.date)" :key="'sleep-' + event.id" class="sleep-event" @click.stop="$emit('open-event', event)">
+              <span class="sleep-event-time">{{ dayjs(event.start).format('HH:mm') }}-{{ dayjs(event.end).format('HH:mm') }}</span>
+              <span class="sleep-event-title">{{ event.title }}</span>
+            </div>
+          </div>
           
           <!-- Selection overlay for drag-to-create -->
           <div
@@ -61,11 +69,11 @@
             />
           </div>
           <div
-            v-for="event in getEventsForDay(day.date)"
+            v-for="event in getVisibleEventsForDay(day.date)"
             :key="event.id"
             class="event-block"
             :class="{ 'dragging': draggedEvent?.id === event.id, 'is-resizing': isResizing(event.id) }"
-            :style="getEventStyle(event, day.date)"
+            :style="getEventStyle(event, dayjs(day.date).startOf('day'))"
             :data-event-id="event.id"
             draggable="true"
             @click.stop="handleEventClick($event, event)"
@@ -73,7 +81,7 @@
             @drag="handleDrag($event)"
             @dragend="handleDragEnd"
             @dragover="handleTaskDragOver($event)"
-            @drop="handleTaskDrop($event, day)"
+            @drop="handleTaskDrop($event, props.events)"
             @mouseenter="hoveredEventId = event.id"
             @mouseleave="hoveredEventId = hoveredEventId === event.id ? null : hoveredEventId"
           >
@@ -120,13 +128,13 @@
                   <span class="event-title-text" data-edit-title>{{ event.title }}</span>
                 </template>
                 <div v-if="tagPickerEventId === event.id" class="tag-picker-dropdown" @click.stop>
-                  <div class="tag-picker-option" @click="selectTag(event, null)">— нет тега</div>
+                  <div class="tag-picker-option" @click="selectTag(event, null, tagsStore.tags)">— нет тега</div>
                   <div
                     v-for="tag in tagsStore.tags"
                     :key="tag.id"
                     class="tag-picker-option"
                     :class="{ active: event.tag_id === tag.id }"
-                    @click="selectTag(event, tag.id)"
+                    @click="selectTag(event, tag.id, tagsStore.tags)"
                   >
                     <span class="tag-picker-color" :style="{ backgroundColor: tag.color }"></span>
                     {{ tag.name }}
@@ -151,8 +159,8 @@
                   <span @dblclick.stop="startEditDesc(event)">{{ event.description }}</span>
                 </template>
               </div>
-              <template v-for="ti in [getVisibleTaskInfo(event, day.date)]" :key="'ti'">
-              <div v-if="(ti.visible > 0 || (event.eventTasks?.length ?? 0) > 0 || (hoveredEventId === event.id && canShowAddTask(event, day.date))) && quickAddEventId !== event.id">
+              <template v-for="ti in [getVisibleTaskInfo(event)]" :key="'ti'">
+              <div v-if="(ti.visible > 0 || (event.eventTasks?.length ?? 0) > 0 || (hoveredEventId === event.id && canShowAddTask(event))) && quickAddEventId !== event.id">
                 <div v-if="ti.visible === 0 && (event.eventTasks?.length ?? 0) > 0" class="event-tasks-indicator" @click.stop="$emit('open-event-tasks', event)">
                   <span class="tasks-icon">•</span>
                   <span class="tasks-count">{{ event.completed_task_count || 0 }}/{{ event.eventTasks?.length ?? 0 }} {{ getTaskWord(event.eventTasks?.length ?? 0) }}</span>
@@ -169,13 +177,13 @@
                   <div v-if="ti.remaining > 0" class="event-tasks-more" @click.stop="$emit('open-event-tasks', event)">
                     +{{ ti.remaining }}
                   </div>
-                  <div v-if="ti.remaining === 0 && canShowProgressBar(event, day.date)" class="event-tasks-progress">
+                  <div v-if="ti.remaining === 0 && canShowProgressBar(event)" class="event-tasks-progress">
                     <div class="event-progress-bar-bg">
                       <div class="event-progress-bar-fill" :style="{ width: getProgressPercent(event) + '%' }"></div>
                     </div>
                   </div>
                 </template>
-                <div v-if="(hoveredEventId === event.id || activeAddTaskEventId === event.id) && canShowAddTask(event, day.date)" class="event-add-task" @click.stop>
+                <div v-if="(hoveredEventId === event.id || activeAddTaskEventId === event.id) && canShowAddTask(event)" class="event-add-task" @click.stop>
                   <input
                     v-model="addTaskTitle"
                     class="event-add-task-input"
@@ -200,7 +208,7 @@
               </template>
             </div>
             <span 
-              v-if="showTaskBadge(event, day.date)" 
+              v-if="showTaskBadge(event)" 
               class="event-task-badge" 
               @click.stop="$emit('open-event-tasks', event)"
               :title="'Задачи: ' + (event.eventTasks?.length ?? 0)"
@@ -246,11 +254,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import { getContrastColors } from '@/utils/color'
 import { useTagsStore } from '@/stores/tags'
+import { useCalendarTime } from '@/composables/useCalendarTime'
+import { useEventResize } from '@/composables/useEventResize'
+import { useEventTasks } from '@/composables/useEventTasks'
+import { useEventDrag } from '@/composables/useEventDrag'
+import { useDragToCreate } from '@/composables/useDragToCreate'
+
 const tagsStore = useTagsStore()
 
 dayjs.locale('ru')
@@ -258,7 +271,6 @@ dayjs.locale('ru')
 const iconModules = import.meta.glob<{ default: string }>('../../assets/icon/*.svg', { query: '?url', import: 'default', eager: true })
 
 const getTagIconPath = (iconName: string): string => {
-  // import.meta.glob возвращает ключи в формате /src/assets/icon/filename.svg
   for (const [path, url] of Object.entries(iconModules)) {
     if (path.includes(`/${iconName}.svg`) || path.includes(`/${iconName}`)) {
       return (url as unknown as string)
@@ -329,232 +341,172 @@ const emit = defineEmits<{
   (e: 'toggle-tags-panel'): void
 }>()
 
-// Drag and drop state
-const draggedEvent = ref<CalendarEvent | null>(null)
-const dragGhost = ref<HTMLElement | null>(null)
-const dragOffsetX = ref(0)
-const dragOffsetY = ref(0)
+// --- Composables ---
+const {
+  hours,
+  calendarHeight,
+  sleepGaps,
+  toVisibleMinutes,
+  getEventStyle: getEventStyleRaw,
+  formatEventTime: formatEventTimeRaw,
+  formatTime
+} = useCalendarTime({
+  dayStartHour: computed(() => props.dayStartHour),
+  dayEndHour: computed(() => props.dayEndHour),
+  sleepMode: computed(() => props.sleepMode),
+  sleepStartHour: computed(() => props.sleepStartHour),
+  sleepEndHour: computed(() => props.sleepEndHour),
+  hourHeight: computed(() => props.hourHeight),
+  eventAccentMode: computed(() => props.eventAccentMode)
+})
+
+const {
+  resizeNewStart,
+  resizeNewEnd,
+  isResizing,
+  startResize,
+  cleanupResize
+} = useEventResize(computed(() => props.hourHeight))
+
+const {
+  hoveredEventId,
+  addTaskTitle,
+  activeAddTaskEventId,
+  quickAddEventId,
+  quickAddTitle,
+  editingTitleEventId,
+  editingTitleValue,
+  editingDescEventId,
+  editingDescValue,
+  tagPickerEventId,
+  titleInputRef,
+  getTaskWord,
+  getVisibleTaskInfo: getVisibleTaskInfoRaw,
+  canShowProgressBar: canShowProgressBarRaw,
+  showTaskBadge: showTaskBadgeRaw,
+  canShowAddTask: canShowAddTaskRaw,
+  getProgressPercent,
+  toggleTaskInline,
+  submitAddTask: submitAddTaskRaw,
+  cancelAddTask,
+  handleAddTaskBlur,
+  toggleQuickAdd,
+  submitQuickAdd,
+  cancelQuickAdd,
+  saveTitle: saveTitleRaw,
+  cancelTitleEdit,
+  onTitleInputMouseDown,
+  startEditDesc,
+  saveDesc: saveDescRaw,
+  cancelDescEdit,
+  selectTag: selectTagRaw,
+  handleEventClick: handleEventClickRaw
+} = useEventTasks(
+  computed(() => props.hourHeight),
+  {
+    EVENT_PADDING: 10,
+    TITLE_H: 22,
+    TIME_H: 20,
+    DESC_H: 20,
+    TASK_H: 22,
+    TASK_GAP: 2,
+    PROGRESS_BAR_H: 14,
+    ADD_TASK_H: 28,
+    MORE_H: 22
+  }
+)
+
+const {
+  draggedEvent,
+  dragOffsetY,
+  isAltPressed,
+  handleDragStart,
+  handleDrag,
+  handleDragEnd,
+  handleTaskDragOver,
+  handleTaskDrop: handleTaskDropRaw,
+  getTimeFromPixel
+} = useEventDrag({
+  hourHeight: computed(() => props.hourHeight),
+  dayStartHour: computed(() => props.dayStartHour),
+  sleepMode: computed(() => props.sleepMode),
+  sleepStartHour: computed(() => props.sleepStartHour),
+  sleepEndHour: computed(() => props.sleepEndHour)
+})
+
+const {
+  selDay,
+  selTop,
+  selHeight,
+  showCreateInput,
+  createTitle,
+  createTitleInput,
+  startSelection: startSelectionRaw,
+  createEvent: createEventRaw,
+  cancelSelection: cancelSelectionRaw,
+  submitCreate: submitCreateRaw
+} = useDragToCreate({
+  hourHeight: computed(() => props.hourHeight),
+  dayStartHour: computed(() => props.dayStartHour),
+  sleepMode: computed(() => props.sleepMode),
+  sleepStartHour: computed(() => props.sleepStartHour),
+  sleepEndHour: computed(() => props.sleepEndHour)
+})
+
+// --- Adapter functions (bridge composable signatures to component expectations) ---
+
+const ee = (name: string, ...args: any[]) => (emit as any)(name, ...args)
+
+const getEventStyle = (event: CalendarEvent, dayStart: dayjs.Dayjs) =>
+  getEventStyleRaw(event, dayStart, isResizing, resizeNewStart, resizeNewEnd)
+
+const formatEventTime = (event: CalendarEvent) =>
+  formatEventTimeRaw(event, isResizing, resizeNewStart, resizeNewEnd)
+
+const getVisibleTaskInfo = (event: CalendarEvent) =>
+  getVisibleTaskInfoRaw(event, isResizing, resizeNewStart, resizeNewEnd)
+
+const canShowProgressBar = (event: CalendarEvent) =>
+  canShowProgressBarRaw(event, isResizing, resizeNewStart, resizeNewEnd)
+
+const showTaskBadge = (event: CalendarEvent) =>
+  showTaskBadgeRaw(event, isResizing, resizeNewStart, resizeNewEnd)
+
+const canShowAddTask = (event: CalendarEvent) =>
+  canShowAddTaskRaw(event, isResizing, resizeNewStart, resizeNewEnd)
+
+const submitAddTask = (event: CalendarEvent) =>
+  submitAddTaskRaw(event, ee)
+
+const saveTitle = (event: CalendarEvent) =>
+  saveTitleRaw(event, ee)
+
+const saveDesc = (event: CalendarEvent) =>
+  saveDescRaw(event, ee)
+
+const handleEventClick = (e: MouseEvent, event?: CalendarEvent) =>
+  handleEventClickRaw(e, event, ee)
+
+const startSelection = (event: MouseEvent, day: WeekDay) =>
+  startSelectionRaw(event, day)
+
+const createEvent = () =>
+  createEventRaw(ee)
+
+const cancelSelection = () => cancelSelectionRaw()
+
+const submitCreate = () => submitCreateRaw(ee)
+
+// Template calls handleTaskDrop($event, props.events) but only needs $event
+const handleTaskDrop = (e: DragEvent, _events?: any) => handleTaskDropRaw(e, props.events as any, ee)
+
+// Template calls selectTag(event, tagId, tags) - bridge to composable's 4-arg version
+const selectTag = (event: CalendarEvent, tagId: string | null, tags?: any) =>
+  selectTagRaw(event as any, tagId, tags || tagsStore.tags, ee)
+
+// --- Week-specific drag/drop handling ---
 const dragOverDay = ref<string | null>(null)
 const dragOverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
-
-const isAltPressed = ref(false)
-
-// Resize state
-const resizingEventId = ref<string | number | null>(null)
-const resizeStartY = ref(0)
-const resizeDirection = ref<'bottom' | 'top' | null>(null)
-const resizeOriginalEnd = ref<dayjs.Dayjs | null>(null)
-const resizeNewEnd = ref<dayjs.Dayjs | null>(null)
-const resizeOriginalStart = ref<dayjs.Dayjs | null>(null)
-const resizeNewStart = ref<dayjs.Dayjs | null>(null)
-const resizeEvent = ref<CalendarEvent | null>(null)
-
-// Hover and add-task state
-const hoveredEventId = ref<string | number | null>(null)
-const addTaskTitle = ref('')
-const activeAddTaskEventId = ref<string | number | null>(null)
-
-// Quick add state
-const quickAddEventId = ref<string | number | null>(null)
-const quickAddTitle = ref('')
-
-const isResizing = (eventId: string | number) => resizingEventId.value === eventId
-
-const startResize = (e: MouseEvent, event: CalendarEvent, direction: 'bottom' | 'top') => {
-  e.stopPropagation()
-  e.preventDefault()
-
-  resizingEventId.value = event.id
-  resizeStartY.value = e.clientY
-  resizeDirection.value = direction
-  resizeOriginalEnd.value = dayjs(event.end)
-  resizeOriginalStart.value = dayjs(event.start)
-  resizeEvent.value = event
-
-  document.addEventListener('pointermove', onResizeMove)
-  document.addEventListener('pointerup', onResizeEnd)
-}
-
-const onResizeMove = (e: PointerEvent) => {
-  if (!resizeEvent.value) return
-
-  const deltaY = e.clientY - resizeStartY.value
-  const deltaMinutes = (deltaY / props.hourHeight) * 60
-
-  if (resizeDirection.value === 'bottom') {
-    if (!resizeOriginalEnd.value) return
-    const newEnd = resizeOriginalEnd.value.add(deltaMinutes, 'minute')
-    const snapMinutes = Math.round(newEnd.minute() / 10) * 10
-    const snappedEnd = newEnd.minute(snapMinutes).second(0).millisecond(0)
-    const start = dayjs(resizeEvent.value.start)
-    const minEnd = start.add(15, 'minute')
-    resizeNewEnd.value = snappedEnd.isBefore(minEnd) ? minEnd : snappedEnd
-  } else {
-    if (!resizeOriginalStart.value) return
-    const newStart = resizeOriginalStart.value.add(deltaMinutes, 'minute')
-    const snapMinutes = Math.round(newStart.minute() / 10) * 10
-    const snappedStart = newStart.minute(snapMinutes).second(0).millisecond(0)
-    const end = dayjs(resizeEvent.value.end)
-    const maxStart = end.subtract(15, 'minute')
-    resizeNewStart.value = snappedStart.isAfter(maxStart) ? maxStart : snappedStart
-  }
-}
-
-const onResizeEnd = () => {
-  document.removeEventListener('pointermove', onResizeMove)
-  document.removeEventListener('pointerup', onResizeEnd)
-
-  if (resizeEvent.value) {
-    const event = resizeEvent.value
-    if (resizeDirection.value === 'top' && resizeNewStart.value) {
-      const startISO = resizeNewStart.value.toISOString()
-      const dayStart = dayjs(event.start).startOf('day')
-      emit('event-drop', {
-        event,
-        newDate: dayStart.format('YYYY-MM-DD'),
-        newStart: startISO,
-        newEnd: event.end
-      })
-    } else if (resizeDirection.value === 'bottom' && resizeNewEnd.value) {
-      const endISO = resizeNewEnd.value.toISOString()
-      const dayStart = dayjs(event.start).startOf('day')
-      emit('event-drop', {
-        event,
-        newDate: dayStart.format('YYYY-MM-DD'),
-        newStart: event.start,
-        newEnd: endISO
-      })
-    }
-  }
-
-  setTimeout(() => {
-    resizingEventId.value = null
-    resizeStartY.value = 0
-    resizeDirection.value = null
-    resizeOriginalEnd.value = null
-    resizeNewEnd.value = null
-    resizeOriginalStart.value = null
-    resizeNewStart.value = null
-    resizeEvent.value = null
-  }, 60)
-}
-
-// Auto-scroll during drag
-const SCROLL_THRESHOLD = 60
-const SCROLL_SPEED = 15
-let autoScrollInterval: ReturnType<typeof setInterval> | null = null
-let currentScrollDir: 'up' | 'down' | null = null
-
-const getCalendarGrid = (): HTMLElement | null => {
-  return document.querySelector('.calendar-grid') as HTMLElement
-}
-
-const startAutoScroll = (dir: 'up' | 'down') => {
-  if (autoScrollInterval) return
-  autoScrollInterval = setInterval(() => {
-    const grid = getCalendarGrid()
-    if (!grid) return
-    if (dir === 'up') {
-      grid.scrollTop = Math.max(0, grid.scrollTop - SCROLL_SPEED)
-    } else {
-      grid.scrollTop += SCROLL_SPEED
-    }
-  }, 16)
-}
-
-const stopAutoScroll = () => {
-  if (autoScrollInterval) {
-    clearInterval(autoScrollInterval)
-    autoScrollInterval = null
-  }
-}
-
-const handleDragStart = (event: DragEvent, calendarEvent: CalendarEvent) => {
-  draggedEvent.value = calendarEvent
-  isAltPressed.value = event.altKey
-
-  // Подавляем нативный ghost и создаём кастомный с анимацией
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = event.altKey ? 'copy' : 'move'
-    event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent))
-    event.dataTransfer.setData('application/x-alt-drag', String(event.altKey))
-
-    // Прозрачное изображение 1x1 для скрытия нативного ghost
-    const transparentImg = new Image()
-    transparentImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
-    event.dataTransfer.setDragImage(transparentImg, 0, 0)
-  }
-
-  const target = event.target as HTMLElement
-  const eventBlock = target.closest('.event-block') as HTMLElement
-  if (eventBlock) {
-    const rect = eventBlock.getBoundingClientRect()
-    const offsetX = event.clientX - rect.left
-    const offsetY = event.clientY - rect.top
-    const ghost = eventBlock.cloneNode(true) as HTMLElement
-    ghost.classList.add('drag-ghost')
-    ghost.style.position = 'fixed'
-    ghost.style.pointerEvents = 'none'
-    ghost.style.zIndex = '9999'
-    ghost.style.width = eventBlock.offsetWidth + 'px'
-    ghost.style.opacity = '0.85'
-    ghost.style.left = (event.clientX - offsetX) + 'px'
-    ghost.style.top = (event.clientY - offsetY) + 'px'
-    dragOffsetX.value = offsetX
-    dragOffsetY.value = offsetY
-    document.body.appendChild(ghost)
-    dragGhost.value = ghost
-  }
-}
-
-const handleDrag = (event: DragEvent) => {
-  if (dragGhost.value) {
-    dragGhost.value.style.left = (event.clientX - dragOffsetX.value) + 'px'
-    dragGhost.value.style.top = (event.clientY - dragOffsetY.value) + 'px'
-  }
-
-  const grid = getCalendarGrid()
-  if (!grid) return
-  const rect = grid.getBoundingClientRect()
-  const relativeY = event.clientY - rect.top
-
-  if (relativeY < SCROLL_THRESHOLD) {
-    if (currentScrollDir !== 'up') {
-      stopAutoScroll()
-      startAutoScroll('up')
-      currentScrollDir = 'up'
-    }
-  } else if (relativeY > rect.height - SCROLL_THRESHOLD) {
-    if (currentScrollDir !== 'down') {
-      stopAutoScroll()
-      startAutoScroll('down')
-      currentScrollDir = 'down'
-    }
-  } else {
-    if (currentScrollDir !== null) {
-      stopAutoScroll()
-      currentScrollDir = null
-    }
-  }
-}
-
-const handleDragEnd = () => {
-  draggedEvent.value = null
-  dragOverDay.value = null
-  isAltPressed.value = false
-  dragOffsetX.value = 0
-  dragOffsetY.value = 0
-  if (dragOverTimeout.value) clearTimeout(dragOverTimeout.value)
-
-  stopAutoScroll()
-  currentScrollDir = null
-
-  // Удаляем кастомный ghost
-  if (dragGhost.value) {
-    dragGhost.value.remove()
-    dragGhost.value = null
-  }
-}
 
 const handleDragOver = (event: DragEvent, day: WeekDay) => {
   event.preventDefault()
@@ -581,33 +533,19 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
   try {
     const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
     
-    // Проверяем, это перетаскивание события календаря или задачи/категории из Inbox
     if (draggedEvent.value) {
-      // Перетаскивание события календаря
       const eventData = draggedEvent.value
-      const isCopy = event.altKey || isAltPressed.value // Проверяем Alt при сбросе
+      const isCopy = event.altKey || isAltPressed.value
       
-      // Calculate the time offset from the original start
       const originalStart = dayjs(eventData.start)
       const originalEnd = dayjs(eventData.end)
       const duration = originalEnd.diff(originalStart, 'minute')
       
-      // Get the time from the drop position (корректируем на половину высоты, т.к. курсор по центру ghost)
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
       const dropY = event.clientY - rect.top - dragOffsetY.value
-      const slotIndex = Math.floor(dropY / props.hourHeight)
-      const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
-      const minutes = Math.round(rawMinutes / 10) * 10
+      const { hour, minute } = getTimeFromPixel(dropY)
       
-      let hour: number
-      if (props.sleepMode) {
-        const visibleHours = Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
-        hour = visibleHours[slotIndex] ?? 0
-      } else {
-        hour = slotIndex + props.dayStartHour
-      }
-      
-      const newStart = day.fullDate.hour(hour).minute(minutes)
+      const newStart = day.fullDate.hour(hour).minute(minute)
       const newEnd = newStart.add(duration, 'minute')
       
       if (isCopy) {
@@ -628,18 +566,8 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
     } else if (droppedData.type === 'category') {
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
       const dropY = event.clientY - rect.top
-      const slotIndex = Math.floor(dropY / props.hourHeight)
-      const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
-      const minutes = Math.round(rawMinutes / 10) * 10
-      
-      let hour: number
-      if (props.sleepMode) {
-        const visibleHours = Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
-        hour = visibleHours[slotIndex] ?? 0
-      } else {
-        hour = slotIndex + props.dayStartHour
-      }
-      const dropTime = day.fullDate.hour(hour).minute(minutes)
+      const { hour, minute } = getTimeFromPixel(dropY)
+      const dropTime = day.fullDate.hour(hour).minute(minute)
       
       emit('category-drop-to-day', {
         categoryId: droppedData.categoryId,
@@ -649,18 +577,8 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
     } else if (droppedData.id && droppedData.title) {
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
       const dropY = event.clientY - rect.top
-      const slotIndex = Math.floor(dropY / props.hourHeight)
-      const rawMinutes = Math.floor((dropY % props.hourHeight) / props.hourHeight * 60)
-      const minutes = Math.round(rawMinutes / 10) * 10
-      
-      let hour: number
-      if (props.sleepMode) {
-        const visibleHours = Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
-        hour = visibleHours[slotIndex] ?? 0
-      } else {
-        hour = slotIndex + props.dayStartHour
-      }
-      const dropTime = day.fullDate.hour(hour).minute(minutes)
+      const { hour, minute } = getTimeFromPixel(dropY)
+      const dropTime = day.fullDate.hour(hour).minute(minute)
       
       emit('task-drop-to-day', {
         task: droppedData,
@@ -675,353 +593,50 @@ const handleDrop = (event: DragEvent, day: WeekDay) => {
   isAltPressed.value = false
 }
 
-// Task drag and drop handlers
-const handleTaskDragOver = (event: DragEvent) => {
-  event.preventDefault()
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move'
-  }
-}
-
-const handleTaskDrop = (event: DragEvent, _day: WeekDay) => {
-  event.preventDefault()
-  if (draggedEvent.value) return
-  event.stopPropagation()
-
-  try {
-    const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
-    
-    if (droppedData._tag) {
-      const targetElement = event.target as HTMLElement
-      const eventBlock = targetElement.closest('.event-block')
-      
-      if (eventBlock) {
-        const eventId = eventBlock.getAttribute('data-event-id')
-        const targetEvent = props.events.find(e => String(e.id) === eventId)
-        
-        if (targetEvent) {
-          emit('tag-drop-to-event', { tag: droppedData, event: targetEvent })
-        }
-      }
-    } else if (droppedData.type === 'category') {
-      // Находим событие, над которым была сброшена категория
-      const targetElement = event.target as HTMLElement
-      const eventBlock = targetElement.closest('.event-block')
-      
-      if (eventBlock) {
-        // Находим событие по его ID
-        const eventId = eventBlock.getAttribute('data-event-id')
-        const targetEvent = props.events.find(e => String(e.id) === eventId)
-        
-        if (targetEvent) {
-          emit('task-drop-to-event', { task: droppedData, event: targetEvent })
-        }
-      }
-    } else if (droppedData.id && droppedData.title) {
-      // Находим событие, над которым была сброшена задача
-      const targetElement = event.target as HTMLElement
-      const eventBlock = targetElement.closest('.event-block')
-      
-      if (eventBlock) {
-        // Находим событие по его ID
-        const eventId = eventBlock.getAttribute('data-event-id')
-        const targetEvent = props.events.find(e => String(e.id) === eventId)
-        
-        if (targetEvent) {
-          emit('task-drop-to-event', { task: droppedData, event: targetEvent })
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error parsing task data:', error)
-  }
-}
-
-// Get correct word form for task count
-const getTaskWord = (count: number): string => {
-  const lastTwo = count % 100
-  const lastOne = count % 10
-  
-  if (lastTwo >= 11 && lastTwo <= 14) return 'задач'
-  if (lastOne === 1) return 'задача'
-  if (lastOne >= 2 && lastOne <= 4) return 'задачи'
-  return 'задач'
-}
-
-const EVENT_PADDING = 10
-const TITLE_H = 22
-const TIME_H = 20
-const DESC_H = 20
-const TASK_H = 22
-const TASK_GAP = 2
-
-const PROGRESS_BAR_H = 14
-const ADD_TASK_H = 28
-const MORE_H = 22
-
-const getCurrentEventTimes = (event: CalendarEvent) => {
-  const start = isResizing(event.id) && resizeNewStart.value ? resizeNewStart.value : dayjs(event.start)
-  const end = isResizing(event.id) && resizeNewEnd.value ? resizeNewEnd.value : dayjs(event.end)
-  return { start, end }
-}
-
-const getVisibleTaskInfo = (event: CalendarEvent, dayDate: string) => {
-  const tasks = event.eventTasks
-  if (!tasks || tasks.length === 0) return { visible: 0, remaining: 0, eventHeight: 0 }
-
-  const { start, end } = getCurrentEventTimes(event)
-  const dayStart = dayjs(dayDate).startOf('day')
-  let startMinutes = start.diff(dayStart, 'minute')
-  const duration = end.diff(start, 'minute')
-  if (props.dayStartHour > 0 && startMinutes < props.dayStartHour * 60) startMinutes = props.dayStartHour * 60
-  const eventHeight = Math.max((duration / 60) * props.hourHeight, 30)
-
-  let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
-  if (event.description) usedHeight += DESC_H
-
-  const available = eventHeight - usedHeight
-  const taskHeight = TASK_H + TASK_GAP
-  const availableForTasks = available - MORE_H
-  const visible = Math.max(0, Math.floor(availableForTasks / taskHeight))
-  const remaining = Math.max(0, tasks.length - visible)
-
-  return { visible, remaining, eventHeight }
-}
-
-const canShowProgressBar = (event: CalendarEvent, dayDate: string): boolean => {
-  const info = getVisibleTaskInfo(event, dayDate)
-  if (info.remaining > 0 || !event.eventTasks?.length || event.eventTasks.length < 5) return false
-  const taskHeight = TASK_H + TASK_GAP
-  const allTasksHeight = event.eventTasks.length * taskHeight - TASK_GAP
-  let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
-  if (event.description) usedHeight += DESC_H
-  usedHeight += allTasksHeight + MORE_H
-  return info.eventHeight - usedHeight >= PROGRESS_BAR_H
-}
-
-const showTaskBadge = (event: CalendarEvent, dayDate: string): boolean => {
-  const info = getVisibleTaskInfo(event, dayDate)
-  return (event.eventTasks?.length ?? 0) > 0 && info.visible === 0
-}
-
-const canShowAddTask = (event: CalendarEvent, dayDate: string): boolean => {
-  const info = getVisibleTaskInfo(event, dayDate)
-  const taskHeight = TASK_H + TASK_GAP
-  const visibleTasksHeight = info.visible * taskHeight
-  let usedHeight = EVENT_PADDING + TITLE_H + TIME_H
-  if (event.description) usedHeight += DESC_H
-  usedHeight += visibleTasksHeight + MORE_H
-  const remaining = info.eventHeight - usedHeight
-  if (info.visible > 0 && info.remaining === 0) {
-    return remaining >= PROGRESS_BAR_H + ADD_TASK_H
-  }
-  return remaining >= ADD_TASK_H
-}
-
-const getProgressPercent = (event: CalendarEvent): number => {
-  if (!event.eventTasks || event.eventTasks.length === 0) return 0
-  const completed = event.eventTasks.filter(t => t.completed).length
-  return Math.round((completed / event.eventTasks.length) * 100)
-}
-
-const submitAddTask = (event: CalendarEvent) => {
-  const title = addTaskTitle.value.trim()
-  if (!title) return
-  emit('add-task-to-event', { event, title })
-  addTaskTitle.value = ''
-}
-
-const cancelAddTask = () => {
-  addTaskTitle.value = ''
-  activeAddTaskEventId.value = null
-}
-
-const handleAddTaskBlur = () => {
-  if (!addTaskTitle.value.trim()) {
-    activeAddTaskEventId.value = null
-  }
-}
-
-const toggleQuickAdd = (event: CalendarEvent) => {
-  if (quickAddEventId.value === event.id) {
-    cancelQuickAdd()
-  } else {
-    quickAddEventId.value = event.id
-    quickAddTitle.value = ''
-    nextTick(() => {
-      const el = document.querySelector('.event-quick-add-input') as HTMLInputElement
-      el?.focus()
-    })
-  }
-}
-
-const submitQuickAdd = (event: CalendarEvent) => {
-  const title = quickAddTitle.value.trim()
-  if (!title) return
-  emit('add-task-to-event', { event, title })
-  quickAddEventId.value = null
-  quickAddTitle.value = ''
-}
-
-const cancelQuickAdd = () => {
-  quickAddEventId.value = null
-  quickAddTitle.value = ''
-}
-
-const toggleTaskInline = async (task: EventTask, calendarEvent: CalendarEvent) => {
-  try {
-    const res = await fetch(`/api/v1/tasks/${task.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ completed: !task.completed })
-    })
-    if (res.ok) {
-      task.completed = !task.completed
-      if (calendarEvent.eventTasks) {
-        calendarEvent.completed_task_count = calendarEvent.eventTasks.filter(t => t.completed).length
-      }
-    }
-  } catch (e) {
-    console.error('Failed to toggle task:', e)
-  }
-}
-
-// Inline editing state
-const editingTitleEventId = ref<string | number | null>(null)
-const editingTitleValue = ref('')
-const editingDescEventId = ref<string | number | null>(null)
-const editingDescValue = ref('')
-const tagPickerEventId = ref<string | number | null>(null)
-const titleInputRef = ref<HTMLInputElement | null>(null)
-
-const startEditTitle = (event: CalendarEvent) => {
-  editingTitleValue.value = event.title
-  editingTitleEventId.value = event.id
-  nextTick(() => {
-    titleInputRef.value?.focus()
-    document.addEventListener('mousedown', onDocumentMouseDown)
+// --- Event helpers (WeekView-specific) ---
+const getEventsForDay = (date: string) => {
+  return props.events.filter(event => {
+    const eventDate = dayjs(event.start).format('YYYY-MM-DD')
+    return eventDate === date
   })
 }
 
-const onDocumentMouseDown = (e: MouseEvent) => {
-  if (!editingTitleEventId.value) {
-    document.removeEventListener('mousedown', onDocumentMouseDown)
-    return
-  }
-  const input = titleInputRef.value
-  if (input && !input.contains(e.target as Node)) {
-    cancelTitleEdit()
-    document.removeEventListener('mousedown', onDocumentMouseDown)
-  }
+const getSleepEventsForDay = (date: string) => {
+  if (!props.sleepMode) return []
+  const sleepStartMin = props.sleepStartHour * 60
+  const sleepEndMin = props.sleepEndHour * 60
+  return getEventsForDay(date).filter(event => {
+    const start = dayjs(event.start)
+    const dayStart = dayjs(date).startOf('day')
+    const startMinutes = start.diff(dayStart, 'minute')
+    const duration = dayjs(event.end).diff(start, 'minute')
+    return startMinutes >= sleepStartMin && (startMinutes + duration) <= sleepEndMin
+  })
 }
 
-const saveTitle = (event: CalendarEvent) => {
-  const val = editingTitleValue.value.trim()
-  if (val && val !== event.title) {
-    emit('event-update', { event, changes: { title: val } })
-  }
-  editingTitleEventId.value = null
-  document.removeEventListener('mousedown', onDocumentMouseDown)
+const getVisibleEventsForDay = (date: string) => {
+  if (!props.sleepMode) return getEventsForDay(date)
+  const sleepStartMin = props.sleepStartHour * 60
+  const sleepEndMin = props.sleepEndHour * 60
+  return getEventsForDay(date).filter(event => {
+    const start = dayjs(event.start)
+    const dayStart = dayjs(date).startOf('day')
+    const startMinutes = start.diff(dayStart, 'minute')
+    const duration = dayjs(event.end).diff(start, 'minute')
+    return !(startMinutes >= sleepStartMin && (startMinutes + duration) <= sleepEndMin)
+  })
 }
 
-const cancelTitleEdit = () => {
-  editingTitleEventId.value = null
-  document.removeEventListener('mousedown', onDocumentMouseDown)
-}
-
-const onTitleInputMouseDown = (e: MouseEvent, event: CalendarEvent) => {
-  if (editingTitleEventId.value !== event.id) return
-  const startX = e.clientX
-  const startY = e.clientY
-  const onMove = (e: MouseEvent) => {
-    if (Math.abs(e.clientX - startX) > 3 || Math.abs(e.clientY - startY) > 3) {
-      saveTitle(event)
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-    }
-  }
-  const onUp = () => {
-    document.removeEventListener('mousemove', onMove)
-    document.removeEventListener('mouseup', onUp)
-  }
-  document.addEventListener('mousemove', onMove)
-  document.addEventListener('mouseup', onUp)
-}
-
-const startEditDesc = (event: CalendarEvent) => {
-  editingDescValue.value = event.description || ''
-  editingDescEventId.value = event.id
-}
-
-const saveDesc = (event: CalendarEvent) => {
-  const val = editingDescValue.value.trim()
-  if (val !== event.description) {
-    emit('event-update', { event, changes: { description: val || '' } })
-  }
-  editingDescEventId.value = null
-}
-
-const cancelDescEdit = () => {
-  editingDescEventId.value = null
-}
-
-const selectTag = (event: CalendarEvent, tagId: string | null) => {
-  const curTagId = event.tag_id || ''
-  if (tagId !== curTagId) {
-    const tag = tagId ? tagsStore.tags.find(t => t.id === tagId) : null
-    emit('event-update', { event, changes: { tag_id: tag?.id || '', color: tag?.color || '' } })
-  }
-  tagPickerEventId.value = null
-}
-
-// Handle event click
-const handleEventClick = (e: MouseEvent, calEvent?: CalendarEvent) => {
-  if (!calEvent) return
-
-  const container = e.currentTarget as HTMLElement
-
-  const iconAreas = container.querySelectorAll('.event-tag-icon-wrapper, .event-tag-icon')
-  for (const el of iconAreas) {
-    const r = el.getBoundingClientRect()
-    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-      emit('toggle-tags-panel')
-      return
-    }
-  }
-
-  const titleEl = container.querySelector('[data-edit-title]')
-  if (titleEl) {
-    const r = titleEl.getBoundingClientRect()
-    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-      startEditTitle(calEvent)
-    }
-  }
-}
-
-// Current time for the red line
+// --- Current time line ---
 const currentTime = ref(dayjs())
 let timeInterval: ReturnType<typeof setInterval> | null = null
 
-onMounted(() => {
-  // Update time every minute
-  timeInterval = setInterval(() => {
-    currentTime.value = dayjs()
-  }, 60000)
-})
+const isCurrentDay = (day: WeekDay) => dayjs(day.date).isSame(dayjs(), 'day')
 
-onUnmounted(() => {
-  if (timeInterval) {
-    clearInterval(timeInterval)
-  }
-  stopAutoScroll()
-  currentScrollDir = null
-  removeListeners()
-})
-
-// Calculate the position of the current time line
 const currentTimeLineStyle = computed(() => {
-  const hours = currentTime.value.hour()
-  const minutes = currentTime.value.minute()
+  const now = currentTime.value
+  const hours = now.hour()
+  const minutes = now.minute()
   const nowMinutes = hours * 60 + minutes
 
   if (props.sleepMode) {
@@ -1035,379 +650,24 @@ const currentTimeLineStyle = computed(() => {
     return { top: `${top}px` }
   }
   
-  // Calculate total minutes from start of day (or 7:00 for compact mode)
   const startHour = props.dayStartHour
   const totalMinutes = (hours - startHour) * 60 + minutes
-  
   const top = (totalMinutes / 60) * props.hourHeight
-
-  return {
-    top: `${top}px`
-  }
+  return { top: `${top}px` }
 })
 
-// Check if current day is today
-const isCurrentDay = (day: WeekDay) => {
-  return dayjs(day.date).isSame(dayjs(), 'day')
-}
-
-const hours = computed(() => {
-  if (props.sleepMode) {
-    return Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
-  }
-  return Array.from({ length: props.dayEndHour - props.dayStartHour }, (_, i) => i + props.dayStartHour)
+onMounted(() => {
+  timeInterval = setInterval(() => {
+    currentTime.value = dayjs()
+  }, 60000)
 })
 
-const calendarHeight = computed(() => {
-  if (props.sleepMode) {
-    return (24 - (props.sleepEndHour - props.sleepStartHour)) * props.hourHeight
+onUnmounted(() => {
+  if (timeInterval) {
+    clearInterval(timeInterval)
   }
-  const totalHours = props.dayEndHour - props.dayStartHour
-  return totalHours * props.hourHeight
+  cleanupResize()
 })
-
-const sleepGaps = computed(() => {
-  if (!props.sleepMode) return []
-  const h = hours.value
-  const gaps = []
-  for (let i = 1; i < h.length; i++) {
-    if (h[i] - h[i-1] > 1) {
-      gaps.push({
-        sleepStart: h[i-1] + 1,
-        sleepEnd: h[i],
-        top: i * props.hourHeight
-      })
-    }
-  }
-  return gaps
-})
-
-const toVisibleMinutes = (minutes: number): number => {
-  if (!props.sleepMode) return minutes
-  const sleepStartMin = props.sleepStartHour * 60
-  const sleepDuration = (props.sleepEndHour - props.sleepStartHour) * 60
-  if (minutes <= sleepStartMin) return minutes
-  if (minutes >= props.sleepEndHour * 60) return minutes - sleepDuration
-  return sleepStartMin
-}
-
-const getEventsForDay = (date: string) => {
-  return props.events.filter(event => {
-    const eventDate = dayjs(event.start).format('YYYY-MM-DD')
-    return eventDate === date
-  })
-}
-
-const getEventStyle = (event: CalendarEvent, dayDate: string) => {
-  const start = isResizing(event.id) && resizeNewStart.value ? resizeNewStart.value : dayjs(event.start)
-  const end = isResizing(event.id) && resizeNewEnd.value ? resizeNewEnd.value : dayjs(event.end)
-  const dayStart = dayjs(dayDate).startOf('day')
-
-  let startMinutes = start.diff(dayStart, 'minute')
-  const duration = end.diff(start, 'minute')
-
-  if (props.sleepMode) {
-    const sleepStartMin = props.sleepStartHour * 60
-    const sleepEndMin = props.sleepEndHour * 60
-    const eventStartMin = startMinutes
-    const eventEndMin = startMinutes + duration
-
-    if (eventStartMin >= sleepStartMin && eventEndMin <= sleepEndMin) {
-      return { display: 'none' }
-    }
-
-    let visibleStart = eventStartMin
-    let visibleEnd = eventEndMin
-
-    if (visibleStart < sleepStartMin && visibleEnd > sleepStartMin && visibleEnd <= sleepEndMin) {
-      visibleEnd = sleepStartMin
-    } else if (visibleStart >= sleepStartMin && visibleStart < sleepEndMin) {
-      visibleStart = sleepEndMin
-    }
-
-    const visStart = toVisibleMinutes(visibleStart)
-    const visEnd = toVisibleMinutes(visibleEnd)
-    const visDuration = visEnd - visStart
-
-    const eventColor = event.color || '#4a5568'
-    const eventBg = props.eventAccentMode ? '#1a1a1a' : eventColor
-    const { text: eventTextColor, textMuted: eventTextMuted, iconFilter: eventIconFilter } = getContrastColors(eventBg)
-    const eventStyleExtra: Record<string, string> = {
-      '--event-text-color': eventTextColor,
-      '--event-text-muted': eventTextMuted,
-      '--event-icon-filter': eventIconFilter
-    }
-    eventStyleExtra['--event-color'] = eventColor
-
-    const totalVisibleHours = 24 - (props.sleepEndHour - props.sleepStartHour)
-    const top = (visStart / 60) * props.hourHeight
-    const height = Math.max((visDuration / 60) * props.hourHeight, 30)
-    const maxTop = totalVisibleHours * props.hourHeight
-    const clampedTop = Math.max(0, Math.min(top, maxTop))
-    const clampedHeight = Math.min(height, maxTop - clampedTop)
-
-    if (clampedTop >= maxTop || clampedHeight <= 0) {
-      return { display: 'none' }
-    }
-
-    return {
-      top: `${clampedTop}px`,
-      height: `${clampedHeight}px`,
-      backgroundColor: eventBg,
-      position: 'absolute' as const,
-      left: '2px',
-      right: '2px',
-      zIndex: 10,
-      ...eventStyleExtra
-    }
-  }
-
-  // Используем цвет события или дефолтный серый цвет
-  const eventColor = event.color || '#4a5568'
-  const eventBg = props.eventAccentMode ? '#1a1a1a' : eventColor
-  const { text: eventTextColor, textMuted: eventTextMuted, iconFilter: eventIconFilter } = getContrastColors(eventBg)
-  const eventStyleExtra: Record<string, string> = {
-    '--event-text-color': eventTextColor,
-    '--event-text-muted': eventTextMuted,
-    '--event-icon-filter': eventIconFilter
-  }
-  eventStyleExtra['--event-color'] = eventColor
-
-  const totalDisplayHours = props.dayEndHour - props.dayStartHour
-  const offsetMinutes = props.dayStartHour * 60
-
-  if (totalDisplayHours < 24) {
-    if (startMinutes < offsetMinutes) {
-      startMinutes = offsetMinutes
-    } else if (startMinutes >= props.dayEndHour * 60) {
-      return { display: 'none' }
-    }
-
-    const top = ((startMinutes - offsetMinutes) / 60) * props.hourHeight
-    const height = Math.max((duration / 60) * props.hourHeight, 30)
-
-    const maxTop = totalDisplayHours * props.hourHeight
-    const clampedTop = Math.max(0, Math.min(top, maxTop))
-    const clampedHeight = Math.min(height, maxTop - clampedTop)
-
-    if (clampedTop >= maxTop || clampedHeight <= 0) {
-      return { display: 'none' }
-    }
-
-    return {
-      top: `${clampedTop}px`,
-      height: `${clampedHeight}px`,
-      backgroundColor: eventBg,
-      position: 'absolute' as const,
-      left: '2px',
-      right: '2px',
-      zIndex: 10,
-      ...eventStyleExtra
-    }
-  }
-
-  const top = (startMinutes / 60) * props.hourHeight
-  const height = Math.max((duration / 60) * props.hourHeight, 30)
-
-  const maxTop = 24 * props.hourHeight
-  const clampedTop = Math.max(0, Math.min(top, maxTop))
-  const clampedHeight = Math.min(height, maxTop - clampedTop)
-
-  if (clampedTop >= maxTop || clampedHeight <= 0) {
-    return { display: 'none' }
-  }
-
-  return {
-    top: `${clampedTop}px`,
-    height: `${clampedHeight}px`,
-    backgroundColor: eventBg,
-    position: 'absolute' as const,
-    left: '2px',
-    right: '2px',
-    zIndex: 10,
-    ...eventStyleExtra
-  }
-}
-
-const formatTime = (hour: number) => {
-  return `${hour.toString().padStart(2, '0')}:00`
-}
-
-const formatEventTime = (event: CalendarEvent) => {
-  const start = isResizing(event.id) && resizeNewStart.value ? resizeNewStart.value : dayjs(event.start)
-  const end = isResizing(event.id) && resizeNewEnd.value ? resizeNewEnd.value : dayjs(event.end)
-  return `${start.format('HH:mm')} - ${end.format('HH:mm')}`
-}
-
-// ========== Drag-to-create selection ==========
-const selDay = ref<string>('')
-const selTop = ref(0)
-const selHeight = ref(0)
-const isDragging = ref(false)
-const hasMoved = ref(false)
-const showCreateInput = ref(false)
-const createTitle = ref('')
-let selStartY = 0
-let selStartDay = ''
-const createTitleInput = ref<HTMLInputElement | null>(null)
-
-let removeMouseListeners: (() => void) | null = null
-
-const addMouseListeners = () => {
-  const onMove = (e: MouseEvent) => {
-    if (!isDragging.value) return
-    hasMoved.value = true
-
-    const dayEl = (e.target as HTMLElement).closest('.day-column') as HTMLElement
-    if (!dayEl) return
-
-    const rect = dayEl.getBoundingClientRect()
-    const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height - 1))
-    const dayDate = dayEl.dataset.dayDate || selStartDay
-
-    selDay.value = dayDate
-    selTop.value = Math.min(selStartY, currentY)
-    selHeight.value = Math.abs(currentY - selStartY)
-  }
-
-  const onUp = (e: MouseEvent) => {
-    if (!isDragging.value) return
-    isDragging.value = false
-    removeListeners()
-
-    if (!hasMoved.value) {
-      // Just a click — emit day-click as before
-      selDay.value = ''
-      selTop.value = 0
-      selHeight.value = 0
-
-      const dayEl = (e.target as HTMLElement).closest('.day-column') as HTMLElement
-      if (dayEl) {
-        const rect = dayEl.getBoundingClientRect()
-        const clickY = e.clientY - rect.top
-        const slotIndex = Math.floor(clickY / props.hourHeight)
-        const rawMinutes = Math.floor((clickY % props.hourHeight) / props.hourHeight * 60)
-        const minutes = Math.round(rawMinutes / 10) * 10
-        let hour: number
-        if (props.sleepMode) {
-          const visibleHours = Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
-          hour = visibleHours[slotIndex] ?? 0
-        } else {
-          hour = slotIndex + props.dayStartHour
-        }
-        const dayData = props.weekDays.find(d => d.date === selStartDay)
-        if (dayData) {
-          const clickedDateTime = dayData.fullDate.hour(hour).minute(minutes)
-          emit('day-click', { day: dayData, dateTime: clickedDateTime })
-        }
-      }
-      return
-    }
-
-    // Selection complete — show input
-    showCreateInput.value = true
-    createTitle.value = ''
-    nextTick(() => {
-      const input = document.querySelector('.create-event-input') as HTMLInputElement
-      if (input) input.focus()
-    })
-  }
-
-  document.addEventListener('mousemove', onMove)
-  document.addEventListener('mouseup', onUp)
-  removeMouseListeners = () => {
-    document.removeEventListener('mousemove', onMove)
-    document.removeEventListener('mouseup', onUp)
-  }
-}
-
-const removeListeners = () => {
-  if (removeMouseListeners) {
-    removeMouseListeners()
-    removeMouseListeners = null
-  }
-}
-
-const startSelection = (event: MouseEvent, day: WeekDay) => {
-  // Ignore clicks on event blocks
-  if ((event.target as HTMLElement).closest('.event-block')) return
-
-  const dayEl = (event.currentTarget as HTMLElement)
-  const rect = dayEl.getBoundingClientRect()
-  selStartY = Math.max(0, Math.min(event.clientY - rect.top, rect.height - 1))
-  selStartDay = day.date
-
-  isDragging.value = true
-  hasMoved.value = false
-  showCreateInput.value = false
-  createTitle.value = ''
-  selDay.value = day.date
-  selTop.value = selStartY
-  selHeight.value = 0
-
-  addMouseListeners()
-}
-
-const getTimeFromPixel = (pixelY: number): { hour: number; minute: number } => {
-  const slotIndex = Math.floor(pixelY / props.hourHeight)
-  const offsetMin = Math.round(((pixelY % props.hourHeight) / props.hourHeight) * 60 / 10) * 10
-
-  if (props.sleepMode) {
-    const visibleHours = Array.from({ length: 24 }, (_, i) => i).filter(h => h < props.sleepStartHour || h >= props.sleepEndHour)
-    const hour = visibleHours[slotIndex] ?? 0
-    return { hour, minute: offsetMin }
-  }
-
-  const hour = slotIndex + props.dayStartHour
-  return { hour, minute: offsetMin }
-}
-
-const createEvent = () => {
-  if (!createTitle.value.trim()) {
-    cancelSelection()
-    return
-  }
-
-  const startTime = getTimeFromPixel(selTop.value)
-  const endTime = getTimeFromPixel(selTop.value + selHeight.value)
-
-  // Ensure minimum 30 min duration, and end after start
-  let endHour = endTime.hour
-  let endMin = endTime.minute
-  if (endHour < startTime.hour || (endHour === startTime.hour && endMin <= startTime.minute)) {
-    endHour = startTime.hour
-    endMin = startTime.minute + 30
-    if (endMin >= 60) { endHour += 1; endMin -= 60 }
-  }
-
-  const fmt = (h: number, m: number) =>
-    `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-
-  emit('create-event', {
-    date: selDay.value,
-    startTime: fmt(startTime.hour, startTime.minute),
-    endTime: fmt(endHour, endMin),
-    title: createTitle.value.trim()
-  })
-
-  cancelSelection()
-}
-
-const cancelSelection = () => {
-  selDay.value = ''
-  selTop.value = 0
-  selHeight.value = 0
-  showCreateInput.value = false
-  createTitle.value = ''
-}
-
-const submitCreate = () => {
-  if (createTitle.value.trim()) {
-    createEvent()
-  } else {
-    cancelSelection()
-  }
-}
 </script>
 
 <style scoped>
@@ -1511,7 +771,6 @@ const submitCreate = () => {
   z-index: 100;
 }
 
-/* Drag over state for day column */
 .day-column.drag-over {
   background-color: rgba(200, 200, 200, 0.15);
 }
@@ -1779,7 +1038,6 @@ const submitCreate = () => {
   margin-top: 2px;
 }
 
-/* Event Star Button */
 .event-star-btn {
   position: absolute;
   top: 4px;
@@ -1811,7 +1069,6 @@ const submitCreate = () => {
   transform: scale(1.2);
 }
 
-/* Event Task Badge */
 .event-task-badge {
   position: absolute;
   top: 0px;
@@ -1840,7 +1097,6 @@ const submitCreate = () => {
   transform: scale(1.15);
 }
 
-/* Event Quick Add Button */
 .event-quick-add-btn {
   position: absolute;
   top: 30px;
@@ -1869,7 +1125,6 @@ const submitCreate = () => {
   color: #ffffff;
 }
 
-/* When badge exists: shift star/plus below badge */
 .event-task-badge ~ .event-star-btn {
   top: 20px;
 }
@@ -1882,7 +1137,6 @@ const submitCreate = () => {
   top: 46px;
 }
 
-/* Event Quick Add Input */
 .event-quick-add {
   margin-top: 3px;
   pointer-events: auto;
@@ -1909,7 +1163,6 @@ const submitCreate = () => {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Current Time Line */
 .current-time-line {
   position: absolute;
   left: 0;
@@ -1931,7 +1184,6 @@ const submitCreate = () => {
   border-radius: 50%;
 }
 
-/* Selection overlay for drag-to-create */
 .selection-overlay {
   position: absolute;
   left: 2px;
@@ -2070,7 +1322,48 @@ const submitCreate = () => {
   bottom: 0;
 }
 
-/* Sleep gap marker */
+.sleep-events {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0;
+  pointer-events: auto;
+}
+
+.sleep-event {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(60, 60, 80, 0.6);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1.3;
+  transition: background 0.15s;
+}
+
+.sleep-event:hover {
+  background: rgba(80, 80, 100, 0.8);
+}
+
+.sleep-event-time {
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+  font-size: 9px;
+}
+
+.sleep-event-title {
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sleep-gap-marker {
   position: absolute;
   left: 0;
