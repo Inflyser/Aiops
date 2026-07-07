@@ -77,7 +77,6 @@ export function useDragToCreate(config: DragToCreateConfig) {
     const onUp = (e: MouseEvent) => {
       if (!isDragging.value) return
       isDragging.value = false
-      removeListeners()
 
       if (!hasMoved.value) {
         selDay.value = ''
@@ -147,7 +146,6 @@ export function useDragToCreate(config: DragToCreateConfig) {
     const onUp = (_e: MouseEvent) => {
       if (!isDragging.value) return
       isDragging.value = false
-      removeListeners()
 
       if (!hasMoved.value) {
         cancelSelection()

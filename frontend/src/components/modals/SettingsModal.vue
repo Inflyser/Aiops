@@ -99,53 +99,51 @@
           <div class="setting-card">
             <div class="setting-row" style="margin-bottom: 12px;">
               <div class="setting-info">
-                <span class="setting-label">{{ props.sleepMode ? 'Режим сна' : 'Дневной интервал по умолчанию' }}</span>
-                <span class="setting-hint">{{ props.sleepMode ? 'Скрываемый временной промежуток (время сна)' : 'Отображаемый временной промежуток в дневном и недельном виде' }}</span>
+                <span class="setting-label">Режим сна</span>
+                <span class="setting-hint">Скрываемый временной промежуток (время сна)</span>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" :checked="props.sleepMode" @change="emit('update:sleepMode', ($event.target as HTMLInputElement).checked)" />
                 <span class="toggle-slider"></span>
               </label>
             </div>
-            <div class="time-range-display">
-              <span class="time-label">{{ formatTime(props.sleepMode ? props.sleepStartHour : props.dayStartHour) }}</span>
-              <span class="time-separator">—</span>
-              <span class="time-label">{{ formatTime(props.sleepMode ? props.sleepEndHour : props.dayEndHour) }}</span>
-            </div>
-            <div class="range-slider-wrapper">
-              <div class="range-track">
-                <div
-                  class="range-fill"
-                  :style="{
-                    left: ((props.sleepMode ? props.sleepStartHour : props.dayStartHour) / 24) * 100 + '%',
-                    width: (((props.sleepMode ? props.sleepEndHour : props.dayEndHour) - (props.sleepMode ? props.sleepStartHour : props.dayStartHour)) / 24) * 100 + '%'
-                  }"
-                ></div>
+            <template v-if="props.sleepMode">
+              <div class="time-range-display">
+                <span class="time-label">{{ formatTime(props.sleepStartHour) }}</span>
+                <span class="time-separator">—</span>
+                <span class="time-label">{{ formatTime(props.sleepEndHour) }}</span>
               </div>
-              <input
-                type="range" min="0" max="24" step="1"
-                :value="props.sleepMode ? props.sleepStartHour : props.dayStartHour"
-                @input="props.sleepMode
-                  ? emit('update:sleepStartHour', parseFloat(($event.target as HTMLInputElement).value))
-                  : emit('update:dayStartHour', parseFloat(($event.target as HTMLInputElement).value))"
-                class="range-input range-start"
-              />
-              <input
-                type="range" min="0" max="24" step="1"
-                :value="props.sleepMode ? props.sleepEndHour : props.dayEndHour"
-                @input="props.sleepMode
-                  ? emit('update:sleepEndHour', parseFloat(($event.target as HTMLInputElement).value))
-                  : emit('update:dayEndHour', parseFloat(($event.target as HTMLInputElement).value))"
-                class="range-input range-end"
-              />
-            </div>
-            <div class="range-labels">
-              <span>00:00</span>
-              <span>06:00</span>
-              <span>12:00</span>
-              <span>18:00</span>
-              <span>24:00</span>
-            </div>
+              <div class="range-slider-wrapper">
+                <div class="range-track">
+                  <div
+                    class="range-fill"
+                    :style="{
+                      left: (props.sleepStartHour / 24) * 100 + '%',
+                      width: ((props.sleepEndHour - props.sleepStartHour) / 24) * 100 + '%'
+                    }"
+                  ></div>
+                </div>
+                <input
+                  type="range" min="0" max="24" step="1"
+                  :value="props.sleepStartHour"
+                  @input="emit('update:sleepStartHour', parseFloat(($event.target as HTMLInputElement).value))"
+                  class="range-input range-start"
+                />
+                <input
+                  type="range" min="0" max="24" step="1"
+                  :value="props.sleepEndHour"
+                  @input="emit('update:sleepEndHour', parseFloat(($event.target as HTMLInputElement).value))"
+                  class="range-input range-end"
+                />
+              </div>
+              <div class="range-labels">
+                <span>00:00</span>
+                <span>06:00</span>
+                <span>12:00</span>
+                <span>18:00</span>
+                <span>24:00</span>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -253,8 +251,6 @@ import { ref, watch } from 'vue'
 const props = defineProps<{
   show: boolean
   eventAccentMode: boolean
-  dayStartHour: number
-  dayEndHour: number
   sleepMode: boolean
   sleepStartHour: number
   sleepEndHour: number
@@ -263,8 +259,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'update:eventAccentMode', value: boolean): void
-  (e: 'update:dayStartHour', value: number): void
-  (e: 'update:dayEndHour', value: number): void
   (e: 'update:sleepMode', value: boolean): void
   (e: 'update:sleepStartHour', value: number): void
   (e: 'update:sleepEndHour', value: number): void

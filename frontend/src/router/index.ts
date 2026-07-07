@@ -27,6 +27,16 @@ const router = createRouter({
       path: '/goals',
       name: 'goals',
       component: () => import('../views/Goals.vue')
+    },
+    {
+      path: '/goals/new',
+      name: 'goal-new',
+      component: () => import('../views/GoalEdit.vue')
+    },
+    {
+      path: '/goals/:id',
+      name: 'goal-edit',
+      component: () => import('../views/GoalEdit.vue')
     }
   ]
 })

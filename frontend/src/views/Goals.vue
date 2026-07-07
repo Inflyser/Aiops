@@ -9,7 +9,7 @@
 
     <div class="goals-header">
       <h1 class="goals-title">Цели</h1>
-      <button class="add-goal-btn" @click="openCreateModal">+ Цель</button>
+      <button class="add-goal-btn" @click="router.push('/goals/new')">+ Цель</button>
     </div>
 
     <div class="goals-scroll">
@@ -69,7 +69,7 @@
             v-for="goal in sortedGoals"
             :key="goal.id"
             class="goal-card"
-            @click="openEditModal(goal)"
+            @click="router.push('/goals/' + goal.id)"
           >
             <div class="goal-card-left">
               <div class="goal-icon" :style="{ backgroundColor: getStatusColor(goal.status) + '22' }">
@@ -110,109 +110,12 @@
       </div>
     </div>
 
-    <!-- Goal Modal -->
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="goal-modal">
-        <div class="goal-modal-header">
-          <h2>{{ editingGoal ? 'Редактировать цель' : 'Новая цель' }}</h2>
-          <button class="modal-close-btn" @click="closeModal">✕</button>
-        </div>
-
-        <div class="goal-modal-body">
-          <div class="form-group">
-            <label>Название</label>
-            <input v-model="form.title" class="form-input" placeholder="Название цели" />
-          </div>
-
-          <div class="form-group">
-            <label>Описание</label>
-            <textarea v-model="form.description" class="form-textarea" placeholder="Описание цели" rows="3"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Тип цели</label>
-            <div class="type-toggle">
-              <button
-                class="type-btn"
-                :class="{ active: form.goal_type === 'concrete' }"
-                @click="form.goal_type = 'concrete'"
-              >Конкретная</button>
-              <button
-                class="type-btn"
-                :class="{ active: form.goal_type === 'numeric' }"
-                @click="form.goal_type = 'numeric'"
-              >Числовая</button>
-            </div>
-          </div>
-
-          <template v-if="form.goal_type === 'numeric'">
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>Целевое значение</label>
-                <input v-model.number="form.target_value" type="number" class="form-input" placeholder="1000" />
-              </div>
-              <div class="form-group flex-1">
-                <label>Единица</label>
-                <input v-model="form.target_unit" class="form-input" placeholder="$, км, раз..." />
-              </div>
-            </div>
-          </template>
-          <template v-if="form.goal_type === 'numeric' && editingGoal">
-            <div class="form-group">
-              <label>Текущее значение ({{ form.current_value }})</label>
-              <input v-model.number="form.current_value" type="number" class="form-input" placeholder="0" />
-            </div>
-          </template>
-
-          <div class="form-group">
-            <label>Дедлайн</label>
-            <input v-model="form.deadline" type="date" class="form-input" />
-          </div>
-
-          <div class="form-group">
-            <label>Статус</label>
-            <div class="status-select">
-              <button
-                v-for="s in statuses"
-                :key="s.value"
-                class="status-btn"
-                :class="{ active: form.status === s.value }"
-                :style="form.status === s.value ? { backgroundColor: s.color + '22', color: s.color, borderColor: s.color } : {}"
-                @click="form.status = s.value"
-              >{{ s.label }}</button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Иконка</label>
-            <div class="icon-grid">
-              <div
-                v-for="icon in availableIcons"
-                :key="icon"
-                class="icon-option"
-                :class="{ selected: form.icon === icon }"
-                @click="form.icon = form.icon === icon ? undefined : icon"
-              >
-                <img :src="getIconPath(icon)" class="icon-option-img" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="goal-modal-footer">
-          <button v-if="editingGoal" class="btn-delete" @click="deleteCurrentGoal">Удалить</button>
-          <div class="footer-right">
-            <button class="btn-cancel" @click="closeModal">Отмена</button>
-            <button class="btn-save" @click="saveGoal" :disabled="!form.title.trim()">Сохранить</button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import ThreeDotsMenu from '../components/ui/ThreeDotsMenu.vue'
@@ -220,6 +123,7 @@ import { useGoalsStore, type Goal } from '../stores/goals'
 
 dayjs.locale('ru')
 
+const router = useRouter()
 const goalsStore = useGoalsStore()
 
 const currentTime = ref('')
@@ -249,13 +153,6 @@ const getIconPath = (iconName: string): string => {
   }
   return ''
 }
-
-const availableIcons = computed(() => {
-  return Object.keys(iconModules).map(p => {
-    const name = p.split('/').pop()?.replace('.svg', '') || ''
-    return name
-  })
-})
 
 // Statuses
 const statuses = [
@@ -305,109 +202,13 @@ const unpinGoal = async (pos: number) => {
 const handleFeaturedClick = async (pos: number) => {
   const goal = featuredAtPos(pos)
   if (goal) {
-    openEditModal(goal)
+    router.push('/goals/' + goal.id)
   }
 }
 
 const numericProgress = (goal: Goal) => {
   if (!goal.target_value || goal.target_value === 0) return 0
   return Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
-}
-
-// Modal
-const showModal = ref(false)
-const editingGoal = ref<Goal | null>(null)
-
-const form = ref({
-  title: '',
-  description: '',
-  goal_type: 'concrete',
-  target_value: undefined as number | undefined,
-  target_unit: '',
-  current_value: 0,
-  deadline: '',
-  status: 'active',
-  icon: undefined as string | undefined
-})
-
-const resetForm = () => {
-  form.value = {
-    title: '',
-    description: '',
-    goal_type: 'concrete',
-    target_value: undefined,
-    target_unit: '',
-    current_value: 0,
-    deadline: '',
-    status: 'active',
-    icon: undefined
-  }
-}
-
-const openCreateModal = () => {
-  resetForm()
-  editingGoal.value = null
-  showModal.value = true
-}
-
-const openEditModal = (goal: Goal) => {
-  editingGoal.value = goal
-  form.value = {
-    title: goal.title,
-    description: goal.description || '',
-    goal_type: goal.goal_type,
-    target_value: goal.target_value,
-    target_unit: goal.target_unit || '',
-    current_value: goal.current_value,
-    deadline: goal.deadline ? dayjs(goal.deadline).format('YYYY-MM-DD') : '',
-    status: goal.status,
-    icon: goal.icon
-  }
-  showModal.value = true
-}
-
-const closeModal = () => {
-  showModal.value = false
-  editingGoal.value = null
-  resetForm()
-}
-
-const saveGoal = async () => {
-  if (!form.value.title.trim()) return
-
-  const data: any = {
-    title: form.value.title,
-    description: form.value.description || undefined,
-    goal_type: form.value.goal_type,
-    target_value: form.value.goal_type === 'numeric' ? form.value.target_value : undefined,
-    target_unit: form.value.goal_type === 'numeric' ? form.value.target_unit : undefined,
-    current_value: form.value.goal_type === 'numeric' ? form.value.current_value : 0,
-    deadline: form.value.deadline ? dayjs(form.value.deadline).toISOString() : undefined,
-    status: form.value.status,
-    icon: form.value.icon || undefined
-  }
-
-  try {
-    if (editingGoal.value) {
-      await goalsStore.updateGoal(editingGoal.value.id, data)
-    } else {
-      await goalsStore.createGoal(data)
-    }
-    closeModal()
-  } catch (err) {
-    console.error('Failed to save goal:', err)
-  }
-}
-
-const deleteCurrentGoal = async () => {
-  if (!editingGoal.value) return
-  if (!confirm(`Удалить цель "${editingGoal.value.title}"?`)) return
-  try {
-    await goalsStore.deleteGoal(editingGoal.value.id)
-    closeModal()
-  } catch (err) {
-    console.error('Failed to delete goal:', err)
-  }
 }
 </script>
 
@@ -808,252 +609,5 @@ const deleteCurrentGoal = async () => {
   white-space: nowrap;
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
 
-.goal-modal {
-  background: var(--bg-tertiary);
-  border: 1px solid #2a2a2a;
-  border-radius: 16px;
-  width: 540px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.goal-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 24px 0;
-}
-
-.goal-modal-header h2 {
-  margin: 0;
-  font-size: 19px;
-  color: #fff;
-}
-
-.modal-close-btn {
-  background: transparent;
-  border: none;
-  color: #888;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-
-.modal-close-btn:hover {
-  background: #2a2a2a;
-  color: #fff;
-}
-
-.goal-modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-group label {
-  font-size: 11px;
-  color: #888;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.form-input, .form-textarea {
-  width: 100%;
-  padding: 12px;
-  background: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
-  color: #fff;
-  font-size: 13px;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus, .form-textarea:focus {
-  border-color: #4a9eff;
-}
-
-.form-textarea {
-  resize: vertical;
-  font-family: inherit;
-}
-
-.form-row {
-  display: flex;
-  gap: 12px;
-}
-
-.flex-1 {
-  flex: 1;
-}
-
-.type-toggle {
-  display: flex;
-  gap: 8px;
-}
-
-.type-btn {
-  flex: 1;
-  padding: 10px;
-  background: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
-  color: #888;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.type-btn.active {
-  background: #4a9eff22;
-  border-color: #4a9eff;
-  color: #4a9eff;
-}
-
-.status-select {
-  display: flex;
-  gap: 8px;
-}
-
-.status-btn {
-  flex: 1;
-  padding: 8px;
-  background: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
-  color: #888;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.icon-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 6px;
-  max-height: 160px;
-  overflow-y: auto;
-  padding: 4px 0;
-}
-
-.icon-option {
-  width: 100%;
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  padding: 6px;
-  box-sizing: border-box;
-}
-
-.icon-option:hover {
-  border-color: #4a4a4a;
-}
-
-.icon-option.selected {
-  background: #4a9eff22;
-  border-color: #4a9eff;
-}
-
-.icon-option-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-  opacity: 0.6;
-}
-
-.icon-option.selected .icon-option-img {
-  opacity: 1;
-}
-
-.goal-modal-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 24px 24px;
-}
-
-.footer-right {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.btn-cancel, .btn-save, .btn-delete {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-cancel {
-  background: transparent;
-  border: 1px solid #2a2a2a;
-  color: #ccc;
-}
-
-.btn-cancel:hover {
-  background: #1a1a1a;
-}
-
-.btn-save {
-  background: #4a9eff;
-  color: #fff;
-}
-
-.btn-save:hover {
-  background: #3a8eef;
-}
-
-.btn-save:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.btn-delete {
-  background: transparent;
-  border: 1px solid #5a1a1a;
-  color: #ff6b6b;
-}
-
-.btn-delete:hover {
-  background: #3a1a1a;
-}
 </style>

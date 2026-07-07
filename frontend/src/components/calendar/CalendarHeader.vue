@@ -8,15 +8,14 @@
       </div>
     </div>
     <div class="days-header">
-      <!-- Empty column for time labels + compact toggle -->
+      <!-- Empty column for time labels + sleep toggle -->
       <div class="time-header">
         <div
-          v-if="!sleepMode"
-          class="compact-toggle"
-          @click="$emit('toggle-compact', !compactMode)"
-          :title="compactMode ? `Полный день (0:00–24:00)` : `Рабочий день (${String(dayStartHour).padStart(2, '0')}:00–${String(dayEndHour).padStart(2, '0')}:00)`"
+          class="sleep-toggle"
+          @click="$emit('toggle-sleep', !props.sleepMode)"
+          :title="props.sleepMode ? 'Выключить режим сна' : 'Включить режим сна'"
         >
-          <img v-if="compactMode" src="@/assets/sun.svg" class="toggle-svg" />
+          <img v-if="props.sleepMode" src="@/assets/sun.svg" class="toggle-svg" />
           <img v-else src="@/assets/moon.svg" class="toggle-svg" />
         </div>
       </div>
@@ -42,16 +41,13 @@ dayjs.locale('ru')
 
 const props = defineProps<{
   currentWeekStart: dayjs.Dayjs
-  compactMode: boolean
-  dayStartHour: number
-  dayEndHour: number
   sleepMode: boolean
 }>()
 
 defineEmits<{
   (e: 'prev-week'): void
   (e: 'next-week'): void
-  (e: 'toggle-compact', value: boolean): void
+  (e: 'toggle-sleep', value: boolean): void
 }>()
 
 const weekDays = computed(() => {
@@ -130,7 +126,7 @@ const monthYear = computed(() => {
   justify-content: center;
 }
 
-.compact-toggle {
+.sleep-toggle {
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -139,7 +135,7 @@ const monthYear = computed(() => {
   opacity: 0.6;
 }
 
-.compact-toggle:hover {
+.sleep-toggle:hover {
   opacity: 1;
 }
 

@@ -369,9 +369,13 @@ const {
   resizeNewStart,
   resizeNewEnd,
   isResizing,
-  startResize,
+  startResize: startResizeRaw,
   cleanupResize
 } = useEventResize(computed(() => props.hourHeight))
+
+const startResize = (e: MouseEvent, event: any, direction: 'bottom' | 'top') => {
+  startResizeRaw(e, event, direction, (data) => ee('event-drop', data))
+}
 
 const DAY_TASK_LAYOUT = {
   EVENT_PADDING: 16, TITLE_H: 26, TIME_H: 24, DESC_H: 28,
@@ -438,7 +442,9 @@ const {
   startSelectionDay,
   createEvent: createEventRaw,
   cancelSelection,
-  submitCreate: submitCreateRaw
+  submitCreate: submitCreateRaw,
+  addMouseListenersDay,
+  cleanupCreate
 } = useDragToCreate({
   hourHeight: computed(() => props.hourHeight),
   dayStartHour: computed(() => props.dayStartHour),
@@ -655,6 +661,11 @@ const currentTimeLineStyle = computed(() => {
 
 // Lifecycle
 onMounted(() => {
+  addMouseListenersDay(
+    (_data) => {}, // unused
+    scrollContainerRef,
+    props.currentDay
+  )
   timeInterval = setInterval(() => {
     currentTime.value = dayjs()
   }, 60000)
@@ -664,6 +675,7 @@ onUnmounted(() => {
   if (timeInterval) {
     clearInterval(timeInterval)
   }
+  cleanupCreate()
   cleanupResize()
 })
 </script>

@@ -13,6 +13,7 @@ export interface Goal {
   current_value: number
   deadline?: string
   icon?: string
+  cover_image?: string
   is_featured: boolean
   featured_position?: number
   order: number

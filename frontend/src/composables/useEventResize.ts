@@ -16,6 +16,7 @@ export function useEventResize(hourHeight: import('vue').Ref<number> | number) {
   const resizeOriginalStart = ref<dayjs.Dayjs | null>(null)
   const resizeNewStart = ref<dayjs.Dayjs | null>(null)
   const resizeEvent = ref<ResizableEvent | null>(null)
+  let resizeEndCallback: ResizeCallback | undefined
 
   function isResizing(eventId: string | number): boolean {
     return resizingEventId.value === eventId
@@ -25,7 +26,7 @@ export function useEventResize(hourHeight: import('vue').Ref<number> | number) {
     return (hourHeight as import('vue').Ref<number>).value ?? (hourHeight as number)
   }
 
-  function startResize(e: MouseEvent, event: ResizableEvent, direction: 'bottom' | 'top') {
+  function startResize(e: MouseEvent, event: ResizableEvent, direction: 'bottom' | 'top', onEnd?: ResizeCallback) {
     e.stopPropagation()
     e.preventDefault()
 
@@ -35,13 +36,15 @@ export function useEventResize(hourHeight: import('vue').Ref<number> | number) {
     resizeOriginalEnd.value = dayjs(event.end)
     resizeOriginalStart.value = dayjs(event.start)
     resizeEvent.value = event
+    resizeEndCallback = onEnd
 
     document.addEventListener('pointermove', onResizeMove)
     document.addEventListener('pointerup', onPointerUp)
   }
 
   function onPointerUp() {
-    onResizeEnd()
+    onResizeEnd(resizeEndCallback)
+    resizeEndCallback = undefined
   }
 
   function onResizeMove(e: PointerEvent) {

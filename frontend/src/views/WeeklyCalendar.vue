@@ -68,13 +68,10 @@
         <div class="calendar-header-with-inbox">
           <CalendarHeader
             :current-week-start="currentWeekStart"
-            :compact-mode="compactMode"
-            :day-start-hour="dayStartHour"
-            :day-end-hour="dayEndHour"
             :sleep-mode="sleepMode"
             @prev-week="lastWeek"
             @next-week="nextWeek"
-            @toggle-compact="compactMode = $event"
+            @toggle-sleep="sleepMode = $event"
           />
         </div>
 
@@ -82,8 +79,8 @@
         <WeekView
           :week-days="weekDays"
           :events="filteredEvents"
-          :day-start-hour="displayStartHour"
-          :day-end-hour="displayEndHour"
+          :day-start-hour="0"
+          :day-end-hour="24"
           :event-accent-mode="eventAccentMode"
           :inbox-panel-open="showInboxPanel"
           :hour-height="weekHourHeight"
@@ -131,8 +128,8 @@
         <DayView
           :current-day="currentDay"
           :events="dayEvents"
-          :day-start-hour="displayStartHour"
-          :day-end-hour="displayEndHour"
+          :day-start-hour="0"
+          :day-end-hour="24"
           :event-accent-mode="eventAccentMode"
           :hour-height="dayHourHeight"
           :sleep-mode="sleepMode"
@@ -224,15 +221,11 @@
     <SettingsModal
       :show="showSettings"
       :event-accent-mode="eventAccentMode"
-      :day-start-hour="dayStartHour"
-      :day-end-hour="dayEndHour"
       :sleep-mode="sleepMode"
       :sleep-start-hour="sleepStartHour"
       :sleep-end-hour="sleepEndHour"
       @close="showSettings = false"
       @update:event-accent-mode="eventAccentMode = $event"
-      @update:day-start-hour="dayStartHour = $event"
-      @update:day-end-hour="dayEndHour = $event"
       @update:sleep-mode="sleepMode = $event"
       @update:sleep-start-hour="sleepStartHour = $event"
       @update:sleep-end-hour="sleepEndHour = $event"
@@ -366,32 +359,19 @@ const startZoom = (e: MouseEvent) => {
 // Локальное состояние для bounce анимации
 const bouncingEvents = ref<Set<string>>(new Set())
 
-const savedStart = localStorage.getItem('day-start-hour')
-const savedEnd = localStorage.getItem('day-end-hour')
 const savedSleepMode = localStorage.getItem('sleep-mode')
 const savedSleepStart = localStorage.getItem('sleep-start-hour')
 const savedSleepEnd = localStorage.getItem('sleep-end-hour')
 
-const compactMode = ref(true)
-const dayStartHour = ref(savedStart ? parseFloat(savedStart) : 7)
-const dayEndHour = ref(savedEnd ? parseFloat(savedEnd) : 23)
 const sleepMode = ref(savedSleepMode ? savedSleepMode === 'true' : false)
 const sleepStartHour = ref(savedSleepStart ? parseFloat(savedSleepStart) : 0)
 const sleepEndHour = ref(savedSleepEnd ? parseFloat(savedSleepEnd) : 0)
-
-watch([dayStartHour, dayEndHour], () => {
-  localStorage.setItem('day-start-hour', String(dayStartHour.value))
-  localStorage.setItem('day-end-hour', String(dayEndHour.value))
-})
 
 watch([sleepMode, sleepStartHour, sleepEndHour], () => {
   localStorage.setItem('sleep-mode', String(sleepMode.value))
   localStorage.setItem('sleep-start-hour', String(sleepStartHour.value))
   localStorage.setItem('sleep-end-hour', String(sleepEndHour.value))
 })
-
-const displayStartHour = computed(() => sleepMode.value ? 0 : (compactMode.value ? dayStartHour.value : 0))
-const displayEndHour = computed(() => sleepMode.value ? 24 : (compactMode.value ? dayEndHour.value : 24))
 
 // Tags state
 const showTagsPanel = ref(false)

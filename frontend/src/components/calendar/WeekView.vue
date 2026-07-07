@@ -364,9 +364,13 @@ const {
   resizeNewStart,
   resizeNewEnd,
   isResizing,
-  startResize,
+  startResize: startResizeRaw,
   cleanupResize
 } = useEventResize(computed(() => props.hourHeight))
+
+const startResize = (e: MouseEvent, event: any, direction: 'bottom' | 'top') => {
+  startResizeRaw(e, event, direction, (data) => ee('event-drop', data))
+}
 
 const {
   hoveredEventId,
@@ -444,7 +448,9 @@ const {
   startSelection: startSelectionRaw,
   createEvent: createEventRaw,
   cancelSelection: cancelSelectionRaw,
-  submitCreate: submitCreateRaw
+  submitCreate: submitCreateRaw,
+  addMouseListeners,
+  cleanupCreate
 } = useDragToCreate({
   hourHeight: computed(() => props.hourHeight),
   dayStartHour: computed(() => props.dayStartHour),
@@ -657,6 +663,11 @@ const currentTimeLineStyle = computed(() => {
 })
 
 onMounted(() => {
+  addMouseListeners(
+    (data) => ee('day-click', data),
+    (_data) => {}, // unused
+    props.weekDays
+  )
   timeInterval = setInterval(() => {
     currentTime.value = dayjs()
   }, 60000)
@@ -666,6 +677,7 @@ onUnmounted(() => {
   if (timeInterval) {
     clearInterval(timeInterval)
   }
+  cleanupCreate()
   cleanupResize()
 })
 </script>
