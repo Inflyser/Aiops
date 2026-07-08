@@ -7,8 +7,11 @@ class EventTaskBase(BaseModel):
     order: int = 0
 
 
-class EventTaskCreate(EventTaskBase):
-    pass
+class EventTaskCreate(BaseModel):
+    event_id: str
+    task_id: str | None = None
+    order: int = 0
+    title: str | None = None
 
 
 class EventTaskUpdate(BaseModel):

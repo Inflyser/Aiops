@@ -1177,14 +1177,11 @@ const handleTaskDropToEvent = async (data: { task: any; event: any }) => {
 // Handle inline add task to event
 const handleAddTaskToEvent = async (data: { event: any; title: string }) => {
   try {
-    const newTask = await tasksStore.createTask({ title: data.title })
-    if (newTask && newTask.id) {
-      await eventTasksApi.post('/', {
-        event_id: String(data.event.id),
-        task_id: String(newTask.id),
-        order: 0
-      })
-    }
+    await eventTasksApi.post('/', {
+      event_id: String(data.event.id),
+      title: data.title,
+      order: 0
+    })
     await loadEvents()
     if (currentView.value === 'day') await loadEventsForDay()
     await tasksStore.fetchTasks()

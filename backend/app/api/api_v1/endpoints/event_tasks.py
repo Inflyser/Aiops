@@ -21,7 +21,7 @@ async def add_task_to_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Добавить задачу к событию (создаёт копию задачи из шаблона)"""
+    """Добавить задачу к событию (создаёт копию задачи из шаблона или новую задачу по названию)"""
     # Проверяем существование события
     event = db.query(CalendarEvent).filter(
         CalendarEvent.id == event_task_data.event_id,
@@ -31,29 +31,45 @@ async def add_task_to_event(
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
     
-    # Находим шаблон задачи в Inbox
-    template = db.query(Task).filter(
-        Task.id == event_task_data.task_id,
-        Task.user_id == current_user.id
-    ).first()
-    
-    if not template:
-        raise HTTPException(status_code=404, detail="Задача-шаблон не найдена")
-    
-    # Создаём НОВУЮ независимую копию задачи с теми же данными
-    task_copy = Task(
-        id=str(uuid4()),
-        title=template.title,
-        description=template.description,
-        completed=False,
-        status='event',
-        priority=template.priority,
-        tags=template.tags,
-        order=0,
-        user_id=current_user.id,
-    )
-    db.add(task_copy)
-    db.flush()
+    # Если передан title (quick-add), создаём новую задачу напрямую
+    if event_task_data.title:
+        task_copy = Task(
+            id=str(uuid4()),
+            title=event_task_data.title,
+            description='',
+            completed=False,
+            status='event',
+            priority=None,
+            tags=[],
+            order=0,
+            user_id=current_user.id,
+        )
+        db.add(task_copy)
+        db.flush()
+    else:
+        # Находим шаблон задачи в Inbox
+        template = db.query(Task).filter(
+            Task.id == event_task_data.task_id,
+            Task.user_id == current_user.id
+        ).first()
+        
+        if not template:
+            raise HTTPException(status_code=404, detail="Задача-шаблон не найдена")
+        
+        # Создаём НОВУЮ независимую копию задачи с теми же данными
+        task_copy = Task(
+            id=str(uuid4()),
+            title=template.title,
+            description=template.description,
+            completed=False,
+            status='event',
+            priority=template.priority,
+            tags=template.tags,
+            order=0,
+            user_id=current_user.id,
+        )
+        db.add(task_copy)
+        db.flush()
     
     # Создаём связь между новой задачей и событием
     event_task = EventTask(

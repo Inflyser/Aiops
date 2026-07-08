@@ -78,6 +78,15 @@ export function useEventDrag(config: DragConfig) {
     draggedEvent.value = calendarEvent
     isAltPressed.value = event.altKey
 
+    // Safety: ensure cleanup even if dragend doesn't fire on the element
+    const onWindowDragEnd = () => {
+      draggedEvent.value = null
+      isAltPressed.value = false
+      dragOffsetX.value = 0
+      dragOffsetY.value = 0
+    }
+    window.addEventListener('dragend', onWindowDragEnd, { once: true })
+
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = event.altKey ? 'copy' : 'move'
       event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent))
@@ -169,11 +178,14 @@ export function useEventDrag(config: DragConfig) {
     emitFn: (event: string, ...args: any[]) => void
   ) {
     event.preventDefault()
-    if (draggedEvent.value) return
-    event.stopPropagation()
 
     try {
       const droppedData = JSON.parse(event.dataTransfer?.getData('text/plain') || '{}')
+
+      // If dragging a calendar event (has start/end), skip — it's handled elsewhere
+      if (droppedData.start && droppedData.end) return
+
+      event.stopPropagation()
 
       if (droppedData._tag) {
         const targetElement = event.target as HTMLElement

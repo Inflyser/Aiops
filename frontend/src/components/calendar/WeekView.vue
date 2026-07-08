@@ -395,7 +395,7 @@ const {
   cancelAddTask,
   handleAddTaskBlur,
   toggleQuickAdd,
-  submitQuickAdd,
+  submitQuickAdd: submitQuickAddRaw,
   cancelQuickAdd,
   saveTitle: saveTitleRaw,
   cancelTitleEdit,
@@ -483,6 +483,9 @@ const canShowAddTask = (event: CalendarEvent) =>
 
 const submitAddTask = (event: CalendarEvent) =>
   submitAddTaskRaw(event, ee)
+
+const submitQuickAdd = (event: CalendarEvent) =>
+  submitQuickAddRaw(event, ee)
 
 const saveTitle = (event: CalendarEvent) =>
   saveTitleRaw(event, ee)
