@@ -87,8 +87,8 @@ const monthYear = computed(() => {
 }
 
 .month-year {
-  font-size: 42px;
-  margin-bottom: 20px;
+  font-size: 32px;
+  margin-bottom: 12px;
   text-transform: capitalize;
   font-weight: bold;
   flex: 1;
@@ -103,10 +103,10 @@ const monthYear = computed(() => {
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: 30px;
+  font-size: 26px;
   cursor: pointer;
   font-weight: bold;
-  padding: 0px 10px 15px 25px;
+  padding: 0px 10px 10px 20px;
 }
 
 .days-header {
@@ -169,11 +169,12 @@ const monthYear = computed(() => {
 .is-today .day-number {
   background-color: var(--bg-elevated);
   color: white;
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
 }
 </style>

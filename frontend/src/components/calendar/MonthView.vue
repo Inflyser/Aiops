@@ -714,7 +714,7 @@ const getExtraEventsCount = (date: string) => {
 }
 
 .day-events-modal-item-star {
-  color: #f59e0b;
+  color: var(--event-text-color, #ffffff);
   font-size: 14px;
   flex-shrink: 0;
 }

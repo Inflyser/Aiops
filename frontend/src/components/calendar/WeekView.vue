@@ -1059,7 +1059,7 @@ onUnmounted(() => {
   cursor: pointer;
   padding: 4px;
   font-size: 20px;
-  color: #aaa;
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.7));
   z-index: 14;
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
@@ -1069,7 +1069,7 @@ onUnmounted(() => {
 
 .event-star-btn.is-important {
   opacity: 1;
-  color: #f59e0b;
+  color: var(--event-text-color, #ffffff);
 }
 
 .event-block:hover .event-star-btn {
@@ -1119,7 +1119,7 @@ onUnmounted(() => {
   padding: 4px 6px;
   font-size: 18px;
   font-weight: 600;
-  color: #aaa;
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.7));
   opacity: 0;
   pointer-events: auto;
   transition: opacity 0.2s, transform 0.2s, color 0.2s;
@@ -1134,7 +1134,7 @@ onUnmounted(() => {
 .event-quick-add-btn:hover {
   opacity: 0.8;
   transform: scale(1.3);
-  color: #ffffff;
+  color: var(--event-text-color, #ffffff);
 }
 
 .event-task-badge ~ .event-star-btn {

@@ -714,16 +714,16 @@ onUnmounted(() => {
 }
 
 .day-weekday {
-  font-size: 38px;
+  font-size: 30px;
   font-weight: bold;
   margin: 0;
   text-transform: capitalize;
 }
 
 .day-date {
-  font-size: 19px;
+  font-size: 17px;
   color: #888;
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   font-weight: 400;
 }
 
@@ -737,10 +737,10 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: 32px;
+  font-size: 26px;
   cursor: pointer;
   font-weight: bold;
-  padding: 5px 15px;
+  padding: 4px 12px;
 }
 
 .today-btn {
@@ -1102,7 +1102,7 @@ onUnmounted(() => {
   cursor: pointer;
   padding: 4px;
   font-size: 20px;
-  color: #aaa;
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.7));
   z-index: 14;
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
@@ -1112,7 +1112,7 @@ onUnmounted(() => {
 
 .event-star-btn.is-important {
   opacity: 1;
-  color: #f59e0b;
+  color: var(--event-text-color, #ffffff);
 }
 
 .day-event:hover .event-star-btn {
@@ -1164,7 +1164,7 @@ onUnmounted(() => {
   padding: 4px 6px;
   font-size: 18px;
   font-weight: 600;
-  color: #aaa;
+  color: var(--event-text-muted, rgba(255, 255, 255, 0.7));
   opacity: 0;
   pointer-events: auto;
   transition: opacity 0.2s, transform 0.2s, color 0.2s;
@@ -1179,7 +1179,7 @@ onUnmounted(() => {
 .event-quick-add-btn:hover {
   opacity: 0.8;
   transform: scale(1.3);
-  color: #ffffff;
+  color: var(--event-text-color, #ffffff);
 }
 
 /* When badge exists: shift star/plus below badge */
