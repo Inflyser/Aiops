@@ -818,6 +818,7 @@ onUnmounted(() => {
   right: 0;
   pointer-events: none;
   z-index: 1;
+  border-left: 1px solid var(--bg-tertiary);
 }
 
 .day-event {

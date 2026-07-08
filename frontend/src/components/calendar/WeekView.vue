@@ -2,7 +2,7 @@
   <div class="week-view">
     <!-- Calendar Grid -->
     <div class="calendar-grid">
-      <div class="time-column">
+      <div class="time-column" :style="{ minHeight: calendarHeight + 'px' }">
         <div
           v-for="hour in hours"
           :key="hour"
@@ -717,7 +717,6 @@ onUnmounted(() => {
   background-color: var(--bg-primary);
   z-index: 5;
   box-sizing: border-box;
-  min-height: 100%;
 }
 
 .time-slot {
